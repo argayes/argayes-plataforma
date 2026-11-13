@@ -439,6 +439,38 @@ app.get('/api/debug/pass-model/:clave', ah(async (req, res) => {
       res.json(resultado);
 }));
 
+// Misma info que arriba, pero como página HTML para VER las imágenes que
+// realmente quedaron dentro del .pkpass (lado a lado con las de disco).
+app.get('/api/debug/pass-model-view/:clave', ah(async (req, res) => {
+      if (req.params.clave !== 'argayes-diag-2026') return res.status(404).end();
+      const clienteId = req.query.clienteId;
+      let cliente, empresa;
+      if (clienteId && esUuidValido(clienteId)) {
+              cliente = await db.obtenerCliente(clienteId);
+              empresa = cliente ? await db.obtenerEmpresa(cliente.empresaId) : null;
+      }
+      if (!cliente) {
+              cliente = { id: 'diagnostico-0000', nombre: 'Diagnóstico', puntos: 0 };
+              empresa = { nombre: 'ARGAYES', color: '#b8872b' };
+      }
+      const r = await appleWallet.diagnosticoModelo(empresa, cliente);
+      const filas = Object.keys(r.enPkpass || {})
+              .filter((n) => n.endsWith('.png'))
+              .map((n) => {
+                      const enDisco = r.enDisco[n];
+                      const enP = r.enPkpass[n];
+                      return `<tr>
+                              <td>${n}</td>
+                              <td>disco: ${enDisco ? enDisco.bytes : '—'}b<br>pkpass: ${enP.bytes}b</td>
+                              <td><img src="data:image/png;base64,${enP.base64}" style="width:120px;height:auto;background:#444;image-rendering:pixelated;border:1px solid #888"></td>
+                      </tr>`;
+              }).join('');
+      res.send(`<html><body style="background:#222;color:#fff;font-family:sans-serif">
+              <h3>Imágenes DENTRO del .pkpass firmado (no las de /pass-model)</h3>
+              <table border="1" cellpadding="8">${filas}</table>
+      </body></html>`);
+}));
+
 // ---------- Servicio web de Apple Wallet (actualizaciones automáticas) ----------
 // Estas 5 rutas las llama directo el iPhone del cliente (no el panel, no
 // nuestro frontend) — su forma exacta (nombres, verbos, status codes) la
