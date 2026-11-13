@@ -1329,6 +1329,29 @@
     recompensa: '', umbral: 10
   };
 
+  // Cada pestaña (Marca, Colores, Sellos, Recompensa, Foto) tiene su propio
+  // botón "Guardar cambios", pero "tarjeta" lleva TODOS los campos en vivo
+  // sin importar en qué pestaña estés parado. Antes cada botón solo mandaba
+  // los campos de su propia pestaña, y como cargarTarjetaDesdeEmpresa()
+  // vuelve a llenar TODO el formulario con lo que regresa el servidor, lo
+  // editado en las otras pestañas (que nunca se mandó) se veía "borrado" —
+  // como si no se hubiera hecho nada. Por eso cualquier botón manda siempre
+  // el paquete completo: así el negocio puede editar varias pestañas y con
+  // un solo clic en cualquiera de ellas queda todo guardado.
+  function datosTarjetaParaGuardar(){
+    return {
+      nombre: (tarjeta.nombre || '').trim(),
+      fuente: tarjeta.fuente,
+      logoUrl: tarjeta.logoUrl,
+      color: tarjeta.color,
+      colorBoton: tarjeta.colorBoton,
+      selloForma: tarjeta.selloForma,
+      selloTamano: tarjeta.selloTamano,
+      recompensa: (tarjeta.recompensa || '').trim(),
+      umbral: Math.min(20, Math.max(1, Number(tarjeta.umbral) || 10))
+    };
+  }
+
   function cargarTarjetaDesdeEmpresa(empresa){
     tarjeta.nombre = empresa.nombre || '';
     tarjeta.logoUrl = empresa.logoUrl || null;
@@ -1624,7 +1647,7 @@
     try {
       var empresa = await api('/api/mi-empresa', {
         method: 'PATCH',
-        body: JSON.stringify({ logoUrl: tarjeta.logoUrl })
+        body: JSON.stringify(datosTarjetaParaGuardar())
       });
       setEmpresaCache(empresa);
       cargarTarjetaDesdeEmpresa(empresa);
@@ -1639,11 +1662,7 @@
     try {
       var empresa = await api('/api/mi-empresa', {
         method: 'PATCH',
-        body: JSON.stringify({
-          nombre: document.getElementById('cfgNombre').value.trim(),
-          fuente: document.getElementById('cfgFuente').value,
-          logoUrl: tarjeta.logoUrl
-        })
+        body: JSON.stringify(datosTarjetaParaGuardar())
       });
       setEmpresaCache(empresa);
       sessionName.textContent = empresa.nombre;
@@ -1681,7 +1700,7 @@
     try {
       var empresa = await api('/api/mi-empresa', {
         method: 'PATCH',
-        body: JSON.stringify({ color: tarjeta.color, colorBoton: tarjeta.colorBoton })
+        body: JSON.stringify(datosTarjetaParaGuardar())
       });
       setEmpresaCache(empresa);
       cargarTarjetaDesdeEmpresa(empresa);
@@ -1755,7 +1774,7 @@
     try {
       var empresa = await api('/api/mi-empresa', {
         method: 'PATCH',
-        body: JSON.stringify({ selloForma: tarjeta.selloForma, selloTamano: tarjeta.selloTamano })
+        body: JSON.stringify(datosTarjetaParaGuardar())
       });
       setEmpresaCache(empresa);
       cargarTarjetaDesdeEmpresa(empresa);
@@ -1785,10 +1804,7 @@
     try {
       var empresa = await api('/api/mi-empresa', {
         method: 'PATCH',
-        body: JSON.stringify({
-          recompensa: document.getElementById('cfgRecompensa').value.trim(),
-          umbral: Math.min(20, Math.max(1, Number(document.getElementById('cfgUmbral').value) || 10))
-        })
+        body: JSON.stringify(datosTarjetaParaGuardar())
       });
       setEmpresaCache(empresa);
       cargarTarjetaDesdeEmpresa(empresa);
