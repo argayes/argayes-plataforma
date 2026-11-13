@@ -643,7 +643,14 @@
       try { localStorage.setItem('argayes-entries', JSON.stringify(entries)); } catch(e){}
       renderHistory();
 
-      formHint.textContent = 'Cliente registrado. Completa el nombre del cliente';
+      // Se limpia el formulario — si no, se queda con el nombre del cliente
+      // anterior y parece que la tarjeta de arriba (que sigue siendo la de
+      // ese cliente anterior hasta el PRÓXIMO registro) es la de alguien
+      // que todavía no se registra.
+      custName.value = '';
+      custContact.value = '';
+      custConsent.checked = false;
+      formHint.textContent = 'Cliente registrado. Completa el nombre del siguiente cliente';
       result.scrollIntoView({behavior:'smooth', block:'nearest'});
     } catch(e){
       if(walletTab){ try { walletTab.close(); } catch(e2){} }
