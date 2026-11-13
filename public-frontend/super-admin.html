@@ -671,6 +671,32 @@
       });
       acciones.appendChild(btn);
 
+      var btnBorrar = document.createElement('button');
+      btnBorrar.type = 'button';
+      btnBorrar.className = 'toggle denegar';
+      btnBorrar.textContent = 'Borrar';
+      btnBorrar.addEventListener('click', function(){
+        var nombre = emp.nombre || 'este negocio';
+        var confirmacion = prompt(
+          '¡Esto borra "' + nombre + '" por completo, junto con TODOS sus clientes, puntos y ' +
+          'canjes registrados — no se puede deshacer!\n\n' +
+          'Escribe el nombre exacto del negocio para confirmar:'
+        );
+        if(confirmacion === null) return;
+        if(confirmacion.trim() !== nombre){
+          alert('El nombre no coincide. No se borró nada.');
+          return;
+        }
+        btnBorrar.disabled = true;
+        denegarUna(emp.id).then(function(){
+          cargarEmpresas();
+        }).catch(function(err){
+          alert(err.message);
+          btnBorrar.disabled = false;
+        });
+      });
+      acciones.appendChild(btnBorrar);
+
       tdBtn.appendChild(acciones);
       tr.appendChild(tdBtn);
 
