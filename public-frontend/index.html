@@ -1,0 +1,967 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Panel ARGAYES</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* Layout: top bar (brand + sesión) over a one-column stack — stat tiles,
+     a settings strip for the backend URL, then the client table. The login
+     screen is a single centered card shown instead of the dashboard until
+     there's a valid session token. */
+  :root{
+    --bg:#f3f1ec;
+    --surface:#ffffff;
+    --surface-2:#eae6db;
+    --ink:#1b1f23;
+    --ink-dim:#5b6066;
+    --border:#d8d3c4;
+    --accent:#b8872b;
+    --accent-ink:#2a1c05;
+    --accent-soft:#f1e3c3;
+    --good:#2f7a4f;
+    --good-soft:#e1efe3;
+    --danger:#a6412f;
+    --danger-soft:#f6e3df;
+    --font-display:"Times New Roman", Times, Georgia, serif;
+    --font-body:"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#15181b; --surface:#1e2226; --surface-2:#262b30;
+      --ink:#eceae4; --ink-dim:#9ba1a6; --border:#343a3f;
+      --accent:#d9a84a; --accent-ink:#1b1206; --accent-soft:#3a2f17;
+      --good:#5fbf86; --good-soft:#1c2e22;
+      --danger:#e06a56; --danger-soft:#33201c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#15181b; --surface:#1e2226; --surface-2:#262b30;
+    --ink:#eceae4; --ink-dim:#9ba1a6; --border:#343a3f;
+    --accent:#d9a84a; --accent-ink:#1b1206; --accent-soft:#3a2f17;
+    --good:#5fbf86; --good-soft:#1c2e22;
+    --danger:#e06a56; --danger-soft:#33201c;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    padding-left:max(16px, env(safe-area-inset-left,0px));
+    padding-right:max(16px, env(safe-area-inset-right,0px));
+  }
+  body::before{
+    content:"";position:fixed;inset:0 0 auto;
+    height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface);
+  }
+
+  header{
+    position:sticky;top:env(safe-area-inset-top,0px);z-index:5;
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    padding:14px 0;background:var(--bg);border-bottom:1px solid var(--border);
+    margin-bottom:24px;
+  }
+  .brand{
+    font-family:var(--font-display);text-transform:uppercase;letter-spacing:.12em;
+    font-size:20px;font-weight:700;display:flex;flex-direction:column;line-height:1.1;
+  }
+  .brand small{
+    font-family:var(--font-body);text-transform:none;letter-spacing:0;
+    font-size:11px;font-weight:500;color:var(--ink-dim);margin-top:2px;
+  }
+  .header-left{display:flex;align-items:center;gap:14px}
+  .menu-btn{
+    width:40px;height:40px;flex:none;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+    background:transparent;border:1px solid var(--border);border-radius:8px;cursor:pointer;
+  }
+  .menu-btn span{display:block;width:18px;height:2px;background:var(--ink);border-radius:1px}
+  .menu-btn:hover{border-color:var(--accent)}
+
+  /* ---- panel lateral: configuración / tema ---- */
+  .theme-scrim{
+    position:fixed;inset:0;background:rgba(0,0,0,.35);
+    opacity:0;pointer-events:none;transition:opacity .18s ease;z-index:28;
+  }
+  .theme-scrim.open{opacity:1;pointer-events:auto}
+  .side-panel{
+    position:fixed;top:0;bottom:0;left:0;
+    width:min(280px, 86vw);
+    background:var(--surface);border-right:1px solid var(--border);
+    transform:translateX(-100%);transition:transform .2s ease;z-index:29;
+    padding:calc(18px + env(safe-area-inset-top,0px)) 20px 20px max(20px, env(safe-area-inset-left,0px));
+    display:flex;flex-direction:column;gap:18px;
+  }
+  .side-panel.open{transform:translateX(0)}
+  .side-panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-dim);margin:0}
+  .side-panel-close{align-self:flex-end;background:none;border:none;color:var(--ink-dim);font-size:22px;line-height:1;cursor:pointer;margin:-6px -6px 0 0}
+  button.ghost{
+    font-family:var(--font-body);font-size:13px;font-weight:600;
+    padding:8px 14px;border-radius:8px;border:1px solid var(--border);
+    background:var(--surface);color:var(--ink);cursor:pointer;
+  }
+  button.ghost:hover{border-color:var(--accent)}
+
+  /* ---- menú de cuenta (avatar + nombre) ---- */
+  .account-box{position:relative}
+  .account-chip{
+    display:flex;align-items:center;gap:9px;
+    background:var(--surface);border:1px solid var(--border);border-radius:999px;
+    padding:4px 14px 4px 4px;cursor:pointer;font-family:var(--font-body);
+  }
+  .account-chip:hover{border-color:var(--accent)}
+  .avatar{
+    width:30px;height:30px;border-radius:50%;flex:none;
+    background:var(--surface-2);color:var(--ink-dim);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block}
+  .session-name{font-size:13px;font-weight:600;color:var(--ink)}
+  .account-menu{
+    position:absolute;top:calc(100% + 8px);right:0;z-index:30;
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    box-shadow:0 10px 28px rgba(0,0,0,.14);min-width:190px;overflow:hidden;
+    display:flex;flex-direction:column;padding:6px;
+  }
+  .account-menu button{
+    text-align:left;padding:10px 12px;border-radius:7px;border:none;background:none;
+    font-family:var(--font-body);font-size:13px;color:var(--ink);cursor:pointer;
+  }
+  .account-menu button:hover{background:var(--surface-2)}
+  .account-menu button.danger{color:var(--danger)}
+
+  /* ---- modal: editar negocio ---- */
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:25}
+  .modal{
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:26;
+    background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    padding:24px;width:min(380px,calc(100vw - 32px));
+    display:flex;flex-direction:column;gap:18px;
+  }
+  .modal h2{margin:0;font-size:15px}
+  .avatar-edit-row{display:flex;align-items:center;gap:16px}
+  .avatar.big{width:64px;height:64px}
+  .avatar.big svg{width:30px;height:30px}
+  .modal .hint{font-size:12px;color:var(--ink-dim);margin:6px 0 0}
+  .modal .hint.error{color:var(--danger);font-weight:600}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px}
+
+  main{max-width:880px;margin:0 auto;padding-bottom:60px}
+
+  /* ---- login / registro ---- */
+  .auth-wrap{display:flex;justify-content:center;padding:40px 0}
+  .auth-card{
+    width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);
+    border-radius:14px;padding:28px;display:flex;flex-direction:column;gap:16px;
+  }
+  .auth-card h1{font-size:17px;margin:0}
+  .auth-card p.sub{margin:-8px 0 0;font-size:13px;color:var(--ink-dim)}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:13px;font-weight:600;color:var(--ink-dim)}
+  input,select{
+    font-family:var(--font-body);font-size:15px;padding:10px 12px;
+    border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--ink);
+  }
+  input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px}
+  button.primary{
+    font-family:var(--font-body);font-weight:600;font-size:15px;padding:12px 20px;
+    border-radius:10px;border:none;background:var(--accent);color:var(--accent-ink);cursor:pointer;
+  }
+  button.primary:hover{filter:brightness(1.06)}
+  button.link{
+    background:none;border:none;color:var(--accent);font-family:var(--font-body);
+    font-size:13px;font-weight:600;cursor:pointer;padding:0;text-align:left;
+  }
+  .auth-error{font-size:13px;color:var(--danger);display:none}
+  .auth-error.show{display:block}
+  .auth-hint{font-size:13px;color:var(--good);display:none}
+  .auth-hint.show{display:block}
+
+  /* ---- campo de contraseña con botón de mostrar/ocultar ---- */
+  .pw-wrap{position:relative;display:flex}
+  .pw-wrap input{flex:1;padding-right:40px}
+  .pw-toggle{
+    position:absolute;right:2px;top:50%;transform:translateY(-50%);
+    width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+    background:none;border:none;color:var(--ink-dim);cursor:pointer;border-radius:6px;padding:0;
+  }
+  .pw-toggle:hover{color:var(--accent)}
+  .pw-toggle svg{display:block}
+
+  details.backend-settings{font-size:12px;color:var(--ink-dim)}
+  details.backend-settings summary{cursor:pointer}
+  details.backend-settings .field{margin-top:8px}
+
+  /* ---- dashboard ---- */
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+  @media (max-width:640px){ .stat-grid{grid-template-columns:repeat(2,1fr)} }
+  .stat{
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:16px;display:flex;flex-direction:column;gap:4px;min-width:0;
+  }
+  .stat .n{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:24px;font-weight:600}
+  .stat .l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-dim)}
+
+  .panel-section{
+    background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    padding:20px;margin-bottom:20px;
+  }
+  .panel-section h2{
+    margin:0 0 14px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);
+  }
+  .config-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:560px){ .config-grid{grid-template-columns:1fr} }
+  .config-actions{display:flex;align-items:center;gap:12px;margin-top:14px}
+  .saved-hint{font-size:12px;color:var(--good);display:none}
+  .saved-hint.show{display:inline}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{
+    text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+    color:var(--ink-dim);padding:8px 10px;border-bottom:1px solid var(--border);
+  }
+  td{padding:10px;border-bottom:1px solid var(--border);min-width:0}
+  tr:last-child td{border-bottom:none}
+  .pts{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+  .table-wrap{overflow-x:auto}
+  .empty{font-size:13px;color:var(--ink-dim);padding:12px 2px}
+
+  .links-row{display:flex;gap:10px;flex-wrap:wrap}
+  .links-row a{
+    font-size:13px;font-weight:600;color:var(--accent-ink);background:var(--accent-soft);
+    padding:9px 14px;border-radius:8px;text-decoration:none;
+  }
+
+  [hidden]{display:none!important}
+</style>
+
+<div class="theme-scrim" id="themeScrim"></div>
+<nav class="side-panel" id="themePanel" aria-label="Configuración">
+  <button class="side-panel-close" id="themePanelClose" aria-label="Cerrar menú" type="button">&times;</button>
+  <h2>Configuración</h2>
+  <div class="field">
+    <label for="themeSelect">Tema</label>
+    <select id="themeSelect">
+      <option value="light">Claro</option>
+      <option value="dark">Oscuro</option>
+    </select>
+  </div>
+</nav>
+
+<header>
+  <div class="header-left">
+    <button class="menu-btn" id="menuBtn" aria-label="Abrir menú" type="button">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="brand">ARGAYES<small>Panel de administración</small></div>
+  </div>
+  <div class="account-box" id="accountBox" hidden>
+    <button class="account-chip" id="accountChip" type="button" aria-haspopup="true" aria-expanded="false">
+      <span class="avatar" id="avatarWrap">
+        <img id="avatarImg" alt="" hidden>
+        <svg id="avatarPlaceholder" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 12.2c2.8 0 5-2.2 5-5s-2.2-5-5-5-5 2.2-5 5 2.2 5 5 5zm0 2.4c-3.3 0-10 1.7-10 5v1.2C2 21.9 2.6 22.5 3.4 22.5h17.2c.8 0 1.4-.6 1.4-1.4V19.6c0-3.3-6.7-5-10-5z"/></svg>
+      </span>
+      <span class="session-name" id="sessionName"></span>
+    </button>
+    <nav class="account-menu" id="accountMenu" hidden>
+      <button type="button" id="editBizBtn">Editar negocio</button>
+      <button type="button" class="danger" id="logoutBtn">Cerrar sesión</button>
+    </nav>
+  </div>
+</header>
+
+<div class="scrim" id="editScrim" hidden></div>
+<div class="modal" id="editBizModal" hidden role="dialog" aria-label="Editar negocio">
+  <h2>Editar negocio</h2>
+  <div class="avatar-edit-row">
+    <span class="avatar big" id="avatarBigWrap">
+      <img id="avatarBigImg" alt="" hidden>
+      <svg id="avatarBigPlaceholder" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 12.2c2.8 0 5-2.2 5-5s-2.2-5-5-5-5 2.2-5 5 2.2 5 5 5zm0 2.4c-3.3 0-10 1.7-10 5v1.2C2 21.9 2.6 22.5 3.4 22.5h17.2c.8 0 1.4-.6 1.4-1.4V19.6c0-3.3-6.7-5-10-5z"/></svg>
+    </span>
+    <div>
+      <input type="file" id="avatarFileInput" accept="image/png,image/jpeg" hidden>
+      <button type="button" class="ghost" id="chooseAvatarBtn">Cambiar foto</button>
+      <p class="hint" id="avatarHint">PNG o JPG, máximo 5MB. Se ve mejor cuadrada.</p>
+      <p class="hint error" id="avatarError" hidden>El archivo supera los 5MB.</p>
+    </div>
+  </div>
+  <div class="modal-actions">
+    <button type="button" class="ghost" id="cancelEditBiz">Cancelar</button>
+    <button type="button" class="primary" id="saveAvatarBtn">Guardar</button>
+  </div>
+</div>
+
+<main>
+  <!-- ---- Login / registro ---- -->
+  <section class="auth-wrap" id="authView">
+    <div class="auth-card">
+      <h1 id="authTitle">Entrar a tu panel</h1>
+      <p class="sub" id="authSub">Solo tú ves esta información — cada negocio tiene su propia cuenta.</p>
+
+      <form id="loginForm">
+        <div class="field">
+          <label for="loginEmail">Email</label>
+          <input id="loginEmail" type="email" required autocomplete="username">
+        </div>
+        <div class="field" style="margin-top:12px">
+          <label for="loginPassword">Contraseña</label>
+          <div class="pw-wrap">
+            <input id="loginPassword" type="password" required autocomplete="current-password">
+            <button type="button" class="pw-toggle" data-target="loginPassword" aria-label="Mostrar contraseña">
+              <svg class="icon-eye" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="icon-eye-off" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.6 18.6 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a18.6 18.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
+        </div>
+        <p class="auth-error" id="loginError"></p>
+        <button class="primary" type="submit" style="margin-top:14px;width:100%">Iniciar sesión</button>
+        <button class="link" type="button" id="forgotPasswordBtn" style="margin-top:12px">¿Olvidaste tu contraseña?</button>
+      </form>
+
+      <form id="registerForm" hidden>
+        <div class="field">
+          <label for="regNombre">Nombre de la empresa</label>
+          <input id="regNombre" required>
+        </div>
+        <div class="field" style="margin-top:12px">
+          <label for="regEmail">Email</label>
+          <input id="regEmail" type="email" required autocomplete="username">
+        </div>
+        <div class="field" style="margin-top:12px">
+          <label for="regPassword">Contraseña</label>
+          <div class="pw-wrap">
+            <input id="regPassword" type="password" required autocomplete="new-password" minlength="6">
+            <button type="button" class="pw-toggle" data-target="regPassword" aria-label="Mostrar contraseña">
+              <svg class="icon-eye" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="icon-eye-off" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.6 18.6 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a18.6 18.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="field" style="margin-top:12px">
+          <label for="regRecompensa">Recompensa al llegar al umbral</label>
+          <input id="regRecompensa" placeholder="Ej. servicio de publicidad gratis">
+        </div>
+        <div class="field" style="margin-top:12px">
+          <label for="regUmbral">Umbral de puntos</label>
+          <input id="regUmbral" type="number" min="1" value="10">
+        </div>
+        <p class="auth-error" id="registerError"></p>
+        <button class="primary" type="submit" style="margin-top:14px;width:100%">Crear cuenta</button>
+      </form>
+
+      <form id="forgotForm" hidden>
+        <div id="forgotStep1">
+          <p class="sub" style="margin:0 0 14px">Escribe el email con el que inició sesión tu negocio. Te mandaremos un código para crear una nueva contraseña.</p>
+          <div class="field">
+            <label for="forgotEmail">Email</label>
+            <input id="forgotEmail" type="email" required autocomplete="username">
+          </div>
+          <p class="auth-error" id="forgotError"></p>
+          <p class="auth-hint" id="forgotSentHint">Si ese email está registrado, te llegará un código en unos minutos. Revisa también la carpeta de spam.</p>
+          <button class="primary" type="button" id="sendResetCodeBtn" style="margin-top:14px;width:100%">Enviar código</button>
+        </div>
+
+        <div id="forgotStep2" hidden>
+          <div class="field">
+            <label for="resetCode">Código de verificación</label>
+            <input id="resetCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" required>
+          </div>
+          <div class="field" style="margin-top:12px">
+            <label for="resetNewPassword">Nueva contraseña</label>
+            <div class="pw-wrap">
+              <input id="resetNewPassword" type="password" required autocomplete="new-password" minlength="6">
+              <button type="button" class="pw-toggle" data-target="resetNewPassword" aria-label="Mostrar contraseña">
+                <svg class="icon-eye" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="icon-eye-off" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.6 18.6 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a18.6 18.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="field" style="margin-top:12px">
+            <label for="resetConfirmPassword">Confirmar nueva contraseña</label>
+            <div class="pw-wrap">
+              <input id="resetConfirmPassword" type="password" required autocomplete="new-password" minlength="6">
+              <button type="button" class="pw-toggle" data-target="resetConfirmPassword" aria-label="Mostrar contraseña">
+                <svg class="icon-eye" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="icon-eye-off" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.6 18.6 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a18.6 18.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+          </div>
+          <p class="auth-error" id="resetError"></p>
+          <button class="primary" type="submit" style="margin-top:14px;width:100%">Cambiar contraseña</button>
+          <button class="link" type="button" id="resendCodeBtn" style="margin-top:12px">Reenviar código</button>
+        </div>
+
+        <button class="link" type="button" id="backToLoginBtn" style="margin-top:12px">← Volver a iniciar sesión</button>
+      </form>
+
+      <button class="link" id="toggleAuth">¿No tienes cuenta? Crea una</button>
+
+      <details class="backend-settings">
+        <summary>Conexión al backend</summary>
+        <div class="field">
+          <label for="backendUrl">URL del backend</label>
+          <input id="backendUrl" placeholder="https://tu-backend.up.railway.app">
+        </div>
+        <button class="link" id="saveBackend" style="margin-top:8px">Guardar</button>
+      </details>
+    </div>
+  </section>
+
+  <!-- ---- Dashboard ---- -->
+  <section id="dashView" hidden>
+    <div class="stat-grid">
+      <div class="stat"><span class="n" id="statClientes">—</span><span class="l">Clientes</span></div>
+      <div class="stat"><span class="n" id="statVisitas">—</span><span class="l">Visitas hoy</span></div>
+      <div class="stat"><span class="n" id="statCanjes">—</span><span class="l">Canjes pendientes</span></div>
+      <div class="stat"><span class="n" id="statPuntos">—</span><span class="l">Puntos repartidos</span></div>
+    </div>
+
+    <div class="panel-section">
+      <h2>Configuración del programa</h2>
+      <div class="config-grid">
+        <div class="field">
+          <label for="cfgNombre">Nombre de la empresa</label>
+          <input id="cfgNombre">
+        </div>
+        <div class="field">
+          <label for="cfgUmbral">Umbral de puntos</label>
+          <input id="cfgUmbral" type="number" min="1">
+        </div>
+        <div class="field" style="grid-column:1 / -1">
+          <label for="cfgRecompensa">Recompensa</label>
+          <input id="cfgRecompensa">
+        </div>
+      </div>
+      <div class="config-actions">
+        <button class="primary" id="saveConfigBtn">Guardar cambios</button>
+        <span class="saved-hint" id="savedHint">Guardado</span>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h2>Clientes</h2>
+      <div class="table-wrap">
+        <table id="clientesTable" hidden>
+          <thead><tr><th>Nombre</th><th>Contacto</th><th>Puntos</th><th>Alta</th></tr></thead>
+          <tbody id="clientesBody"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="clientesEmpty">Todavía no hay clientes registrados.</p>
+    </div>
+
+    <div class="panel-section">
+      <h2>Accesos rápidos</h2>
+      <div class="links-row">
+        <a href="https://argayes.netlify.app/registro.html" target="_blank" rel="noopener" id="regLink">Página de registro de clientes</a>
+        <a href="https://argayes.netlify.app/escanear.html" target="_blank" rel="noopener" id="scanLink">Escanear clientes (sumar puntos)</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---- tema (claro/oscuro) ----
+  var root = document.documentElement;
+  var themeSelect = document.getElementById('themeSelect');
+  function applyTheme(v){
+    if(v === 'dark' || v === 'light'){ root.setAttribute('data-theme', v); }
+    else { root.removeAttribute('data-theme'); }
+    themeSelect.value = (v === 'dark') ? 'dark' : 'light';
+  }
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem('argayes-theme'); } catch(e){}
+  applyTheme(savedTheme === 'dark' ? 'dark' : 'light'); // default: claro
+  themeSelect.addEventListener('change', function(){
+    applyTheme(this.value);
+    try { localStorage.setItem('argayes-theme', this.value); } catch(e){}
+  });
+
+  // ---- panel lateral de configuración ----
+  var menuBtn = document.getElementById('menuBtn');
+  var themePanel = document.getElementById('themePanel');
+  var themeScrim = document.getElementById('themeScrim');
+  var themePanelClose = document.getElementById('themePanelClose');
+  function openThemePanel(){ themePanel.classList.add('open'); themeScrim.classList.add('open'); }
+  function closeThemePanel(){ themePanel.classList.remove('open'); themeScrim.classList.remove('open'); }
+  menuBtn.addEventListener('click', openThemePanel);
+  themePanelClose.addEventListener('click', closeThemePanel);
+  themeScrim.addEventListener('click', closeThemePanel);
+
+  function getBackendUrl(){
+    try { return localStorage.getItem('argayes-backend-url') || ''; } catch(e){ return ''; }
+  }
+  function setBackendUrl(v){
+    try { localStorage.setItem('argayes-backend-url', v); } catch(e){}
+  }
+  function getToken(){
+    try { return sessionStorage.getItem('argayes-token') || ''; } catch(e){ return ''; }
+  }
+  function setToken(v){
+    try {
+      if(v) sessionStorage.setItem('argayes-token', v);
+      else sessionStorage.removeItem('argayes-token');
+    } catch(e){}
+  }
+  function getEmpresaCache(){
+    try { return JSON.parse(sessionStorage.getItem('argayes-empresa') || 'null'); } catch(e){ return null; }
+  }
+  function setEmpresaCache(v){
+    try { sessionStorage.setItem('argayes-empresa', JSON.stringify(v)); } catch(e){}
+  }
+
+  var backendInput = document.getElementById('backendUrl');
+  backendInput.value = getBackendUrl();
+  document.getElementById('saveBackend').addEventListener('click', function(){
+    setBackendUrl(backendInput.value.trim().replace(/\/$/, ''));
+  });
+
+  async function api(path, opts){
+    var base = getBackendUrl();
+    if(!base){
+      throw new Error('Primero configura la URL del backend en "Conexión al backend" (abajo del formulario).');
+    }
+    opts = opts || {};
+    opts.headers = Object.assign({'Content-Type':'application/json'}, opts.headers || {});
+    var token = getToken();
+    if(token) opts.headers.Authorization = 'Bearer ' + token;
+    var res = await fetch(base + path, opts);
+    var data = null;
+    try { data = await res.json(); } catch(e){}
+    if(!res.ok){
+      throw new Error((data && data.error) || ('Error ' + res.status));
+    }
+    return data;
+  }
+
+  // ---- vistas ----
+  var authView = document.getElementById('authView');
+  var dashView = document.getElementById('dashView');
+  var accountBox = document.getElementById('accountBox');
+  var sessionName = document.getElementById('sessionName');
+
+  function pintarAvatar(empresa){
+    [['avatarImg','avatarPlaceholder'], ['avatarBigImg','avatarBigPlaceholder']].forEach(function(pair){
+      var img = document.getElementById(pair[0]);
+      var placeholder = document.getElementById(pair[1]);
+      if(empresa && empresa.logoUrl){
+        img.src = empresa.logoUrl;
+        img.hidden = false;
+        placeholder.hidden = true;
+      } else {
+        img.hidden = true;
+        img.removeAttribute('src');
+        placeholder.hidden = false;
+      }
+    });
+  }
+
+  function mostrarDash(empresa){
+    setEmpresaCache(empresa);
+    authView.hidden = true;
+    dashView.hidden = false;
+    accountBox.hidden = false;
+    sessionName.textContent = empresa.nombre;
+    pintarAvatar(empresa);
+    document.getElementById('cfgNombre').value = empresa.nombre || '';
+    document.getElementById('cfgUmbral').value = empresa.umbral || 10;
+    document.getElementById('cfgRecompensa').value = empresa.recompensa || '';
+    // El link de registro lleva el id de ESTE negocio y el backend que ya
+    // configuraste, para que la página de registro sepa en qué negocio dar
+    // de alta al cliente sin que tengas que explicárselo a nadie.
+    var regLink = document.getElementById('regLink');
+    var backend = getBackendUrl();
+    if(regLink){
+      var params = 'empresaId=' + encodeURIComponent(empresa.id);
+      if(backend) params += '&backend=' + encodeURIComponent(backend);
+      regLink.href = 'https://argayes.netlify.app/registro.html?' + params;
+    }
+    var scanLink = document.getElementById('scanLink');
+    if(scanLink && backend){
+      scanLink.href = 'https://argayes.netlify.app/escanear.html?backend=' + encodeURIComponent(backend);
+    }
+    cargarClientes();
+    cargarEstadisticas();
+  }
+
+  function mostrarLogin(){
+    setToken('');
+    setEmpresaCache(null);
+    authView.hidden = false;
+    dashView.hidden = true;
+    accountBox.hidden = true;
+    cerrarMenuCuenta();
+  }
+
+  document.getElementById('logoutBtn').addEventListener('click', mostrarLogin);
+
+  // ---- menú de cuenta (avatar + nombre) ----
+  var accountChip = document.getElementById('accountChip');
+  var accountMenu = document.getElementById('accountMenu');
+
+  function cerrarMenuCuenta(){
+    accountMenu.hidden = true;
+    accountChip.setAttribute('aria-expanded', 'false');
+  }
+  accountChip.addEventListener('click', function(ev){
+    ev.stopPropagation();
+    var abierto = !accountMenu.hidden;
+    if(abierto){ cerrarMenuCuenta(); }
+    else { accountMenu.hidden = false; accountChip.setAttribute('aria-expanded', 'true'); }
+  });
+  document.addEventListener('click', function(ev){
+    if(!accountBox.contains(ev.target)) cerrarMenuCuenta();
+  });
+
+  // ---- modal: editar negocio ----
+  var editScrim = document.getElementById('editScrim');
+  var editBizModal = document.getElementById('editBizModal');
+  var avatarFileInput = document.getElementById('avatarFileInput');
+  var nuevoLogoDataUrl = null;
+
+  function abrirEditBiz(){
+    cerrarMenuCuenta();
+    nuevoLogoDataUrl = null;
+    pintarAvatar(getEmpresaCache());
+    document.getElementById('avatarError').hidden = true;
+    editScrim.hidden = false;
+    editBizModal.hidden = false;
+  }
+  function cerrarEditBiz(){
+    editScrim.hidden = true;
+    editBizModal.hidden = true;
+  }
+
+  document.getElementById('editBizBtn').addEventListener('click', abrirEditBiz);
+  document.getElementById('cancelEditBiz').addEventListener('click', cerrarEditBiz);
+  editScrim.addEventListener('click', cerrarEditBiz);
+
+  document.getElementById('chooseAvatarBtn').addEventListener('click', function(){
+    avatarFileInput.click();
+  });
+
+  var AVATAR_MAX_BYTES = 5 * 1024 * 1024; // 5MB — deja margen bajo el límite de 8MB del backend (el base64 pesa ~33% más que el archivo original)
+  var avatarErrorEl = document.getElementById('avatarError');
+
+  avatarFileInput.addEventListener('change', function(){
+    var file = avatarFileInput.files[0];
+    if(!file) return;
+    if(file.size > AVATAR_MAX_BYTES){
+      avatarErrorEl.hidden = false;
+      avatarFileInput.value = '';
+      return;
+    }
+    avatarErrorEl.hidden = true;
+    var reader = new FileReader();
+    reader.onload = function(){
+      nuevoLogoDataUrl = reader.result;
+      var img = document.getElementById('avatarBigImg');
+      img.src = nuevoLogoDataUrl;
+      img.hidden = false;
+      document.getElementById('avatarBigPlaceholder').hidden = true;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('saveAvatarBtn').addEventListener('click', async function(){
+    if(!nuevoLogoDataUrl){ cerrarEditBiz(); return; }
+    try {
+      var empresa = await api('/api/mi-empresa', {
+        method: 'PATCH',
+        body: JSON.stringify({ logoUrl: nuevoLogoDataUrl })
+      });
+      setEmpresaCache(empresa);
+      pintarAvatar(empresa);
+      cerrarEditBiz();
+    } catch(e){
+      alert(e.message);
+    }
+  });
+
+  // ---- mostrar/ocultar contraseña (aplica a login, registro y reset) ----
+  document.querySelectorAll('.pw-toggle').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var input = document.getElementById(btn.dataset.target);
+      if(!input) return;
+      var mostrando = input.type === 'text';
+      input.type = mostrando ? 'password' : 'text';
+      btn.querySelector('.icon-eye').hidden = !mostrando;
+      btn.querySelector('.icon-eye-off').hidden = mostrando;
+      btn.setAttribute('aria-label', mostrando ? 'Mostrar contraseña' : 'Ocultar contraseña');
+    });
+  });
+
+  // ---- login / registro / olvidé mi contraseña (toggle entre las 3 vistas) ----
+  var loginForm = document.getElementById('loginForm');
+  var registerForm = document.getElementById('registerForm');
+  var forgotForm = document.getElementById('forgotForm');
+  var toggleAuth = document.getElementById('toggleAuth');
+  var forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
+  var backToLoginBtn = document.getElementById('backToLoginBtn');
+  var authTitle = document.getElementById('authTitle');
+  var authSub = document.getElementById('authSub');
+  var authMode = 'login'; // 'login' | 'register' | 'forgot'
+
+  function pintarAuthMode(){
+    loginForm.hidden = authMode !== 'login';
+    registerForm.hidden = authMode !== 'register';
+    forgotForm.hidden = authMode !== 'forgot';
+    toggleAuth.hidden = authMode === 'forgot';
+    if(authMode === 'login'){
+      authTitle.textContent = 'Entrar a tu panel';
+      authSub.textContent = 'Solo tú ves esta información — cada negocio tiene su propia cuenta.';
+      toggleAuth.textContent = '¿No tienes cuenta? Crea una';
+    } else if(authMode === 'register'){
+      authTitle.textContent = 'Crea tu cuenta';
+      authSub.textContent = 'Esto envía tu solicitud de suscripción a ARGAYES. En cuanto la aprobemos, podrás entrar a tu panel.';
+      toggleAuth.textContent = '¿Ya tienes cuenta? Inicia sesión';
+    } else {
+      authTitle.textContent = 'Recuperar contraseña';
+      authSub.textContent = 'Solo para negocios — si eres cliente, tu tarjeta de lealtad no usa contraseña.';
+      // Siempre reinicia al paso 1 cada vez que se entra a esta vista.
+      document.getElementById('forgotStep1').hidden = false;
+      document.getElementById('forgotStep2').hidden = true;
+      document.getElementById('forgotSentHint').classList.remove('show');
+      document.getElementById('forgotError').classList.remove('show');
+      document.getElementById('resetError').classList.remove('show');
+      document.getElementById('forgotEmail').value = '';
+      document.getElementById('resetCode').value = '';
+      document.getElementById('resetNewPassword').value = '';
+      document.getElementById('resetConfirmPassword').value = '';
+    }
+  }
+
+  toggleAuth.addEventListener('click', function(){
+    authMode = authMode === 'login' ? 'register' : 'login';
+    pintarAuthMode();
+  });
+  forgotPasswordBtn.addEventListener('click', function(){
+    authMode = 'forgot';
+    pintarAuthMode();
+  });
+  backToLoginBtn.addEventListener('click', function(){
+    authMode = 'login';
+    pintarAuthMode();
+  });
+
+  // ---- olvidé mi contraseña: paso 1, enviar código por correo ----
+  var ultimoEmailReset = '';
+  async function enviarCodigoReset(){
+    var email = document.getElementById('forgotEmail').value.trim();
+    var err = document.getElementById('forgotError');
+    var hint = document.getElementById('forgotSentHint');
+    err.classList.remove('show');
+    if(!email){
+      err.textContent = 'Escribe tu email.';
+      err.classList.add('show');
+      return;
+    }
+    var btn = document.getElementById('sendResetCodeBtn');
+    btn.disabled = true;
+    try {
+      await api('/api/auth/olvide-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: email })
+      });
+      ultimoEmailReset = email;
+      hint.classList.add('show');
+      document.getElementById('forgotStep1').hidden = true;
+      document.getElementById('forgotStep2').hidden = false;
+    } catch(e){
+      err.textContent = e.message;
+      err.classList.add('show');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+  document.getElementById('sendResetCodeBtn').addEventListener('click', enviarCodigoReset);
+  document.getElementById('resendCodeBtn').addEventListener('click', async function(){
+    var err = document.getElementById('resetError');
+    err.classList.remove('show');
+    try {
+      await api('/api/auth/olvide-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: ultimoEmailReset })
+      });
+      err.textContent = 'Te mandamos un código nuevo.';
+      err.style.color = 'var(--good)';
+      err.classList.add('show');
+    } catch(e){
+      err.style.color = '';
+      err.textContent = e.message;
+      err.classList.add('show');
+    }
+  });
+
+  // ---- olvidé mi contraseña: paso 2, código + nueva contraseña ----
+  forgotForm.addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    if(document.getElementById('forgotStep2').hidden) return; // el paso 1 no envía el form
+    var err = document.getElementById('resetError');
+    err.style.color = '';
+    err.classList.remove('show');
+    var codigo = document.getElementById('resetCode').value.trim();
+    var nueva = document.getElementById('resetNewPassword').value;
+    var confirmar = document.getElementById('resetConfirmPassword').value;
+    if(nueva !== confirmar){
+      err.textContent = 'Las dos contraseñas no coinciden.';
+      err.classList.add('show');
+      return;
+    }
+    if(nueva.length < 6){
+      err.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+      err.classList.add('show');
+      return;
+    }
+    try {
+      await api('/api/auth/restablecer-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: ultimoEmailReset, codigo: codigo, nuevaPassword: nueva })
+      });
+      authMode = 'login';
+      pintarAuthMode();
+      document.getElementById('loginEmail').value = ultimoEmailReset;
+      var loginErr = document.getElementById('loginError');
+      loginErr.textContent = 'Contraseña actualizada — ya puedes iniciar sesión.';
+      loginErr.style.color = 'var(--good)';
+      loginErr.classList.add('show');
+    } catch(e){
+      err.textContent = e.message;
+      err.classList.add('show');
+    }
+  });
+
+  loginForm.addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    var err = document.getElementById('loginError');
+    err.style.color = '';
+    err.classList.remove('show');
+    try {
+      var data = await api('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: document.getElementById('loginEmail').value.trim(),
+          password: document.getElementById('loginPassword').value
+        })
+      });
+      setToken(data.token);
+      mostrarDash(data.empresa);
+    } catch(e){
+      err.textContent = e.message;
+      err.classList.add('show');
+    }
+  });
+
+  registerForm.addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    var err = document.getElementById('registerError');
+    err.style.color = '';
+    err.classList.remove('show');
+    try {
+      var emailRegistrado = document.getElementById('regEmail').value.trim();
+      var data = await api('/api/auth/registro', {
+        method: 'POST',
+        body: JSON.stringify({
+          nombre: document.getElementById('regNombre').value.trim(),
+          email: emailRegistrado,
+          password: document.getElementById('regPassword').value,
+          recompensa: document.getElementById('regRecompensa').value.trim(),
+          umbral: Number(document.getElementById('regUmbral').value) || 10
+        })
+      });
+      // Ya no se entra directo al panel: la cuenta queda pendiente de que
+      // ARGAYES la apruebe, así que se regresa a la vista de login con un
+      // aviso en vez de abrir el dashboard.
+      registerForm.reset();
+      authMode = 'login';
+      pintarAuthMode();
+      document.getElementById('loginEmail').value = emailRegistrado;
+      var loginErr = document.getElementById('loginError');
+      loginErr.style.color = 'var(--good)';
+      loginErr.textContent = data.mensaje || 'Solicitud de suscripción enviada. Te avisaremos en cuanto tu cuenta sea aprobada.';
+      loginErr.classList.add('show');
+    } catch(e){
+      err.textContent = e.message;
+      err.classList.add('show');
+    }
+  });
+
+  // ---- config ----
+  document.getElementById('saveConfigBtn').addEventListener('click', async function(){
+    var hint = document.getElementById('savedHint');
+    hint.classList.remove('show');
+    try {
+      var empresa = await api('/api/mi-empresa', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          nombre: document.getElementById('cfgNombre').value.trim(),
+          umbral: Number(document.getElementById('cfgUmbral').value) || 10,
+          recompensa: document.getElementById('cfgRecompensa').value.trim()
+        })
+      });
+      setEmpresaCache(empresa);
+      sessionName.textContent = empresa.nombre;
+      hint.classList.add('show');
+      setTimeout(function(){ hint.classList.remove('show'); }, 2000);
+    } catch(e){
+      alert(e.message);
+    }
+  });
+
+  // ---- clientes y estadísticas ----
+  async function cargarClientes(){
+    var tbody = document.getElementById('clientesBody');
+    var table = document.getElementById('clientesTable');
+    var empty = document.getElementById('clientesEmpty');
+    try {
+      var clientes = await api('/api/mis-clientes');
+      if(!clientes.length){ table.hidden = true; empty.hidden = false; return; }
+      table.hidden = false; empty.hidden = true;
+      tbody.innerHTML = '';
+      clientes.forEach(function(c){
+        var tr = document.createElement('tr');
+        var fecha = (c.creado || '').slice(0,10);
+        tr.innerHTML =
+          '<td>' + escapeHtml(c.nombre) + '</td>' +
+          '<td>' + escapeHtml(c.contacto || '—') + '</td>' +
+          '<td class="pts">' + c.puntos + '</td>' +
+          '<td>' + fecha + '</td>';
+        tbody.appendChild(tr);
+      });
+    } catch(e){
+      empty.textContent = 'No se pudo cargar: ' + e.message;
+      empty.hidden = false;
+      table.hidden = true;
+    }
+  }
+
+  async function cargarEstadisticas(){
+    try {
+      var s = await api('/api/mis-estadisticas');
+      document.getElementById('statClientes').textContent = s.totalClientes;
+      document.getElementById('statVisitas').textContent = s.visitasHoy;
+      document.getElementById('statCanjes').textContent = s.canjesPendientes;
+      document.getElementById('statPuntos').textContent = s.puntosRepartidos;
+    } catch(e){ /* los tiles se quedan en "—" si falla */ }
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  // ---- arranque: si ya hay sesión guardada, entra directo ----
+  var tokenGuardado = getToken();
+  var empresaGuardada = getEmpresaCache();
+  if(tokenGuardado && empresaGuardada){
+    mostrarDash(empresaGuardada);
+  }
+})();
+</script>

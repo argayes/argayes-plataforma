@@ -1,0 +1,450 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Super-admin ARGAYES</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f3f1ec;
+    --surface:#ffffff;
+    --surface-2:#eae6db;
+    --ink:#1b1f23;
+    --ink-dim:#5b6066;
+    --border:#d8d3c4;
+    --accent:#b8872b;
+    --accent-ink:#2a1c05;
+    --accent-soft:#f1e3c3;
+    --good:#2f7a4f;
+    --good-soft:#e1efe3;
+    --danger:#a6412f;
+    --danger-soft:#f6e3df;
+    --font-display:"Times New Roman", Times, Georgia, serif;
+    --font-body:"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#15181b; --surface:#1e2226; --surface-2:#262b30;
+      --ink:#eceae4; --ink-dim:#9ba1a6; --border:#343a3f;
+      --accent:#d9a84a; --accent-ink:#1b1206; --accent-soft:#3a2f17;
+      --good:#5fbf86; --good-soft:#1c2e22;
+      --danger:#e06a56; --danger-soft:#33201c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#15181b; --surface:#1e2226; --surface-2:#262b30;
+    --ink:#eceae4; --ink-dim:#9ba1a6; --border:#343a3f;
+    --accent:#d9a84a; --accent-ink:#1b1206; --accent-soft:#3a2f17;
+    --good:#5fbf86; --good-soft:#1c2e22;
+    --danger:#e06a56; --danger-soft:#33201c;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    padding-left:max(16px, env(safe-area-inset-left,0px));
+    padding-right:max(16px, env(safe-area-inset-right,0px));
+  }
+  body::before{
+    content:"";position:fixed;inset:0 0 auto;
+    height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface);
+  }
+
+  header{
+    position:sticky;top:env(safe-area-inset-top,0px);z-index:5;
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    padding:14px 0;background:var(--bg);border-bottom:1px solid var(--border);
+    margin-bottom:24px;
+  }
+  .brand{
+    font-family:var(--font-display);text-transform:uppercase;letter-spacing:.12em;
+    font-size:20px;font-weight:700;display:flex;flex-direction:column;line-height:1.1;
+  }
+  .brand small{
+    font-family:var(--font-body);text-transform:none;letter-spacing:0;
+    font-size:11px;font-weight:500;color:var(--ink-dim);margin-top:2px;
+  }
+  button.ghost{
+    font-family:var(--font-body);font-size:13px;font-weight:600;
+    padding:8px 14px;border-radius:8px;border:1px solid var(--border);
+    background:var(--surface);color:var(--ink);cursor:pointer;
+  }
+  button.ghost:hover{border-color:var(--accent)}
+
+  main{max-width:880px;margin:0 auto;padding-bottom:60px}
+
+  .auth-wrap{display:flex;justify-content:center;padding:40px 0}
+  .auth-card{
+    width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);
+    border-radius:14px;padding:28px;display:flex;flex-direction:column;gap:16px;
+  }
+  .auth-card h1{font-size:17px;margin:0}
+  .auth-card p.sub{margin:-8px 0 0;font-size:13px;color:var(--ink-dim)}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:13px;font-weight:600;color:var(--ink-dim)}
+  input{
+    font-family:var(--font-body);font-size:15px;padding:10px 12px;
+    border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--ink);
+  }
+  input:focus{outline:2px solid var(--accent);outline-offset:1px}
+  button.primary{
+    font-family:var(--font-body);font-weight:600;font-size:15px;padding:12px 20px;
+    border-radius:10px;border:none;background:var(--accent);color:var(--accent-ink);cursor:pointer;
+  }
+  button.primary:hover{filter:brightness(1.06)}
+  .auth-error{font-size:13px;color:var(--danger);display:none}
+  .auth-error.show{display:block}
+  details.backend-settings{font-size:12px;color:var(--ink-dim)}
+  details.backend-settings summary{cursor:pointer}
+  details.backend-settings .field{margin-top:8px}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+  @media (max-width:640px){ .stat-grid{grid-template-columns:repeat(1,1fr)} }
+  .stat{
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:16px;display:flex;flex-direction:column;gap:4px;min-width:0;
+  }
+  .stat .n{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:24px;font-weight:600}
+  .stat .l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-dim)}
+
+  .panel-section{
+    background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    padding:20px;margin-bottom:20px;
+  }
+  .panel-section h2{
+    margin:0 0 14px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);
+  }
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{
+    text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+    color:var(--ink-dim);padding:8px 10px;border-bottom:1px solid var(--border);
+  }
+  td{padding:10px;border-bottom:1px solid var(--border);min-width:0;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  .table-wrap{overflow-x:auto}
+  .empty{font-size:13px;color:var(--ink-dim);padding:12px 2px}
+
+  .badge{
+    display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;
+    padding:4px 10px;border-radius:999px;text-transform:uppercase;
+  }
+  .badge.on{background:var(--good-soft);color:var(--good)}
+  .badge.off{background:var(--danger-soft);color:var(--danger)}
+  .badge.pending{background:var(--accent-soft);color:var(--accent-ink)}
+
+  button.toggle{
+    font-family:var(--font-body);font-size:12px;font-weight:600;
+    padding:7px 12px;border-radius:8px;border:1px solid var(--border);
+    background:var(--surface);color:var(--ink);cursor:pointer;white-space:nowrap;
+  }
+  button.toggle.activar{border-color:var(--good);color:var(--good)}
+  button.toggle.desactivar{border-color:var(--danger);color:var(--danger)}
+  button.toggle.aprobar{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft);font-weight:700}
+  button.toggle:hover{filter:brightness(0.97)}
+
+  /* ---- solicitudes pendientes: se resalta en dorado/amarillo a propósito,
+     para que salte a la vista frente al resto de negocios ya conocidos ---- */
+  .panel-section.pendientes{
+    border-color:var(--accent);border-width:2px;
+    background:var(--accent-soft);
+  }
+  .panel-section.pendientes h2{color:var(--accent-ink)}
+  .panel-section.pendientes .table-wrap table{background:var(--surface);border-radius:8px;overflow:hidden}
+
+  [hidden]{display:none!important}
+</style>
+
+<header>
+  <div class="brand">ARGAYES<small>Super-admin · dueño de la plataforma</small></div>
+  <button class="ghost" id="logoutBtn" hidden>Cerrar sesión</button>
+</header>
+
+<main>
+  <!-- ---- Login con clave de administrador ---- -->
+  <section class="auth-wrap" id="authView">
+    <div class="auth-card">
+      <h1>Panel de super-admin</h1>
+      <p class="sub">Solo para ti, dueño de ARGAYES — aquí ves y activas/desactivas los negocios que usan la plataforma.</p>
+
+      <form id="adminLoginForm">
+        <div class="field">
+          <label for="adminSecret">Clave de administrador</label>
+          <input id="adminSecret" type="password" required autocomplete="off">
+        </div>
+        <p class="auth-error" id="adminLoginError"></p>
+        <button class="primary" type="submit" style="margin-top:14px;width:100%">Entrar</button>
+      </form>
+
+      <details class="backend-settings">
+        <summary>Conexión al backend</summary>
+        <div class="field">
+          <label for="backendUrl">URL del backend</label>
+          <input id="backendUrl" placeholder="https://tu-backend.onrender.com">
+        </div>
+        <button class="ghost" id="saveBackend" type="button" style="margin-top:8px">Guardar</button>
+      </details>
+    </div>
+  </section>
+
+  <!-- ---- Lista de negocios ---- -->
+  <section id="dashView" hidden>
+    <div class="stat-grid">
+      <div class="stat"><span class="n" id="statTotal">—</span><span class="l">Negocios registrados</span></div>
+      <div class="stat"><span class="n" id="statActivos">—</span><span class="l">Suscripciones activas</span></div>
+      <div class="stat"><span class="n" id="statInactivos">—</span><span class="l">Suscripciones inactivas</span></div>
+    </div>
+
+    <div class="panel-section pendientes" id="pendientesSection" hidden>
+      <h2>Solicitudes de suscripción pendientes</h2>
+      <div class="table-wrap">
+        <table id="pendientesTable">
+          <thead><tr><th>Negocio</th><th>Email</th><th>Solicitó</th><th></th></tr></thead>
+          <tbody id="pendientesBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h2>Negocios en la plataforma</h2>
+      <div class="table-wrap">
+        <table id="empresasTable" hidden>
+          <thead><tr><th>Negocio</th><th>Email</th><th>Alta</th><th>Estado</th><th></th></tr></thead>
+          <tbody id="empresasBody"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="empresasEmpty" hidden>Todavía no hay negocios aprobados en la plataforma.</p>
+      <p class="auth-error" id="listError"></p>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  function getBackendUrl(){
+    try { return localStorage.getItem('argayes-backend-url') || ''; } catch(e){ return ''; }
+  }
+  function setBackendUrl(v){
+    try { localStorage.setItem('argayes-backend-url', v); } catch(e){}
+  }
+  function getAdminSecret(){
+    try { return sessionStorage.getItem('argayes-admin-secret') || ''; } catch(e){ return ''; }
+  }
+  function setAdminSecret(v){
+    try {
+      if(v) sessionStorage.setItem('argayes-admin-secret', v);
+      else sessionStorage.removeItem('argayes-admin-secret');
+    } catch(e){}
+  }
+
+  var backendInput = document.getElementById('backendUrl');
+  backendInput.value = getBackendUrl();
+  document.getElementById('saveBackend').addEventListener('click', function(){
+    setBackendUrl(backendInput.value.trim().replace(/\/$/, ''));
+  });
+
+  async function adminApi(path, opts){
+    var base = getBackendUrl();
+    if(!base){
+      throw new Error('Primero configura la URL del backend en "Conexión al backend".');
+    }
+    opts = opts || {};
+    opts.headers = Object.assign({'Content-Type':'application/json'}, opts.headers || {});
+    var secret = getAdminSecret();
+    if(secret) opts.headers['x-admin-secret'] = secret;
+    var res = await fetch(base + path, opts);
+    var data = null;
+    try { data = await res.json(); } catch(e){}
+    if(!res.ok){
+      throw new Error((data && data.error) || ('Error ' + res.status));
+    }
+    return data;
+  }
+
+  var authView = document.getElementById('authView');
+  var dashView = document.getElementById('dashView');
+  var logoutBtn = document.getElementById('logoutBtn');
+
+  function mostrarLogin(){
+    authView.hidden = false;
+    dashView.hidden = true;
+    logoutBtn.hidden = true;
+  }
+  function mostrarDash(){
+    authView.hidden = true;
+    dashView.hidden = false;
+    logoutBtn.hidden = false;
+  }
+
+  function pintarPendientes(todas){
+    var pendientes = todas.filter(function(e){ return e.aprobada === false; });
+    var seccion = document.getElementById('pendientesSection');
+    var body = document.getElementById('pendientesBody');
+    body.innerHTML = '';
+
+    if(!pendientes.length){
+      seccion.hidden = true;
+      return;
+    }
+    seccion.hidden = false;
+
+    pendientes.forEach(function(emp){
+      var tr = document.createElement('tr');
+
+      var tdNombre = document.createElement('td');
+      tdNombre.textContent = emp.nombre || '—';
+      tr.appendChild(tdNombre);
+
+      var tdEmail = document.createElement('td');
+      tdEmail.textContent = emp.email || '—';
+      tr.appendChild(tdEmail);
+
+      var tdAlta = document.createElement('td');
+      tdAlta.textContent = emp.creado ? new Date(emp.creado).toLocaleDateString('es-MX') : '—';
+      tr.appendChild(tdAlta);
+
+      var tdBtn = document.createElement('td');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'toggle aprobar';
+      btn.textContent = 'Aprobar';
+      btn.addEventListener('click', function(){
+        btn.disabled = true;
+        adminApi('/api/admin/empresas/' + emp.id + '/activa', {
+          method: 'PATCH',
+          body: JSON.stringify({ activa: true })
+        }).then(function(){
+          cargarEmpresas();
+        }).catch(function(err){
+          alert(err.message);
+          btn.disabled = false;
+        });
+      });
+      tdBtn.appendChild(btn);
+      tr.appendChild(tdBtn);
+
+      body.appendChild(tr);
+    });
+  }
+
+  function pintarEmpresas(todas){
+    pintarPendientes(todas);
+    var lista = todas.filter(function(e){ return e.aprobada !== false; });
+
+    var tabla = document.getElementById('empresasTable');
+    var body = document.getElementById('empresasBody');
+    var vacio = document.getElementById('empresasEmpty');
+    body.innerHTML = '';
+
+    var activos = lista.filter(function(e){ return e.activa !== false; }).length;
+    document.getElementById('statTotal').textContent = todas.length;
+    document.getElementById('statActivos').textContent = activos;
+    document.getElementById('statInactivos').textContent = lista.length - activos;
+
+    if(!lista.length){
+      tabla.hidden = true;
+      vacio.hidden = false;
+      return;
+    }
+    tabla.hidden = false;
+    vacio.hidden = true;
+
+    lista.forEach(function(emp){
+      var activa = emp.activa !== false;
+      var tr = document.createElement('tr');
+
+      var tdNombre = document.createElement('td');
+      tdNombre.textContent = emp.nombre || '—';
+      tr.appendChild(tdNombre);
+
+      var tdEmail = document.createElement('td');
+      tdEmail.textContent = emp.email || '—';
+      tr.appendChild(tdEmail);
+
+      var tdAlta = document.createElement('td');
+      tdAlta.textContent = emp.creado ? new Date(emp.creado).toLocaleDateString('es-MX') : '—';
+      tr.appendChild(tdAlta);
+
+      var tdEstado = document.createElement('td');
+      var badge = document.createElement('span');
+      badge.className = 'badge ' + (activa ? 'on' : 'off');
+      badge.textContent = activa ? 'Activa' : 'Inactiva';
+      tdEstado.appendChild(badge);
+      tr.appendChild(tdEstado);
+
+      var tdBtn = document.createElement('td');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'toggle ' + (activa ? 'desactivar' : 'activar');
+      btn.textContent = activa ? 'Desactivar' : 'Activar';
+      btn.addEventListener('click', function(){
+        btn.disabled = true;
+        adminApi('/api/admin/empresas/' + emp.id + '/activa', {
+          method: 'PATCH',
+          body: JSON.stringify({ activa: !activa })
+        }).then(function(){
+          cargarEmpresas();
+        }).catch(function(err){
+          alert(err.message);
+          btn.disabled = false;
+        });
+      });
+      tdBtn.appendChild(btn);
+      tr.appendChild(tdBtn);
+
+      body.appendChild(tr);
+    });
+  }
+
+  function cargarEmpresas(){
+    var errorEl = document.getElementById('listError');
+    errorEl.classList.remove('show');
+    errorEl.textContent = '';
+    adminApi('/api/admin/empresas').then(function(lista){
+      pintarEmpresas(lista);
+    }).catch(function(err){
+      errorEl.textContent = err.message;
+      errorEl.classList.add('show');
+    });
+  }
+
+  document.getElementById('adminLoginForm').addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var errorEl = document.getElementById('adminLoginError');
+    errorEl.classList.remove('show');
+    setAdminSecret(document.getElementById('adminSecret').value);
+    adminApi('/api/admin/empresas').then(function(lista){
+      mostrarDash();
+      pintarEmpresas(lista);
+    }).catch(function(err){
+      setAdminSecret('');
+      errorEl.textContent = err.message;
+      errorEl.classList.add('show');
+    });
+  });
+
+  logoutBtn.addEventListener('click', function(){
+    setAdminSecret('');
+    mostrarLogin();
+  });
+
+  // Si ya había una clave guardada en esta pestaña, entra directo.
+  if(getAdminSecret() && getBackendUrl()){
+    adminApi('/api/admin/empresas').then(function(lista){
+      mostrarDash();
+      pintarEmpresas(lista);
+    }).catch(function(){
+      mostrarLogin();
+    });
+  } else {
+    mostrarLogin();
+  }
+})();
+</script>

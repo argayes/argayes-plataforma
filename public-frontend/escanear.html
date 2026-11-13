@@ -1,0 +1,612 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Escanear clientes · ARGAYES</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* Layout: login card (reusa la cuenta del negocio) -> vista de escaneo con
+     la cámara en un cuadro, y un panel de resultado que cambia según lo que
+     pasó (punto sumado / listo para canjear / canje confirmado / error). */
+  :root{
+    --bg:#f3f1ec;
+    --surface:#ffffff;
+    --surface-2:#eae6db;
+    --ink:#1b1f23;
+    --ink-dim:#5b6066;
+    --border:#d8d3c4;
+    --accent:#b8872b;
+    --accent-ink:#2a1c05;
+    --accent-soft:#f1e3c3;
+    --good:#2f7a4f;
+    --good-soft:#e1efe3;
+    --danger:#a6412f;
+    --danger-soft:#f6e3df;
+    --font-display:"Times New Roman", Times, Georgia, serif;
+    --font-body:"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#15181b; --surface:#1e2226; --surface-2:#262b30;
+      --ink:#eceae4; --ink-dim:#9ba1a6; --border:#343a3f;
+      --accent:#d9a84a; --accent-ink:#1b1206; --accent-soft:#3a2f17;
+      --good:#5fbf86; --good-soft:#1c2e22;
+      --danger:#e06a56; --danger-soft:#33201c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#15181b; --surface:#1e2226; --surface-2:#262b30;
+    --ink:#eceae4; --ink-dim:#9ba1a6; --border:#343a3f;
+    --accent:#d9a84a; --accent-ink:#1b1206; --accent-soft:#3a2f17;
+    --good:#5fbf86; --good-soft:#1c2e22;
+    --danger:#e06a56; --danger-soft:#33201c;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    padding-left:max(16px, env(safe-area-inset-left,0px));
+    padding-right:max(16px, env(safe-area-inset-right,0px));
+  }
+  body::before{
+    content:"";position:fixed;inset:0 0 auto;
+    height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface);
+  }
+
+  header{
+    position:sticky;top:env(safe-area-inset-top,0px);z-index:5;
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    padding:14px 0;background:var(--bg);border-bottom:1px solid var(--border);
+    margin-bottom:24px;
+  }
+  .header-left{display:flex;align-items:center;gap:14px}
+  .menu-btn{
+    width:40px;height:40px;flex:none;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+    background:transparent;border:1px solid var(--border);border-radius:8px;cursor:pointer;
+  }
+  .menu-btn span{display:block;width:18px;height:2px;background:var(--ink);border-radius:1px}
+  .menu-btn:hover{border-color:var(--accent)}
+  .brand{
+    font-family:var(--font-display);text-transform:uppercase;letter-spacing:.12em;
+    font-size:20px;font-weight:700;display:flex;flex-direction:column;line-height:1.1;
+  }
+  .brand small{
+    font-family:var(--font-body);text-transform:none;letter-spacing:0;
+    font-size:11px;font-weight:500;color:var(--ink-dim);margin-top:2px;
+  }
+  button.ghost{
+    font-family:var(--font-body);font-size:13px;font-weight:600;
+    padding:8px 14px;border-radius:8px;border:1px solid var(--border);
+    background:var(--surface);color:var(--ink);cursor:pointer;
+  }
+  button.ghost:hover{border-color:var(--accent)}
+
+  /* ---- panel lateral: configuración / tema ---- */
+  .scrim{
+    position:fixed;inset:0;background:rgba(0,0,0,.35);
+    opacity:0;pointer-events:none;transition:opacity .18s ease;z-index:28;
+  }
+  .scrim.open{opacity:1;pointer-events:auto}
+  .side-panel{
+    position:fixed;top:0;bottom:0;left:0;
+    width:min(280px, 86vw);
+    background:var(--surface);border-right:1px solid var(--border);
+    transform:translateX(-100%);transition:transform .2s ease;z-index:29;
+    padding:calc(18px + env(safe-area-inset-top,0px)) 20px 20px max(20px, env(safe-area-inset-left,0px));
+    display:flex;flex-direction:column;gap:18px;
+  }
+  .side-panel.open{transform:translateX(0)}
+  .side-panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-dim);margin:0}
+  .side-panel-close{align-self:flex-end;background:none;border:none;color:var(--ink-dim);font-size:22px;line-height:1;cursor:pointer;margin:-6px -6px 0 0}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:13px;font-weight:600;color:var(--ink-dim)}
+  select, input{
+    font-family:var(--font-body);font-size:15px;padding:10px 12px;
+    border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--ink);
+  }
+  select:focus, input:focus{outline:2px solid var(--accent);outline-offset:1px}
+
+  main{max-width:520px;margin:0 auto;padding-bottom:60px}
+
+  /* ---- login ---- */
+  .auth-wrap{display:flex;justify-content:center;padding:40px 0}
+  .auth-card{
+    width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);
+    border-radius:14px;padding:28px;display:flex;flex-direction:column;gap:16px;
+  }
+  .auth-card h1{font-size:17px;margin:0}
+  .auth-card p.sub{margin:-8px 0 0;font-size:13px;color:var(--ink-dim)}
+  button.primary{
+    font-family:var(--font-body);font-weight:600;font-size:15px;padding:12px 20px;
+    border-radius:10px;border:none;background:var(--accent);color:var(--accent-ink);cursor:pointer;
+  }
+  button.primary:hover{filter:brightness(1.06)}
+  button.primary:disabled{opacity:.5;cursor:not-allowed}
+  .auth-error{font-size:13px;color:var(--danger);display:none}
+  .auth-error.show{display:block}
+  details.backend-settings{font-size:12px;color:var(--ink-dim)}
+  details.backend-settings summary{cursor:pointer}
+  details.backend-settings .field{margin-top:8px}
+
+  /* ---- vista de escaneo ---- */
+  .panel-section{
+    background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    padding:20px;margin-bottom:20px;
+  }
+  .panel-section h2{
+    margin:0 0 14px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);
+  }
+  .scan-wrap{
+    position:relative;
+    background:#000;
+    border-radius:12px;
+    overflow:hidden;
+    aspect-ratio:1/1;
+    max-width:360px;
+    margin:0 auto;
+  }
+  #reader{width:100%;height:100%}
+  #reader video{width:100% !important;height:100% !important;object-fit:cover}
+  .scan-placeholder{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:var(--ink-dim);background:var(--surface-2);font-size:13px;text-align:center;padding:20px;
+  }
+  .scan-actions{display:flex;justify-content:center;gap:10px;margin-top:16px}
+  .hint{font-size:12px;color:var(--ink-dim);text-align:center;margin-top:10px}
+  .hint.error{color:var(--danger)}
+
+  /* ---- panel de resultado ---- */
+  .result-card{
+    text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;
+  }
+  .result-icon{
+    width:56px;height:56px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;flex:none;
+  }
+  .result-icon svg{width:28px;height:28px}
+  .result-icon.good{background:var(--good-soft);color:var(--good)}
+  .result-icon.warn{background:var(--accent-soft);color:var(--accent-ink)}
+  .result-icon.bad{background:var(--danger-soft);color:var(--danger)}
+  .result-title{font-size:16px;font-weight:700;margin:0}
+  .result-sub{font-size:13px;color:var(--ink-dim);margin:0}
+  .result-code{
+    font-family:var(--font-mono);font-size:13px;letter-spacing:.04em;
+    background:var(--surface-2);border:1px solid var(--border);border-radius:8px;
+    padding:10px 14px;word-break:break-all;
+  }
+  .result-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+
+  [hidden]{display:none!important}
+</style>
+
+<div class="scrim" id="scrim"></div>
+<nav class="side-panel" id="themePanel" aria-label="Configuración">
+  <button class="side-panel-close" id="themePanelClose" aria-label="Cerrar menú" type="button">&times;</button>
+  <h2>Configuración</h2>
+  <div class="field">
+    <label for="themeSelect">Tema</label>
+    <select id="themeSelect">
+      <option value="light">Claro</option>
+      <option value="dark">Oscuro</option>
+    </select>
+  </div>
+</nav>
+
+<header>
+  <div class="header-left">
+    <button class="menu-btn" id="menuBtn" aria-label="Abrir menú" type="button">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="brand">ARGAYES<small>Escanear clientes</small></div>
+  </div>
+  <button class="ghost" id="logoutBtn" hidden>Cerrar sesión</button>
+</header>
+
+<main>
+  <!-- ---- Login (misma cuenta del negocio) ---- -->
+  <section class="auth-wrap" id="authView">
+    <div class="auth-card">
+      <h1>Entrar para escanear</h1>
+      <p class="sub">Usa el email y contraseña de tu negocio — el mismo panel donde ves tus clientes.</p>
+
+      <form id="loginForm">
+        <div class="field">
+          <label for="loginEmail">Email</label>
+          <input id="loginEmail" type="email" required autocomplete="username">
+        </div>
+        <div class="field" style="margin-top:12px">
+          <label for="loginPassword">Contraseña</label>
+          <input id="loginPassword" type="password" required autocomplete="current-password">
+        </div>
+        <p class="auth-error" id="loginError"></p>
+        <button class="primary" type="submit" style="margin-top:14px;width:100%">Iniciar sesión</button>
+      </form>
+
+      <details class="backend-settings">
+        <summary>Conexión al backend</summary>
+        <div class="field">
+          <label for="backendUrl">URL del backend</label>
+          <input id="backendUrl" placeholder="https://tu-backend.onrender.com">
+        </div>
+        <button class="ghost" id="saveBackend" type="button" style="margin-top:8px">Guardar</button>
+      </details>
+    </div>
+  </section>
+
+  <!-- ---- Escaneo ---- -->
+  <section id="scanView" hidden>
+    <div class="panel-section">
+      <h2>Escanear código QR del cliente</h2>
+      <div class="scan-wrap" id="scanWrap">
+        <div id="reader"></div>
+        <div class="scan-placeholder" id="scanPlaceholder">Toca "Iniciar cámara" para escanear el QR del cliente</div>
+      </div>
+      <div class="scan-actions">
+        <button type="button" class="primary" id="startScanBtn">Iniciar cámara</button>
+        <button type="button" class="ghost" id="stopScanBtn" hidden>Detener</button>
+      </div>
+      <p class="hint" id="scanHint">Pide al cliente que muestre el QR de su Apple o Google Wallet.</p>
+    </div>
+
+    <!-- ---- Resultado: visita registrada / listo para canjear ---- -->
+    <div class="panel-section result-card" id="visitaResult" hidden>
+      <div class="result-icon" id="visitaIcon"></div>
+      <p class="result-title" id="visitaTitle"></p>
+      <p class="result-sub" id="visitaSub"></p>
+      <div class="result-actions" id="visitaActions"></div>
+    </div>
+
+    <!-- ---- Resultado: código de canje generado ---- -->
+    <div class="panel-section result-card" id="canjeResult" hidden>
+      <div class="result-icon warn">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 6h-2.18A3 3 0 0 0 12 4a3 3 0 0 0-5.82 2H4a2 2 0 0 0-2 2v2a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V8a2 2 0 0 0-2-2zm-8-2a1 1 0 1 1-1 1 1 1 0 0 1 1-1zM3 13v6a2 2 0 0 0 2 2h6v-8zm10 0v8h6a2 2 0 0 0 2-2v-6z"/></svg>
+      </div>
+      <p class="result-title">Código de canje generado</p>
+      <p class="result-sub" id="canjeSub"></p>
+      <div class="result-code" id="canjeCodigo"></div>
+      <p class="hint">Dale este código al cliente, o confírmalo aquí mismo cuando entregues la recompensa.</p>
+      <div class="result-actions">
+        <button type="button" class="primary" id="confirmarCanjeBtn">Confirmar entrega</button>
+        <button type="button" class="ghost" id="nuevoEscaneoBtn2">Escanear otro cliente</button>
+      </div>
+    </div>
+
+    <!-- ---- Resultado: error ---- -->
+    <div class="panel-section result-card" id="errorResult" hidden>
+      <div class="result-icon bad">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-2h2zm0-4h-2V7h2z"/></svg>
+      </div>
+      <p class="result-title" id="errorTitle">No se pudo registrar</p>
+      <p class="result-sub" id="errorSub"></p>
+      <div class="result-actions">
+        <button type="button" class="primary" id="reintentarBtn">Escanear otro cliente</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // ---- tema ----
+  var root = document.documentElement;
+  var themeSelect = document.getElementById('themeSelect');
+  function applyTheme(v){
+    if(v === 'dark' || v === 'light'){ root.setAttribute('data-theme', v); }
+    else { root.removeAttribute('data-theme'); }
+    themeSelect.value = (v === 'dark') ? 'dark' : 'light';
+  }
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem('argayes-theme'); } catch(e){}
+  applyTheme(savedTheme === 'dark' ? 'dark' : 'light');
+  themeSelect.addEventListener('change', function(){
+    applyTheme(this.value);
+    try { localStorage.setItem('argayes-theme', this.value); } catch(e){}
+  });
+
+  // ---- panel lateral ----
+  var menuBtn = document.getElementById('menuBtn');
+  var themePanel = document.getElementById('themePanel');
+  var scrim = document.getElementById('scrim');
+  var themePanelClose = document.getElementById('themePanelClose');
+  function openPanel(){ themePanel.classList.add('open'); scrim.classList.add('open'); }
+  function closePanel(){ themePanel.classList.remove('open'); scrim.classList.remove('open'); }
+  menuBtn.addEventListener('click', openPanel);
+  themePanelClose.addEventListener('click', closePanel);
+  scrim.addEventListener('click', closePanel);
+
+  // ---- backend / sesión (misma cuenta que usa el panel principal) ----
+  var qs = new URLSearchParams(location.search);
+  function getBackendUrl(){
+    try { return localStorage.getItem('argayes-backend-url') || ''; } catch(e){ return ''; }
+  }
+  function setBackendUrl(v){
+    try { localStorage.setItem('argayes-backend-url', v); } catch(e){}
+  }
+  function getToken(){
+    try { return sessionStorage.getItem('argayes-token') || ''; } catch(e){ return ''; }
+  }
+  function setToken(v){
+    try {
+      if(v) sessionStorage.setItem('argayes-token', v);
+      else sessionStorage.removeItem('argayes-token');
+    } catch(e){}
+  }
+
+  var backendFromUrl = qs.get('backend');
+  if(backendFromUrl) setBackendUrl(backendFromUrl);
+
+  var backendInput = document.getElementById('backendUrl');
+  backendInput.value = getBackendUrl();
+  document.getElementById('saveBackend').addEventListener('click', function(){
+    setBackendUrl(backendInput.value.trim().replace(/\/$/, ''));
+  });
+
+  async function api(path, opts){
+    var base = getBackendUrl();
+    if(!base){
+      throw new Error('Primero configura la URL del backend en "Conexión al backend".');
+    }
+    opts = opts || {};
+    opts.headers = Object.assign({'Content-Type':'application/json'}, opts.headers || {});
+    var token = getToken();
+    if(token) opts.headers.Authorization = 'Bearer ' + token;
+    var res = await fetch(base + path, opts);
+    var data = null;
+    try { data = await res.json(); } catch(e){}
+    if(!res.ok){
+      throw new Error((data && data.error) || ('Error ' + res.status));
+    }
+    return data;
+  }
+
+  // ---- vistas ----
+  var authView = document.getElementById('authView');
+  var scanView = document.getElementById('scanView');
+  var logoutBtn = document.getElementById('logoutBtn');
+
+  function mostrarLogin(){
+    setToken('');
+    authView.hidden = false;
+    scanView.hidden = true;
+    logoutBtn.hidden = true;
+    detenerCamara();
+  }
+  function mostrarScan(){
+    authView.hidden = true;
+    scanView.hidden = false;
+    logoutBtn.hidden = false;
+  }
+  logoutBtn.addEventListener('click', mostrarLogin);
+
+  var loginForm = document.getElementById('loginForm');
+  loginForm.addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    var err = document.getElementById('loginError');
+    err.classList.remove('show');
+    try {
+      var data = await api('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: document.getElementById('loginEmail').value.trim(),
+          password: document.getElementById('loginPassword').value
+        })
+      });
+      setToken(data.token);
+      mostrarScan();
+    } catch(e){
+      err.textContent = e.message;
+      err.classList.add('show');
+    }
+  });
+
+  // Si ya había sesión abierta en este dispositivo (del panel principal o de aquí), entra directo.
+  if(getToken() && getBackendUrl()){
+    mostrarScan();
+  } else {
+    mostrarLogin();
+  }
+
+  // ---- cámara / lector de QR ----
+  var html5QrCode = null;
+  var escaneando = false;
+  var startScanBtn = document.getElementById('startScanBtn');
+  var stopScanBtn = document.getElementById('stopScanBtn');
+  var scanPlaceholder = document.getElementById('scanPlaceholder');
+  var scanHint = document.getElementById('scanHint');
+
+  function ocultarResultados(){
+    document.getElementById('visitaResult').hidden = true;
+    document.getElementById('canjeResult').hidden = true;
+    document.getElementById('errorResult').hidden = true;
+  }
+
+  async function iniciarCamara(){
+    ocultarResultados();
+    scanHint.classList.remove('error');
+    scanHint.textContent = 'Apunta la cámara al código QR del cliente.';
+    try {
+      if(!html5QrCode){ html5QrCode = new Html5Qrcode('reader'); }
+      scanPlaceholder.hidden = true;
+      await html5QrCode.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 240, height: 240 } },
+        onScanSuccess,
+        function(){ /* onScanFailure: se ignora, sigue intentando frame a frame */ }
+      );
+      escaneando = true;
+      startScanBtn.hidden = true;
+      stopScanBtn.hidden = false;
+    } catch(e){
+      scanPlaceholder.hidden = false;
+      scanHint.classList.add('error');
+      scanHint.textContent = 'No se pudo abrir la cámara: ' + (e.message || e) + '. Revisa los permisos de cámara del navegador.';
+    }
+  }
+
+  async function detenerCamara(){
+    if(html5QrCode && escaneando){
+      try { await html5QrCode.stop(); } catch(e){}
+      escaneando = false;
+    }
+    startScanBtn.hidden = false;
+    stopScanBtn.hidden = true;
+    scanPlaceholder.hidden = false;
+  }
+
+  startScanBtn.addEventListener('click', iniciarCamara);
+  stopScanBtn.addEventListener('click', detenerCamara);
+
+  var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  var procesando = false;
+
+  async function onScanSuccess(textoLeido){
+    if(procesando) return;
+    // El QR del cliente trae directo su id (uuid) — así lo generan registro.html
+    // y los pases de Apple/Google Wallet.
+    var clienteId = (textoLeido || '').trim();
+    if(!UUID_RE.test(clienteId)){
+      mostrarError('Código no reconocido', 'Ese QR no es un código de cliente de ARGAYES.');
+      return;
+    }
+    procesando = true;
+    await detenerCamara();
+    await registrarVisita(clienteId);
+    procesando = false;
+  }
+
+  function mostrarError(titulo, sub){
+    ocultarResultados();
+    document.getElementById('errorTitle').textContent = titulo;
+    document.getElementById('errorSub').textContent = sub || '';
+    document.getElementById('errorResult').hidden = false;
+  }
+
+  document.getElementById('reintentarBtn').addEventListener('click', function(){
+    ocultarResultados();
+    iniciarCamara();
+  });
+  document.getElementById('nuevoEscaneoBtn2').addEventListener('click', function(){
+    ocultarResultados();
+    iniciarCamara();
+  });
+
+  function iconoSvg(nombre){
+    if(nombre === 'check'){
+      return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>';
+    }
+    return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 2 20h20z"/></svg>';
+  }
+
+  async function registrarVisita(clienteId){
+    var box = document.getElementById('visitaResult');
+    var icon = document.getElementById('visitaIcon');
+    var title = document.getElementById('visitaTitle');
+    var sub = document.getElementById('visitaSub');
+    var actions = document.getElementById('visitaActions');
+    actions.innerHTML = '';
+
+    try {
+      var r = await api('/api/visita', {
+        method: 'POST',
+        body: JSON.stringify({ clienteId: clienteId })
+      });
+      ocultarResultados();
+      box.hidden = false;
+
+      if(r.listoParaCanje){
+        icon.className = 'result-icon warn';
+        icon.innerHTML = iconoSvg('gift');
+        title.textContent = '¡' + r.cliente.nombre + ' ya puede canjear su recompensa!';
+        sub.textContent = 'Puntos actuales: ' + r.cliente.puntos;
+        var btnCanjear = document.createElement('button');
+        btnCanjear.type = 'button';
+        btnCanjear.className = 'primary';
+        btnCanjear.textContent = 'Generar código de canje';
+        btnCanjear.addEventListener('click', function(){ generarCanje(clienteId); });
+        var btnOtro = document.createElement('button');
+        btnOtro.type = 'button';
+        btnOtro.className = 'ghost';
+        btnOtro.textContent = 'Escanear otro cliente';
+        btnOtro.addEventListener('click', function(){ ocultarResultados(); iniciarCamara(); });
+        actions.appendChild(btnCanjear);
+        actions.appendChild(btnOtro);
+      } else {
+        icon.className = 'result-icon good';
+        icon.innerHTML = iconoSvg('check');
+        title.textContent = 'Punto sumado a ' + r.cliente.nombre;
+        sub.textContent = 'Puntos: ' + r.cliente.puntos + ' — se actualiza solo en su wallet.';
+        var btnOtro2 = document.createElement('button');
+        btnOtro2.type = 'button';
+        btnOtro2.className = 'primary';
+        btnOtro2.textContent = 'Escanear otro cliente';
+        btnOtro2.addEventListener('click', function(){ ocultarResultados(); iniciarCamara(); });
+        actions.appendChild(btnOtro2);
+      }
+    } catch(e){
+      var msg = e.message || 'Error desconocido';
+      var titulo = 'No se pudo registrar la visita';
+      if(/ya se registr[oó]/i.test(msg)) titulo = 'Ya se le sumó un punto hoy';
+      if(/no pertenece/i.test(msg)) titulo = 'Ese cliente es de otro negocio';
+      if(/no encontrado/i.test(msg)) titulo = 'Cliente no encontrado';
+      mostrarError(titulo, msg);
+    }
+  }
+
+  async function generarCanje(clienteId){
+    try {
+      var canje = await api('/api/canje', {
+        method: 'POST',
+        body: JSON.stringify({ clienteId: clienteId })
+      });
+      ocultarResultados();
+      document.getElementById('canjeSub').textContent = 'Muéstraselo al cliente o confírmalo tú mismo al entregar la recompensa.';
+      document.getElementById('canjeCodigo').textContent = canje.codigo;
+      document.getElementById('canjeResult').hidden = false;
+      document.getElementById('confirmarCanjeBtn').onclick = function(){ confirmarCanje(canje.codigo); };
+    } catch(e){
+      mostrarError('No se pudo generar el canje', e.message);
+    }
+  }
+
+  async function confirmarCanje(codigo){
+    try {
+      var r = await api('/api/canje/confirmar', {
+        method: 'POST',
+        body: JSON.stringify({ codigo: codigo })
+      });
+      ocultarResultados();
+      var box = document.getElementById('visitaResult');
+      var icon = document.getElementById('visitaIcon');
+      icon.className = 'result-icon good';
+      icon.innerHTML = iconoSvg('check');
+      document.getElementById('visitaTitle').textContent = 'Canje confirmado';
+      document.getElementById('visitaSub').textContent = r.cliente ? ('Puntos restantes: ' + r.cliente.puntos) : 'Recompensa entregada.';
+      var actions = document.getElementById('visitaActions');
+      actions.innerHTML = '';
+      var btnOtro = document.createElement('button');
+      btnOtro.type = 'button';
+      btnOtro.className = 'primary';
+      btnOtro.textContent = 'Escanear otro cliente';
+      btnOtro.addEventListener('click', function(){ ocultarResultados(); iniciarCamara(); });
+      actions.appendChild(btnOtro);
+      box.hidden = false;
+    } catch(e){
+      var msg = e.message || 'Error desconocido';
+      var titulo = 'No se pudo confirmar el canje';
+      if(/ya_usado/i.test(msg)) titulo = 'Ese código ya se usó';
+      if(/codigo_no_existe/i.test(msg)) titulo = 'Código de canje no válido';
+      if(/no_pertenece/i.test(msg)) titulo = 'Ese código es de otro negocio';
+      mostrarError(titulo, msg);
+    }
+  }
+})();
+</script>
