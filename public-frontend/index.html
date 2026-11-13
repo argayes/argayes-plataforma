@@ -1,13 +1,14 @@
-<meta name="claude:viewport-fit-sides" content="cover">
-<title>Panel ARGAYES</title>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARGAYES — Lealtad digital para tu negocio</title>
+<meta name="description" content="Tarjetas de lealtad digitales con QR, Apple Wallet y Google Wallet para tu negocio. $800 MXN/mes, sin letras chiquitas.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Poppins:wght@400;600;700&family=Montserrat:wght@400;600;700&family=Playfair+Display:wght@400;700&family=Roboto+Slab:wght@400;700&family=Quicksand:wght@400;600;700&family=Oswald:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  /* Layout nuevo: una barra lateral FIJA (no hamburguesa) con 5 secciones —
-     Panel, Clientes, Escáner, Tarjeta de fidelidad y Ajustes — y a la
-     derecha el contenido de la sección activa. Antes de iniciar sesión se
-     muestra una sola tarjeta de login/registro centrada, sin barra lateral. */
   :root{
     --bg:#f3f1ec;
     --surface:#ffffff;
@@ -18,16 +19,11 @@
     --accent:#b8872b;
     --accent-ink:#2a1c05;
     --accent-soft:#f1e3c3;
-    --accent-ink-soft:#2a1c05;
     --good:#2f7a4f;
     --good-soft:#e1efe3;
-    --danger:#a6412f;
-    --danger-soft:#f6e3df;
+    --whatsapp:#25d366;
     --font-display:"Times New Roman", Times, Georgia, serif;
     --font-body:"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    --font-mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-    --sidebar-w:230px;
-    --sidebar-w-collapsed:72px;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark){
@@ -35,2315 +31,273 @@
       --bg:#15181b; --surface:#1e2226; --surface-2:#262b30;
       --ink:#eceae4; --ink-dim:#9ba1a6; --border:#343a3f;
       --accent:#d9a84a; --accent-ink:#1b1206; --accent-soft:#423c1d;
-      --accent-ink-soft:#f0c450;
       --good:#5fbf86; --good-soft:#1c2e22;
-      --danger:#e06a56; --danger-soft:#33201c;
       color-scheme: dark;
     }
   }
-  :root[data-theme="dark"]{
-    --bg:#15181b; --surface:#1e2226; --surface-2:#262b30;
-    --ink:#eceae4; --ink-dim:#9ba1a6; --border:#343a3f;
-    --accent:#d9a84a; --accent-ink:#1b1206; --accent-soft:#423c1d;
-    --accent-ink-soft:#f0c450;
-    --good:#5fbf86; --good-soft:#1c2e22;
-    --danger:#e06a56; --danger-soft:#33201c;
-    color-scheme: dark;
-  }
-
   *{box-sizing:border-box}
   html,body{margin:0}
-  body{
-    background:var(--bg);
-    color:var(--ink);
-    font-family:var(--font-body);
+  body{background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:1.5}
+  a{color:inherit}
+  img,svg{display:block}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    border:none;border-radius:10px;padding:14px 24px;font-size:16px;font-weight:600;
+    font-family:var(--font-body);cursor:pointer;text-decoration:none;white-space:nowrap;
   }
-  body::before{
-    content:"";position:fixed;inset:0 0 auto;
-    height:env(safe-area-inset-top,0px);z-index:40;background:var(--surface);
-  }
+  .btn.primary{background:var(--accent);color:var(--accent-ink)}
+  .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--border)}
+  .btn.whatsapp{background:var(--whatsapp);color:#06301a}
 
-  /* ======================================================================
-     Login / registro / recuperar contraseña — sin barra lateral
-     ====================================================================== */
-  #authView{
-    display:flex;justify-content:center;padding:calc(40px + env(safe-area-inset-top,0px)) 16px 40px;
-    min-height:100vh;
-  }
-  .auth-brand{
-    font-family:var(--font-display);text-transform:uppercase;letter-spacing:.12em;
-    font-size:22px;font-weight:700;text-align:center;margin:0 0 4px;
-  }
-  .auth-brand small{
-    display:block;font-family:var(--font-body);text-transform:none;letter-spacing:0;
-    font-size:12px;font-weight:500;color:var(--ink-dim);margin-top:4px;
-  }
-  .auth-col{width:100%;max-width:380px;display:flex;flex-direction:column;gap:18px}
-  .auth-card{
-    width:100%;background:var(--surface);border:1px solid var(--border);
-    border-radius:14px;padding:28px;display:flex;flex-direction:column;gap:16px;
-  }
-  .auth-card h1{font-size:17px;margin:0}
-  .auth-card p.sub{margin:-8px 0 0;font-size:13px;color:var(--ink-dim)}
-  .field{display:flex;flex-direction:column;gap:6px}
-  .field label{font-size:13px;font-weight:600;color:var(--ink-dim)}
-  input,select{
-    font-family:var(--font-body);font-size:15px;padding:10px 12px;
-    border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--ink);
-  }
-  input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px}
-  input[type=color]{padding:3px;height:42px;width:64px;cursor:pointer}
-  button.primary{
-    font-family:var(--font-body);font-weight:600;font-size:15px;padding:12px 20px;
-    border-radius:10px;border:none;background:var(--accent);color:var(--accent-ink);cursor:pointer;
-  }
-  button.primary:hover{filter:brightness(1.06)}
-  button.primary:disabled{opacity:.5;cursor:not-allowed}
-  button.ghost{
-    font-family:var(--font-body);font-size:13px;font-weight:600;
-    padding:8px 14px;border-radius:8px;border:1px solid var(--border);
-    background:var(--surface);color:var(--ink);cursor:pointer;
-  }
-  button.ghost:hover{border-color:var(--accent)}
-  button.link{
-    background:none;border:none;color:var(--accent);font-family:var(--font-body);
-    font-size:13px;font-weight:600;cursor:pointer;padding:0;text-align:left;
-  }
-  .auth-error{font-size:13px;color:var(--danger);display:none}
-  .auth-error.show{display:block}
-  .auth-hint{font-size:13px;color:var(--good);display:none}
-  .auth-hint.show{display:block}
+  /* ---- header ---- */
+  header{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--border)}
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:16px 0}
+  .logo{font-family:var(--font-display);font-size:24px;font-weight:700;letter-spacing:.5px;text-decoration:none;color:var(--ink)}
+  nav.links{display:flex;gap:24px;align-items:center}
+  nav.links a.navlink{font-size:14px;color:var(--ink-dim);text-decoration:none}
+  .nav-actions{display:flex;gap:10px;align-items:center}
+  @media (max-width:760px){ nav.links{display:none} }
 
-  .pw-wrap{position:relative;display:flex}
-  .pw-wrap input{flex:1;padding-right:40px}
-  .pw-toggle{
-    position:absolute;right:2px;top:50%;transform:translateY(-50%);
-    width:34px;height:34px;display:flex;align-items:center;justify-content:center;
-    background:none;border:none;color:var(--ink-dim);cursor:pointer;border-radius:6px;padding:0;
-  }
-  .pw-toggle:hover{color:var(--accent)}
-  .pw-toggle svg{display:block}
+  /* ---- hero ---- */
+  .hero{padding:72px 0 56px;text-align:center}
+  .hero h1{font-family:var(--font-display);font-size:clamp(32px,5vw,52px);line-height:1.1;margin:0 0 18px}
+  .hero p.lead{font-size:19px;color:var(--ink-dim);max-width:620px;margin:0 auto 32px}
+  .hero .actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .hero .note{margin-top:16px;font-size:13px;color:var(--ink-dim)}
 
-  details.backend-settings{font-size:12px;color:var(--ink-dim)}
-  details.backend-settings summary{cursor:pointer}
-  details.backend-settings .field{margin-top:8px}
+  /* ---- card mockup ---- */
+  .mock{max-width:320px;margin:48px auto 0;border-radius:20px;padding:26px;background:linear-gradient(145deg,var(--accent),#8a6420);color:#fff;box-shadow:0 20px 50px -20px rgba(0,0,0,.4)}
+  .mock .mock-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+  .mock .mock-brand{font-family:var(--font-display);font-size:18px}
+  .mock .mock-stamps{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+  .mock .mock-stamp{aspect-ratio:1;border-radius:50%;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:16px}
+  .mock .mock-stamp.on{background:#fff;color:var(--accent-ink)}
+  .mock .mock-foot{margin-top:20px;font-size:12px;opacity:.85}
 
-  /* ======================================================================
-     App: barra lateral fija + contenido
-     ====================================================================== */
-  #appShell{display:none}
-  #appShell.show{display:flex;min-height:100vh}
+  /* ---- sections ---- */
+  section{padding:64px 0}
+  h2.section-title{font-family:var(--font-display);font-size:clamp(26px,4vw,36px);text-align:center;margin:0 0 12px}
+  p.section-sub{text-align:center;color:var(--ink-dim);max-width:560px;margin:0 auto 44px}
 
-  .sidebar{
-    position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);
-    background:var(--surface);border-right:1px solid var(--border);
-    display:flex;flex-direction:column;z-index:20;
-    padding-top:env(safe-area-inset-top,0px);
-  }
-  .sidebar-brand{
-    padding:20px 20px 16px;font-family:var(--font-display);text-transform:uppercase;
-    letter-spacing:.12em;font-size:18px;font-weight:700;line-height:1.15;
-    border-bottom:1px solid var(--border);
-  }
-  .sidebar-brand small{
-    display:block;font-family:var(--font-body);text-transform:none;letter-spacing:0;
-    font-size:11px;font-weight:500;color:var(--ink-dim);margin-top:3px;
-  }
-  .sidebar-nav{flex:1;display:flex;flex-direction:column;gap:2px;padding:14px 12px;overflow-y:auto}
-  .nav-btn{
-    display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:9px;
-    border:none;background:none;color:var(--ink-dim);font-family:var(--font-body);
-    font-size:14px;font-weight:600;cursor:pointer;text-align:left;width:100%;
-  }
-  .nav-btn svg{flex:none;width:19px;height:19px}
-  .nav-btn:hover{background:var(--surface-2);color:var(--ink)}
-  .nav-btn.active{background:var(--accent-soft);color:var(--accent-ink-soft)}
-  .nav-label{white-space:nowrap}
+  .features{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media (max-width:860px){ .features{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:560px){ .features{grid-template-columns:1fr} }
+  .feature{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px}
+  .feature .emoji{font-size:28px;margin-bottom:10px}
+  .feature h3{font-size:16px;margin:0 0 6px}
+  .feature p{font-size:14px;color:var(--ink-dim);margin:0}
 
-  .sidebar-foot{border-top:1px solid var(--border);padding:14px 12px;display:flex;flex-direction:column;gap:8px}
-  .sidebar-account{display:flex;align-items:center;gap:10px;padding:6px 8px}
-  .avatar{
-    width:34px;height:34px;border-radius:50%;flex:none;
-    background:var(--surface-2);color:var(--ink-dim);
-    display:flex;align-items:center;justify-content:center;overflow:hidden;
-  }
-  .avatar img{width:100%;height:100%;object-fit:cover;display:block}
-  .sidebar-account-name{font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .nav-logout{color:var(--danger)}
-  .nav-logout:hover{background:var(--danger-soft);color:var(--danger)}
+  .pricing-wrap{display:flex;justify-content:center}
+  .price-card{background:var(--surface);border:2px solid var(--accent);border-radius:18px;padding:40px 36px;max-width:380px;width:100%;text-align:center}
+  .price-card .amount{font-family:var(--font-display);font-size:52px;margin:6px 0}
+  .price-card .amount small{font-size:16px;font-family:var(--font-body);color:var(--ink-dim);font-weight:400}
+  .price-card ul{list-style:none;padding:0;margin:24px 0;text-align:left}
+  .price-card li{padding:8px 0;font-size:14px;display:flex;gap:10px;align-items:flex-start}
+  .price-card li::before{content:"✓";color:var(--good);font-weight:700}
+  .price-card .btn{width:100%;margin-top:8px}
 
-  .main{flex:1;margin-left:var(--sidebar-w);padding:calc(26px + env(safe-area-inset-top,0px)) 28px 60px;min-width:0}
-  .view{max-width:900px;margin:0 auto}
-  .view-title{font-size:20px;font-weight:700;margin:0 0 20px}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;counter-reset:step}
+  @media (max-width:760px){ .steps{grid-template-columns:1fr} }
+  .step{text-align:center}
+  .step .num{width:40px;height:40px;border-radius:50%;background:var(--accent-soft);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;font-weight:700;margin:0 auto 14px}
+  .step h3{font-size:15px;margin:0 0 6px}
+  .step p{font-size:13px;color:var(--ink-dim);margin:0}
 
-  @media (max-width:760px){
-    :root{--sidebar-w:72px}
-    .sidebar-brand{padding:16px 10px;text-align:center;font-size:0}
-    .sidebar-brand::before{content:"A";font-size:20px}
-    .sidebar-brand small{display:none}
-    .nav-label{display:none}
-    .nav-btn{justify-content:center;padding:12px}
-    .sidebar-account-name{display:none}
-    .sidebar-account{justify-content:center}
-    .main{padding:calc(20px + env(safe-area-inset-top,0px)) 14px 50px}
-  }
+  .faq details{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:10px}
+  .faq summary{cursor:pointer;font-weight:600;font-size:15px}
+  .faq p{color:var(--ink-dim);font-size:14px;margin:10px 0 0}
 
-  /* ---- paneles / tarjetas de contenido reutilizables ---- */
-  .panel-section{
-    background:var(--surface);border:1px solid var(--border);border-radius:14px;
-    padding:20px;margin-bottom:20px;
-  }
-  .panel-section h2{
-    margin:0 0 14px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);
-  }
-  .config-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media (max-width:560px){ .config-grid{grid-template-columns:1fr} }
-  .config-actions{display:flex;align-items:center;gap:12px;margin-top:14px}
-  .saved-hint{font-size:12px;color:var(--good);display:none}
-  .saved-hint.show{display:inline}
+  .legal{max-width:720px;margin:0 auto}
+  .legal h3{font-size:18px;margin:28px 0 8px}
+  .legal h3:first-child{margin-top:0}
+  .legal p,.legal li{font-size:14px;color:var(--ink-dim)}
+  .legal-nav{display:flex;gap:16px;justify-content:center;margin-bottom:36px;font-size:14px}
+  .legal-nav a{text-decoration:underline}
 
-  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-  @media (max-width:640px){ .stat-grid{grid-template-columns:repeat(2,1fr)} }
-  .stat{
-    background:var(--surface);border:1px solid var(--border);border-radius:12px;
-    padding:16px;display:flex;flex-direction:column;gap:4px;min-width:0;
-  }
-  .stat .n{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:24px;font-weight:600}
-  .stat .l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-dim)}
+  footer{border-top:1px solid var(--border);padding:32px 0;text-align:center;font-size:13px;color:var(--ink-dim)}
+  footer a{text-decoration:underline}
 
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th{
-    text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
-    color:var(--ink-dim);padding:8px 10px;border-bottom:1px solid var(--border);
+  .wa-float{
+    position:fixed;bottom:22px;right:22px;z-index:30;
+    background:var(--whatsapp);color:#06301a;border-radius:50px;
+    width:58px;height:58px;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 8px 20px rgba(0,0,0,.25);text-decoration:none;font-size:28px;
   }
-  td{padding:10px;border-bottom:1px solid var(--border);min-width:0}
-  tr:last-child td{border-bottom:none}
-  .pts{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
-  .table-wrap{overflow-x:auto}
-  .empty{font-size:13px;color:var(--ink-dim);padding:12px 2px}
-
-  .links-row{display:flex;gap:10px;flex-wrap:wrap}
-  .links-row a{
-    font-size:13px;font-weight:600;color:var(--accent-ink-soft);background:var(--accent-soft);
-    padding:9px 14px;border-radius:8px;text-decoration:none;
-  }
-  .danger-link{
-    background:none;border:none;color:var(--danger);font-family:var(--font-body);
-    font-size:12px;font-weight:600;cursor:pointer;padding:0;
-  }
-  .danger-link:hover{text-decoration:underline}
-
-  .qr-share-row{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
-  .qr-share-box{
-    background:#fff;padding:10px;border-radius:10px;flex:none;
-    width:108px;height:108px;display:flex;align-items:center;justify-content:center;
-  }
-  .qr-share-meta{display:flex;flex-direction:column;gap:8px;min-width:0}
-
-  /* ---- Tus números claros ---- */
-  .numeros-title{font-size:16px;font-weight:700;margin:34px 0 4px}
-  .numeros-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}
-  .periodo-pills{display:flex;gap:6px;background:var(--surface-2);border-radius:999px;padding:3px}
-  .periodo-pill{
-    font-family:var(--font-body);font-size:12px;font-weight:600;padding:7px 14px;border-radius:999px;
-    border:none;background:none;color:var(--ink-dim);cursor:pointer;
-  }
-  .periodo-pill.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
-
-  .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
-  @media (max-width:640px){ .kpi-grid{grid-template-columns:1fr} }
-  .kpi-card{
-    background:var(--surface);border:1px solid var(--border);border-radius:12px;
-    padding:16px;display:flex;flex-direction:column;gap:4px;
-  }
-  .kpi-icon{
-    width:30px;height:30px;border-radius:8px;background:var(--accent-soft);color:var(--accent-ink-soft);
-    display:flex;align-items:center;justify-content:center;margin-bottom:6px;
-  }
-  .kpi-icon svg{width:16px;height:16px}
-  .kpi-number{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:26px;font-weight:700}
-  .kpi-caption{font-size:12px;color:var(--ink-dim)}
-  .kpi-delta{font-size:12px;font-weight:600;margin-top:2px}
-  .kpi-delta.up{color:var(--good)}
-  .kpi-delta.down{color:var(--danger)}
-  .kpi-delta.flat{color:var(--ink-dim)}
-
-  .chart-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:6px}
-  .chart-title{font-size:13px;font-weight:700;margin:0}
-  .chart-sub{font-size:12px;color:var(--ink-dim);margin:2px 0 0}
-  .chart-legend{display:flex;gap:14px;font-size:12px;color:var(--ink-dim)}
-  .chart-legend span{display:inline-flex;align-items:center;gap:6px}
-  .chart-legend i{width:9px;height:9px;border-radius:2px;display:inline-block}
-  .chart-toggle{margin-top:12px;text-align:center}
-  .chart-wrap{position:relative;margin-top:18px}
-  .chart-tooltip{
-    position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);
-    font-size:11px;padding:6px 9px;border-radius:6px;white-space:nowrap;
-    transform:translate(-50%,-100%);opacity:0;transition:opacity .1s;z-index:5;
-  }
-  .chart-tooltip.show{opacity:1}
-  .chart-empty{font-size:13px;color:var(--ink-dim);text-align:center;padding:30px 0}
-
-  /* ---- Tarjeta de fidelidad: pestañas + vista previa ---- */
-  .tarjeta-layout{display:grid;grid-template-columns:260px 1fr;gap:24px;align-items:start}
-  @media (max-width:860px){ .tarjeta-layout{grid-template-columns:1fr} }
-
-  .tarjeta-tabs{display:flex;flex-direction:column;gap:6px}
-  @media (max-width:860px){ .tarjeta-tabs{flex-direction:row;flex-wrap:wrap} }
-  .tab-btn{
-    display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;
-    border:1px solid var(--border);background:var(--surface);color:var(--ink);
-    font-family:var(--font-body);font-size:14px;font-weight:600;cursor:pointer;text-align:left;
-  }
-  .tab-btn svg{flex:none;width:17px;height:17px}
-  .tab-btn:hover{border-color:var(--accent)}
-  .tab-btn.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink-soft)}
-
-  .tab-panel{display:none}
-  .tab-panel.active{display:block}
-
-  .dropzone{
-    border:2px dashed var(--border);border-radius:12px;padding:18px;
-    display:flex;align-items:center;gap:14px;cursor:pointer;background:var(--bg);
-  }
-  .dropzone.drag{border-color:var(--accent);background:var(--accent-soft)}
-  .dropzone .avatar{width:48px;height:48px}
-  .dropzone .dz-text{font-size:12px;color:var(--ink-dim)}
-  .dropzone .dz-text b{color:var(--ink);font-size:13px;display:block;margin-bottom:2px}
-
-  .color-row{display:flex;align-items:center;gap:12px}
-  .color-row input[type=text]{width:110px;font-family:var(--font-mono)}
-
-  .shape-grid, .size-grid{display:flex;gap:10px;flex-wrap:wrap}
-  #selloFormaGridExtra{
-    margin-top:10px;max-height:280px;overflow-y:auto;border:1px solid var(--border);
-    border-radius:10px;padding:12px;background:var(--bg);
-  }
-  #selloFormaGridExtra .shape-group-title{
-    font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
-    color:var(--ink-dim);margin:12px 0 8px;
-  }
-  #selloFormaGridExtra .shape-group-title:first-child{margin-top:0}
-  #selloFormaGridExtra .shape-opt{min-width:62px;padding:8px 10px;font-size:11px}
-  .shape-opt, .size-opt{
-    display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 14px;
-    border:1px solid var(--border);border-radius:10px;background:var(--surface);
-    cursor:pointer;font-size:12px;color:var(--ink-dim);min-width:72px;
-  }
-  .shape-opt:hover, .size-opt:hover{border-color:var(--accent)}
-  .shape-opt.active, .size-opt.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink-soft)}
-  .shape-opt svg{width:26px;height:26px}
-
-  /* ---- la tarjeta misma (vista previa) ---- */
-  .tarjeta-preview-wrap{display:flex;flex-direction:column;gap:10px}
-  .tarjeta-preview-hint{font-size:12px;color:var(--ink-dim);font-style:italic}
-  .tarjeta-card{
-    border-radius:18px;padding:20px;min-height:260px;color:#fff;
-    display:flex;flex-direction:column;justify-content:space-between;gap:16px;
-    box-shadow:0 10px 30px rgba(0,0,0,.18);
-  }
-  .tc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-  .tc-brand{display:flex;align-items:center;gap:10px;min-width:0}
-  .tc-logo{width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,.18);flex:none;overflow:hidden;display:flex;align-items:center;justify-content:center}
-  .tc-logo img{width:100%;height:100%;object-fit:cover}
-  .tc-nombre{font-size:17px;font-weight:700;line-height:1.2;overflow:hidden;text-overflow:ellipsis}
-  .tc-sellos-head{text-align:right}
-  .tc-sellos-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;opacity:.8}
-  .tc-sellos-contador{font-family:var(--font-mono);font-size:18px;font-weight:700}
-  .tc-sellos-grid{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-  .tc-bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
-  .tc-col{min-width:0}
-  .tc-col.right{text-align:right}
-  .tc-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;opacity:.8;margin-bottom:2px}
-  .tc-value{font-size:13px;font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis}
-  .tc-qr{background:#fff;border-radius:10px;padding:6px;flex:none}
-  .tc-qr canvas, .tc-qr img{display:block;width:72px!important;height:72px!important}
-
-  /* ---- Escáner ---- */
-  .scan-wrap{
-    position:relative;background:#000;border-radius:12px;overflow:hidden;
-    aspect-ratio:1/1;max-width:320px;margin:0 auto;
-  }
-  #escanerReader{width:100%;height:100%}
-  #escanerReader video{width:100% !important;height:100% !important;object-fit:cover}
-  .scan-placeholder{
-    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-    color:var(--ink-dim);background:var(--surface-2);font-size:13px;text-align:center;padding:20px;
-  }
-  .scan-actions{display:flex;justify-content:center;gap:10px;margin-top:16px}
-  .hint{font-size:12px;color:var(--ink-dim);text-align:center;margin-top:10px}
-  .hint.error{color:var(--danger)}
-  .hint.error{color:var(--danger)}
-  .result-card{text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
-  .result-icon{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
-  .result-icon svg{width:28px;height:28px}
-  .result-icon.good{background:var(--good-soft);color:var(--good)}
-  .result-icon.warn{background:var(--accent-soft);color:var(--accent-ink-soft)}
-  .result-icon.bad{background:var(--danger-soft);color:var(--danger)}
-  .result-title{font-size:16px;font-weight:700;margin:0}
-  .result-sub{font-size:13px;color:var(--ink-dim);margin:0}
-  .result-code{
-    font-family:var(--font-mono);font-size:13px;letter-spacing:.04em;
-    background:var(--surface-2);border:1px solid var(--border);border-radius:8px;
-    padding:10px 14px;word-break:break-all;
-  }
-  .result-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px}
-
-  [hidden]{display:none!important}
 </style>
+</head>
+<body>
 
-<!-- ======================================================================
-     Login / registro / recuperar contraseña
-     ====================================================================== -->
-<section id="authView">
-  <div class="auth-col">
-    <h1 class="auth-brand">ARGAYES<small>Panel de administración</small></h1>
-    <div class="auth-card">
-      <h1 id="authTitle">Entrar a tu panel</h1>
-      <p class="sub" id="authSub">Solo tú ves esta información — cada negocio tiene su propia cuenta.</p>
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="#top">ARGAYES</a>
+    <nav class="links">
+      <a class="navlink" href="#caracteristicas">Características</a>
+      <a class="navlink" href="#precio">Precio</a>
+      <a class="navlink" href="#preguntas">Preguntas</a>
+      <a class="navlink" href="#contacto">Contacto</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn ghost" href="panel.html">Iniciar sesión</a>
+      <a class="btn primary" href="panel.html#crear-cuenta">Crear cuenta</a>
+    </div>
+  </div>
+</header>
 
-      <form id="loginForm">
-        <div class="field">
-          <label for="loginEmail">Email</label>
-          <input id="loginEmail" type="email" required autocomplete="username">
-        </div>
-        <div class="field" style="margin-top:12px">
-          <label for="loginPassword">Contraseña</label>
-          <div class="pw-wrap">
-            <input id="loginPassword" type="password" required autocomplete="current-password">
-            <button type="button" class="pw-toggle" data-target="loginPassword" aria-label="Mostrar contraseña">
-              <svg class="icon-eye" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-              <svg class="icon-eye-off" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.6 18.6 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a18.6 18.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-            </button>
-          </div>
-        </div>
-        <p class="auth-error" id="loginError"></p>
-        <button class="primary" type="submit" style="margin-top:14px;width:100%">Iniciar sesión</button>
-        <button class="link" type="button" id="forgotPasswordBtn" style="margin-top:12px">¿Olvidaste tu contraseña?</button>
-      </form>
+<div id="top"></div>
 
-      <form id="registerForm" hidden>
-        <div class="field">
-          <label for="regNombre">Nombre de la empresa</label>
-          <input id="regNombre" required>
-        </div>
-        <div class="field" style="margin-top:12px">
-          <label for="regEmail">Email</label>
-          <input id="regEmail" type="email" required autocomplete="username">
-        </div>
-        <div class="field" style="margin-top:12px">
-          <label for="regPassword">Contraseña</label>
-          <div class="pw-wrap">
-            <input id="regPassword" type="password" required autocomplete="new-password" minlength="6">
-            <button type="button" class="pw-toggle" data-target="regPassword" aria-label="Mostrar contraseña">
-              <svg class="icon-eye" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-              <svg class="icon-eye-off" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.6 18.6 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a18.6 18.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-            </button>
-          </div>
-        </div>
-        <div class="field" style="margin-top:12px">
-          <label for="regRecompensa">Recompensa al llegar al umbral</label>
-          <input id="regRecompensa" placeholder="Ej. servicio de publicidad gratis">
-        </div>
-        <div class="field" style="margin-top:12px">
-          <label for="regUmbral">Umbral de puntos (máximo 20)</label>
-          <input id="regUmbral" type="number" min="1" max="20" value="10">
-        </div>
-        <p class="auth-error" id="registerError"></p>
-        <button class="primary" type="submit" style="margin-top:14px;width:100%">Crear cuenta</button>
-      </form>
+<section class="hero">
+  <div class="wrap">
+    <h1>La tarjeta de lealtad de tu negocio,<br>sin plástico y sin complicarte.</h1>
+    <p class="lead">Tus clientes juntan sellos con un QR y guardan su tarjeta en Apple Wallet o Google Wallet. Tú administras todo desde un panel sencillo — sin apps que instalar, sin tarjetas que imprimir.</p>
+    <div class="actions">
+      <a class="btn primary" href="panel.html#crear-cuenta">Crear mi cuenta</a>
+      <a class="btn ghost" href="#precio">Ver precio</a>
+    </div>
+    <p class="note">Tu solicitud se revisa antes de activarse — así mantenemos la calidad del servicio.</p>
 
-      <form id="forgotForm" hidden>
-        <div id="forgotStep1">
-          <p class="sub" style="margin:0 0 14px">Escribe el email con el que inició sesión tu negocio. Te mandaremos un código para crear una nueva contraseña.</p>
-          <div class="field">
-            <label for="forgotEmail">Email</label>
-            <input id="forgotEmail" type="email" required autocomplete="username">
-          </div>
-          <p class="auth-error" id="forgotError"></p>
-          <p class="auth-hint" id="forgotSentHint">Si ese email está registrado, te llegará un código en unos minutos. Revisa también la carpeta de spam.</p>
-          <button class="primary" type="button" id="sendResetCodeBtn" style="margin-top:14px;width:100%">Enviar código</button>
-        </div>
+    <div class="mock">
+      <div class="mock-top">
+        <span class="mock-brand">Tu Negocio</span>
+        <span style="font-size:13px;opacity:.85">7/10 sellos</span>
+      </div>
+      <div class="mock-stamps">
+        <div class="mock-stamp on">★</div>
+        <div class="mock-stamp on">★</div>
+        <div class="mock-stamp on">★</div>
+        <div class="mock-stamp on">★</div>
+        <div class="mock-stamp on">★</div>
+        <div class="mock-stamp on">★</div>
+        <div class="mock-stamp on">★</div>
+        <div class="mock-stamp">☆</div>
+        <div class="mock-stamp">☆</div>
+        <div class="mock-stamp">☆</div>
+      </div>
+      <div class="mock-foot">Junta 3 sellos más y gana tu recompensa</div>
+    </div>
+  </div>
+</section>
 
-        <div id="forgotStep2" hidden>
-          <div class="field">
-            <label for="resetCode">Código de verificación</label>
-            <input id="resetCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" required>
-          </div>
-          <div class="field" style="margin-top:12px">
-            <label for="resetNewPassword">Nueva contraseña</label>
-            <div class="pw-wrap">
-              <input id="resetNewPassword" type="password" required autocomplete="new-password" minlength="6">
-              <button type="button" class="pw-toggle" data-target="resetNewPassword" aria-label="Mostrar contraseña">
-                <svg class="icon-eye" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                <svg class="icon-eye-off" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.6 18.6 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a18.6 18.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-              </button>
-            </div>
-          </div>
-          <div class="field" style="margin-top:12px">
-            <label for="resetConfirmPassword">Confirmar nueva contraseña</label>
-            <div class="pw-wrap">
-              <input id="resetConfirmPassword" type="password" required autocomplete="new-password" minlength="6">
-              <button type="button" class="pw-toggle" data-target="resetConfirmPassword" aria-label="Mostrar contraseña">
-                <svg class="icon-eye" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                <svg class="icon-eye-off" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.6 18.6 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a18.6 18.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-              </button>
-            </div>
-          </div>
-          <p class="auth-error" id="resetError"></p>
-          <button class="primary" type="submit" style="margin-top:14px;width:100%">Cambiar contraseña</button>
-          <button class="link" type="button" id="resendCodeBtn" style="margin-top:12px">Reenviar código</button>
-        </div>
+<section id="caracteristicas">
+  <div class="wrap">
+    <h2 class="section-title">Todo lo que necesitas, incluido</h2>
+    <p class="section-sub">Un sistema completo de lealtad digital, pensado para que lo pongas a andar en un día.</p>
+    <div class="features">
+      <div class="feature"><div class="emoji">📱</div><h3>Apple &amp; Google Wallet</h3><p>Tu cliente guarda la tarjeta en su celular de siempre — nada que instalar.</p></div>
+      <div class="feature"><div class="emoji">🔳</div><h3>Registro por QR</h3><p>Un código que pones en tu mostrador. El cliente se registra solo, en segundos.</p></div>
+      <div class="feature"><div class="emoji">🎨</div><h3>A tu marca</h3><p>Tus colores, tu logo, tu tipografía y el diseño del sello — tu tarjeta, no una genérica.</p></div>
+      <div class="feature"><div class="emoji">📊</div><h3>Números claros</h3><p>Clientes nuevos, visitas, canjes pendientes — todo en un panel fácil de leer.</p></div>
+      <div class="feature"><div class="emoji">✉️</div><h3>Recordatorios automáticos</h3><p>Manda un correo a quien no ha vuelto en varios días, con un clic.</p></div>
+      <div class="feature"><div class="emoji">🔗</div><h3>Link con tu nombre</h3><p>Comparte un link corto con el nombre de tu negocio, en vez de un código largo.</p></div>
+    </div>
+  </div>
+</section>
 
-        <button class="link" type="button" id="backToLoginBtn" style="margin-top:12px">← Volver a iniciar sesión</button>
-      </form>
+<section style="background:var(--surface-2)">
+  <div class="wrap">
+    <h2 class="section-title">Cómo funciona</h2>
+    <div class="steps">
+      <div class="step"><div class="num">1</div><h3>Creas tu cuenta</h3><p>Nos cuentas de tu negocio y tu recompensa. Revisamos tu solicitud y te avisamos.</p></div>
+      <div class="step"><div class="num">2</div><h3>Personalizas tu tarjeta</h3><p>Colores, logo, forma del sello y cuántos sellos se necesitan para la recompensa.</p></div>
+      <div class="step"><div class="num">3</div><h3>Pones tu QR a la vista</h3><p>Tus clientes se registran solos y empiezan a juntar sellos en su próxima visita.</p></div>
+    </div>
+  </div>
+</section>
 
-      <button class="link" id="toggleAuth">¿No tienes cuenta? Crea una</button>
+<section id="precio">
+  <div class="wrap">
+    <h2 class="section-title">Un solo precio, sin sorpresas</h2>
+    <p class="section-sub">Sin costo de instalación, sin límite de clientes, sin contrato forzoso.</p>
+    <div class="pricing-wrap">
+      <div class="price-card">
+        <div>Plan ARGAYES</div>
+        <div class="amount">$800<small> MXN / mes</small></div>
+        <ul>
+          <li>Clientes y sellos ilimitados</li>
+          <li>Apple Wallet y Google Wallet</li>
+          <li>Personalización completa de tu tarjeta</li>
+          <li>Link y QR con el nombre de tu negocio</li>
+          <li>Recordatorios automáticos por correo</li>
+          <li>Respaldo mensual de tu información</li>
+          <li>Cancela cuando quieras, sin penalización</li>
+        </ul>
+        <a class="btn primary" href="panel.html#crear-cuenta">Empezar ahora</a>
+      </div>
+    </div>
+  </div>
+</section>
 
-      <details class="backend-settings">
-        <summary>Conexión al backend</summary>
-        <div class="field">
-          <label for="backendUrl">URL del backend</label>
-          <input id="backendUrl" placeholder="https://tu-backend.up.railway.app">
-        </div>
-        <button class="link" id="saveBackend" style="margin-top:8px">Guardar</button>
+<section id="preguntas" style="background:var(--surface-2)">
+  <div class="wrap" style="max-width:720px">
+    <h2 class="section-title">Preguntas frecuentes</h2>
+    <div class="faq">
+      <details>
+        <summary>¿Necesito instalar algo?</summary>
+        <p>No. Tú administras todo desde el navegador, en tu computadora o celular. Tus clientes tampoco instalan nada — la tarjeta vive en la app de Wallet que ya traen en su teléfono.</p>
+      </details>
+      <details>
+        <summary>¿Cuándo se me cobra?</summary>
+        <p>Primero revisamos tu solicitud de cuenta. Una vez aprobada, activas tu suscripción de $800 MXN al mes directamente desde tu panel.</p>
+      </details>
+      <details>
+        <summary>¿Puedo cancelar cuando quiera?</summary>
+        <p>Sí, sin penalización. Cancelas desde tu panel y tu tarjeta deja de cobrarse al terminar el periodo ya pagado.</p>
+      </details>
+      <details>
+        <summary>¿Qué pasa con los datos de mis clientes?</summary>
+        <p>Son tuyos. ARGAYES solo los usa para hacer funcionar tu programa de lealtad. Puedes leer el detalle completo en nuestro <a href="#privacidad">aviso de privacidad</a>.</p>
       </details>
     </div>
   </div>
 </section>
 
-<!-- ======================================================================
-     App: barra lateral + contenido
-     ====================================================================== -->
-<div id="appShell">
-  <nav class="sidebar" aria-label="Navegación principal">
-    <div class="sidebar-brand">ARGAYES<small>Panel de administración</small></div>
-    <div class="sidebar-nav">
-      <button class="nav-btn active" type="button" data-view="panel">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
-        <span class="nav-label">Panel</span>
-      </button>
-      <button class="nav-btn" type="button" data-view="clientes">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17.5" cy="9" r="2.4"/><path d="M15.8 14.2c2.6.4 4.2 2.1 4.2 4.8"/></svg>
-        <span class="nav-label">Clientes</span>
-      </button>
-      <button class="nav-btn" type="button" data-view="escaner">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
-        <span class="nav-label">Escáner</span>
-      </button>
-      <button class="nav-btn" type="button" data-view="tarjeta">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 9.5h19"/><path d="M6 14h4"/></svg>
-        <span class="nav-label">Tarjeta de fidelidad</span>
-      </button>
-      <button class="nav-btn" type="button" data-view="ajustes">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4.6a7.7 7.7 0 0 0-1.7-1l-.4-2.6h-4l-.4 2.6a7.7 7.7 0 0 0-1.7 1l-2.4-.6-2 3.4 2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-.6a7.7 7.7 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.7 7.7 0 0 0 1.7-1l2.4.6 2-3.4z"/></svg>
-        <span class="nav-label">Ajustes</span>
-      </button>
+<section id="legal">
+  <div class="wrap legal">
+    <h2 class="section-title">Información legal</h2>
+    <div class="legal-nav">
+      <a href="#terminos">Términos y condiciones</a>
+      <a href="#privacidad">Aviso de privacidad</a>
     </div>
-    <div class="sidebar-foot">
-      <div class="sidebar-account">
-        <span class="avatar" id="avatarWrap">
-          <img id="avatarImg" alt="" hidden>
-          <svg id="avatarPlaceholder" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 12.2c2.8 0 5-2.2 5-5s-2.2-5-5-5-5 2.2-5 5 2.2 5 5 5zm0 2.4c-3.3 0-10 1.7-10 5v1.2C2 21.9 2.6 22.5 3.4 22.5h17.2c.8 0 1.4-.6 1.4-1.4V19.6c0-3.3-6.7-5-10-5z"/></svg>
-        </span>
-        <span class="sidebar-account-name" id="sessionName"></span>
-      </div>
-      <button class="nav-btn nav-logout" type="button" id="logoutBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
-        <span class="nav-label">Cerrar sesión</span>
-      </button>
-    </div>
-  </nav>
 
-  <main class="main">
-    <!-- ---- Panel ---- -->
-    <section class="view" id="view-panel">
-      <h1 class="view-title">Panel</h1>
-      <div class="stat-grid">
-        <div class="stat"><span class="n" id="statClientes">—</span><span class="l">Clientes</span></div>
-        <div class="stat"><span class="n" id="statVisitas">—</span><span class="l">Visitas hoy</span></div>
-        <div class="stat"><span class="n" id="statCanjes">—</span><span class="l">Canjes pendientes</span></div>
-        <div class="stat"><span class="n" id="statPuntos">—</span><span class="l">Puntos repartidos</span></div>
-      </div>
-      <div class="panel-section">
-        <h2>Accesos rápidos</h2>
-        <p class="hint" style="margin:0 0 12px">Pon este QR a la vista en tu negocio (en el mostrador, una mesa, una etiqueta) para que el cliente lo escanee con su cámara, se registre solo con su nombre y teléfono/correo, y descargue su tarjeta a Apple Wallet o Google Wallet.</p>
-        <div style="margin-bottom:16px">
-          <label for="slugInput" style="display:block;font-size:13px;color:var(--muted);margin-bottom:6px">Link con el nombre de tu negocio (en vez del código largo)</label>
-          <div class="links-row" style="align-items:center">
-            <input type="text" id="slugInput" placeholder="mi-negocio" maxlength="40" style="padding:9px 12px;min-width:160px">
-            <button type="button" class="ghost" id="slugGuardarBtn">Guardar link</button>
-            <span class="saved-hint" id="slugGuardadoHint">Guardado</span>
-            <span class="hint" id="slugHint" style="text-align:left;margin-top:0"></span>
-          </div>
-        </div>
-        <div class="qr-share-row">
-          <div id="regQrBox" class="qr-share-box"></div>
-          <div class="qr-share-meta">
-            <div class="links-row">
-              <a href="registro.html" target="_blank" rel="noopener" id="regLink">Abrir página de registro</a>
-              <button type="button" class="ghost" id="regQrDownloadBtn">Descargar QR</button>
-            </div>
-          </div>
-        </div>
-        <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
-          <p class="hint" style="margin:0 0 10px">Manda un correo a los clientes (con email registrado) que no han vuelto en los últimos días que elijas, recordándoles su recompensa pendiente.</p>
-          <div class="links-row" style="align-items:center">
-            <select id="recordatorioDias" style="padding:9px 12px">
-              <option value="7">7 días sin volver</option>
-              <option value="14" selected>14 días sin volver</option>
-              <option value="30">30 días sin volver</option>
-              <option value="60">60 días sin volver</option>
-            </select>
-            <button type="button" class="ghost" id="recordatorioBtn">Enviar recordatorio</button>
-            <span class="hint" id="recordatorioHint" style="text-align:left;margin-top:0"></span>
-          </div>
-        </div>
-      </div>
-
-      <h2 class="numeros-title">Tus números claros</h2>
-      <div class="numeros-head">
-        <span></span>
-        <div class="periodo-pills" id="periodoPills">
-          <button type="button" class="periodo-pill active" data-dias="30">30 días</button>
-          <button type="button" class="periodo-pill" data-dias="120">120 días</button>
-          <button type="button" class="periodo-pill" data-dias="365">Un año</button>
-        </div>
-      </div>
-
-      <div class="kpi-grid">
-        <div class="kpi-card">
-          <span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17.5" cy="9" r="2.4"/><path d="M15.8 14.2c2.6.4 4.2 2.1 4.2 4.8"/></svg></span>
-          <span class="kpi-number" id="kpiVinieronNum">—</span>
-          <span class="kpi-caption" id="kpiVinieronCap">vinieron de — miembros</span>
-          <span class="kpi-delta flat" id="kpiVinieronDelta">—</span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M21 6H8a5 5 0 0 0 0 10h1"/><path d="M7 22l-4-4 4-4"/><path d="M3 18h13a5 5 0 0 0 0-10h-1"/></svg></span>
-          <span class="kpi-number" id="kpiRetencionNum">—</span>
-          <span class="kpi-caption" id="kpiRetencionCap">regresan tras su primera visita</span>
-          <span class="kpi-delta flat" id="kpiRetencionDelta">—</span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M17 8v6M20 11h-6"/></svg></span>
-          <span class="kpi-number" id="kpiNuevosNum">—</span>
-          <span class="kpi-caption" id="kpiNuevosCap">miembros nuevos</span>
-          <span class="kpi-delta flat" id="kpiNuevosDelta">—</span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></span>
-          <span class="kpi-number" id="kpiFrecuenciaNum">—</span>
-          <span class="kpi-caption" id="kpiFrecuenciaCap">en promedio entre visitas</span>
-          <span class="kpi-delta flat" id="kpiFrecuenciaDelta">—</span>
-        </div>
-      </div>
-
-      <div class="panel-section">
-        <div class="chart-head">
-          <div>
-            <p class="chart-title" id="chartTitle">Visitas por semana</p>
-            <p class="chart-sub" id="chartSub">Las últimas 12 semanas</p>
-          </div>
-          <div class="chart-legend">
-            <span><i style="background:#2a78d6" id="legendRegresanColor"></i>Regresan</span>
-            <span><i style="background:#eb6834" id="legendPrimeraColor"></i>Primera visita</span>
-          </div>
-        </div>
-        <div class="chart-wrap" id="chartWrap">
-          <div class="chart-tooltip" id="chartTooltip"></div>
-        </div>
-        <div class="chart-toggle">
-          <button type="button" class="ghost" id="toggleHistoricoBtn">Ver histórico</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ---- Clientes ---- -->
-    <section class="view" id="view-clientes" hidden>
-      <h1 class="view-title">Clientes</h1>
-      <div class="panel-section">
-        <div class="table-wrap">
-          <table id="clientesTable" hidden>
-            <thead><tr><th>Nombre</th><th>Contacto</th><th>Puntos</th><th>Alta</th><th>Tarjeta</th><th></th></tr></thead>
-            <tbody id="clientesBody"></tbody>
-          </table>
-        </div>
-        <p class="empty" id="clientesEmpty">Todavía no hay clientes registrados.</p>
-      </div>
-    </section>
-
-    <!-- ---- Escáner ---- -->
-    <section class="view" id="view-escaner" hidden>
-      <h1 class="view-title">Escáner</h1>
-      <div class="panel-section">
-        <h2>Escanear código QR del cliente</h2>
-        <div class="scan-wrap" id="escanerScanWrap">
-          <div id="escanerReader"></div>
-          <div class="scan-placeholder" id="escanerPlaceholder">Toca "Iniciar cámara" para escanear el QR del cliente</div>
-        </div>
-        <div class="scan-actions">
-          <button type="button" class="primary" id="escanerStartBtn">Iniciar cámara</button>
-          <button type="button" class="ghost" id="escanerStopBtn" hidden>Detener</button>
-        </div>
-        <p class="hint" id="escanerHint">Pide al cliente que muestre el QR de su Apple o Google Wallet.</p>
-      </div>
-
-      <div class="panel-section result-card" id="escanerVisitaResult" hidden>
-        <div class="result-icon" id="escanerVisitaIcon"></div>
-        <p class="result-title" id="escanerVisitaTitle"></p>
-        <p class="result-sub" id="escanerVisitaSub"></p>
-        <div class="result-actions" id="escanerVisitaActions"></div>
-      </div>
-
-      <div class="panel-section result-card" id="escanerCanjeResult" hidden>
-        <div class="result-icon warn">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 6h-2.18A3 3 0 0 0 12 4a3 3 0 0 0-5.82 2H4a2 2 0 0 0-2 2v2a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V8a2 2 0 0 0-2-2zm-8-2a1 1 0 1 1-1 1 1 1 0 0 1 1-1zM3 13v6a2 2 0 0 0 2 2h6v-8zm10 0v8h6a2 2 0 0 0 2-2v-6z"/></svg>
-        </div>
-        <p class="result-title">Código de canje generado</p>
-        <p class="result-sub" id="escanerCanjeSub"></p>
-        <div class="result-code" id="escanerCanjeCodigo"></div>
-        <p class="hint">Dale este código al cliente, o confírmalo aquí mismo cuando entregues la recompensa.</p>
-        <div class="result-actions">
-          <button type="button" class="primary" id="escanerConfirmarCanjeBtn">Confirmar entrega</button>
-          <button type="button" class="ghost" id="escanerNuevoEscaneoBtn2">Escanear otro cliente</button>
-        </div>
-      </div>
-
-      <div class="panel-section result-card" id="escanerErrorResult" hidden>
-        <div class="result-icon bad">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-2h2zm0-4h-2V7h2z"/></svg>
-        </div>
-        <p class="result-title" id="escanerErrorTitle">No se pudo registrar</p>
-        <p class="result-sub" id="escanerErrorSub"></p>
-        <div class="result-actions">
-          <button type="button" class="primary" id="escanerReintentarBtn">Escanear otro cliente</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ---- Tarjeta de fidelidad ---- -->
-    <section class="view" id="view-tarjeta" hidden>
-      <h1 class="view-title">Tarjeta de fidelidad</h1>
-      <div class="tarjeta-layout">
-        <div class="tarjeta-tabs">
-          <button class="tab-btn active" type="button" data-tab="marca">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 5.5L20 9l-4.5 4 1.3 6.5L12 16.8 7.2 19.5l1.3-6.5L4 9l5.6-1.5z"/></svg>
-            Marca
-          </button>
-          <button class="tab-btn" type="button" data-tab="colores">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1.3" fill="currentColor"/><circle cx="12" cy="8" r="1.3" fill="currentColor"/><circle cx="15" cy="10" r="1.3" fill="currentColor"/><path d="M8 15c1 1.3 2.4 2 4 2 2.8 0 4-1.5 4-3 0-1-1-1-2-1h-2"/></svg>
-            Colores
-          </button>
-          <button class="tab-btn" type="button" data-tab="sellos">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="3.2"/><circle cx="17" cy="7" r="3.2"/><circle cx="7" cy="17" r="3.2"/><circle cx="17" cy="17" r="3.2"/></svg>
-            Sellos
-          </button>
-          <button class="tab-btn" type="button" data-tab="recompensa">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-2.2A3 3 0 0 0 12 5a3 3 0 0 0-5.8 2H4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zM4 13v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"/></svg>
-            Recompensa
-          </button>
-        </div>
-
-        <div>
-          <!-- preview, siempre visible encima de la pestaña activa -->
-          <div class="tarjeta-preview-wrap">
-            <div class="tarjeta-card" id="tcCard">
-              <div class="tc-top">
-                <div class="tc-brand">
-                  <span class="tc-logo" id="tcLogoWrap"></span>
-                  <span class="tc-nombre" id="tcNombre">Nombre de tu negocio</span>
-                </div>
-                <div class="tc-sellos-head">
-                  <div class="tc-sellos-label">Sellos</div>
-                  <div class="tc-sellos-contador" id="tcContador">3/10</div>
-                </div>
-              </div>
-              <div class="tc-sellos-grid" id="tcSellosGrid"></div>
-              <div class="tc-bottom">
-                <div class="tc-col">
-                  <div class="tc-label">Recompensa</div>
-                  <div class="tc-value" id="tcRecompensa">—</div>
-                </div>
-                <div class="tc-qr" id="tcQrWrap"></div>
-                <div class="tc-col right">
-                  <div class="tc-label">Cliente</div>
-                  <div class="tc-value" id="tcCliente">Nombre del cliente</div>
-                </div>
-              </div>
-            </div>
-            <p class="tarjeta-preview-hint">Así se verá la tarjeta de un cliente de ejemplo — se actualiza mientras editas.</p>
-          </div>
-
-          <!-- ---- Marca ---- -->
-          <div class="tab-panel active" id="panel-marca">
-            <div class="panel-section">
-              <h2>Logo y nombre</h2>
-              <div class="field">
-                <label>Logo del negocio</label>
-                <div class="dropzone" id="logoDropzone">
-                  <span class="avatar" id="dzAvatarWrap" style="width:48px;height:48px">
-                    <img id="dzAvatarImg" alt="" hidden>
-                    <svg id="dzAvatarPlaceholder" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 12.2c2.8 0 5-2.2 5-5s-2.2-5-5-5-5 2.2-5 5 2.2 5 5 5zm0 2.4c-3.3 0-10 1.7-10 5v1.2C2 21.9 2.6 22.5 3.4 22.5h17.2c.8 0 1.4-.6 1.4-1.4V19.6c0-3.3-6.7-5-10-5z"/></svg>
-                  </span>
-                  <div class="dz-text">
-                    <b>Arrastra una imagen aquí</b>
-                    o toca para elegir un archivo — PNG o JPG, máximo 8MB
-                  </div>
-                  <input type="file" id="logoFileInput" accept="image/png,image/jpeg" hidden>
-                </div>
-                <p class="auth-error" id="logoError" hidden>El archivo supera los 8MB.</p>
-              </div>
-              <div class="field" style="margin-top:14px">
-                <label for="cfgNombre">Nombre de la empresa</label>
-                <input id="cfgNombre">
-              </div>
-              <div class="field" style="margin-top:14px">
-                <label for="cfgFuente">Tipografía del nombre</label>
-                <select id="cfgFuente">
-                  <option value="IBM Plex Sans">IBM Plex Sans</option>
-                  <option value="Poppins">Poppins</option>
-                  <option value="Montserrat">Montserrat</option>
-                  <option value="Playfair Display">Playfair Display</option>
-                  <option value="Roboto Slab">Roboto Slab</option>
-                  <option value="Quicksand">Quicksand</option>
-                  <option value="Oswald">Oswald</option>
-                  <option value="Nunito">Nunito</option>
-                </select>
-              </div>
-              <div class="config-actions">
-                <button class="primary" id="saveMarcaBtn">Guardar cambios</button>
-                <span class="saved-hint" id="savedHintMarca">Guardado</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- ---- Colores ---- -->
-          <div class="tab-panel" id="panel-colores">
-            <div class="panel-section">
-              <h2>Colores de la tarjeta</h2>
-              <div class="field">
-                <label for="cfgColor">Color de fondo de la tarjeta</label>
-                <div class="color-row">
-                  <input type="color" id="cfgColor" value="#b8872b">
-                  <input type="text" id="cfgColorTxt" value="#b8872b">
-                </div>
-              </div>
-              <div class="field" style="margin-top:14px">
-                <label for="cfgColorBoton">Color de los botones</label>
-                <div class="color-row">
-                  <input type="color" id="cfgColorBoton" value="#1b1f23">
-                  <input type="text" id="cfgColorBotonTxt" value="#1b1f23">
-                </div>
-              </div>
-              <div class="config-actions">
-                <button class="primary" id="saveColoresBtn">Guardar cambios</button>
-                <span class="saved-hint" id="savedHintColores">Guardado</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- ---- Sellos ---- -->
-          <div class="tab-panel" id="panel-sellos">
-            <div class="panel-section">
-              <h2>Forma y tamaño de los sellos</h2>
-              <p class="sub" style="font-size:12px;color:var(--ink-dim);margin:-6px 0 14px">
-                La cantidad de sellos la decide el umbral de puntos (lo editas en la pestaña "Recompensa").
-              </p>
-              <div class="field">
-                <label>Forma</label>
-                <div class="shape-grid" id="selloFormaGrid">
-                  <div class="shape-opt" data-valor="circulo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>Círculo</div>
-                  <div class="shape-opt" data-valor="estrella"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.9 6.3 6.9.9-5 4.8 1.3 6.8L12 17.6 5.9 20.8l1.3-6.8-5-4.8 6.9-.9z"/></svg>Estrella</div>
-                  <div class="shape-opt" data-valor="corazon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20.3s-7.8-4.7-9.8-9.3C.9 7.6 2.6 4 6.2 4c2 0 3.5 1.1 4.3 2.6.3.5.5 1 .5 1 0 0 .2-.5.5-1C12.3 5.1 13.8 4 15.8 4c3.6 0 5.3 3.6 4 7-2 4.6-9.8 9.3-9.8 9.3z"/></svg>Corazón</div>
-                  <div class="shape-opt" data-valor="cuadrado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="4"/></svg>Cuadrado</div>
-                </div>
-                <button type="button" class="link" id="masFormasBtn" style="margin-top:8px">Más +</button>
-                <div class="shape-grid" id="selloFormaGridExtra" hidden></div>
-              </div>
-              <div class="field" style="margin-top:14px">
-                <label>Tamaño</label>
-                <div class="size-grid" id="selloTamanoGrid">
-                  <div class="size-opt" data-valor="pequeno">Pequeño</div>
-                  <div class="size-opt" data-valor="mediano">Mediano</div>
-                  <div class="size-opt" data-valor="grande">Grande</div>
-                </div>
-              </div>
-              <div class="config-actions">
-                <button class="primary" id="saveSellosBtn">Guardar cambios</button>
-                <span class="saved-hint" id="savedHintSellos">Guardado</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- ---- Recompensa ---- -->
-          <div class="tab-panel" id="panel-recompensa">
-            <div class="panel-section">
-              <h2>Recompensa y umbral de puntos</h2>
-              <div class="field">
-                <label for="cfgRecompensa">¿Qué gana el cliente?</label>
-                <input id="cfgRecompensa" placeholder="Ej. servicio de publicidad gratis">
-              </div>
-              <div class="field" style="margin-top:14px">
-                <label for="cfgUmbral">Umbral de puntos (cuántos sellos pide la tarjeta, máximo 20)</label>
-                <input id="cfgUmbral" type="number" min="1" max="20">
-              </div>
-              <div class="config-actions">
-                <button class="primary" id="saveRecompensaBtn">Guardar cambios</button>
-                <span class="saved-hint" id="savedHintRecompensa">Guardado</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ---- Ajustes ---- -->
-    <section class="view" id="view-ajustes" hidden>
-      <h1 class="view-title">Ajustes</h1>
-
-      <div class="panel-section">
-        <h2>Foto de perfil de la cuenta</h2>
-        <div class="field">
-          <label>Logo del negocio</label>
-          <div class="dropzone" id="ajustesLogoDropzone">
-            <span class="avatar" id="ajustesAvatarWrap" style="width:48px;height:48px">
-              <img id="ajustesAvatarImg" alt="" hidden>
-              <svg id="ajustesAvatarPlaceholder" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 12.2c2.8 0 5-2.2 5-5s-2.2-5-5-5-5 2.2-5 5 2.2 5 5 5zm0 2.4c-3.3 0-10 1.7-10 5v1.2C2 21.9 2.6 22.5 3.4 22.5h17.2c.8 0 1.4-.6 1.4-1.4V19.6c0-3.3-6.7-5-10-5z"/></svg>
-            </span>
-            <div class="dz-text">
-              <b>Arrastra una imagen aquí</b>
-              o toca para elegir un archivo — PNG o JPG, máximo 8MB
-            </div>
-            <input type="file" id="ajustesLogoFileInput" accept="image/png,image/jpeg" hidden>
-          </div>
-          <p class="auth-error" id="ajustesLogoError" hidden>El archivo supera los 8MB.</p>
-          <p class="sub" style="font-size:12px;color:var(--ink-dim);margin:6px 0 0">
-            Es el mismo logo que se usa en la Tarjeta de fidelidad (pestaña "Marca").
-          </p>
-        </div>
-        <div class="config-actions">
-          <button class="primary" id="saveFotoBtn">Guardar cambios</button>
-          <span class="saved-hint" id="savedHintFoto">Guardado</span>
-        </div>
-      </div>
-
-      <div class="panel-section">
-        <h2>Apariencia</h2>
-        <div class="field">
-          <label for="themeSelect">Tema del panel</label>
-          <select id="themeSelect">
-            <option value="light">Claro</option>
-            <option value="dark">Oscuro</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="panel-section">
-        <h2>Cuenta</h2>
-        <div class="field">
-          <label>Contraseña</label>
-          <div><button class="ghost" type="button" id="cambiarPasswordBtn">Cambiar contraseña</button></div>
-        </div>
-        <div class="field" style="margin-top:14px">
-          <label>Sesión</label>
-          <div><button class="ghost" type="button" id="logoutBtnAjustes">Cerrar sesión</button></div>
-        </div>
-      </div>
-
-      <div class="panel-section">
-        <h2>Conexión al backend</h2>
-        <div class="field">
-          <label for="backendUrlAjustes">URL del backend</label>
-          <input id="backendUrlAjustes">
-        </div>
-        <div class="config-actions">
-          <button class="ghost" id="saveBackendAjustes">Guardar</button>
-          <span class="saved-hint" id="savedHintBackend">Guardado</span>
-        </div>
-      </div>
-    </section>
-  </main>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script>
-(function(){
-  "use strict";
-
-  // ---- tema (claro/oscuro) ----
-  var root = document.documentElement;
-  var themeSelect = document.getElementById('themeSelect');
-  function applyTheme(v){
-    if(v === 'dark' || v === 'light'){ root.setAttribute('data-theme', v); }
-    else { root.removeAttribute('data-theme'); }
-    themeSelect.value = (v === 'dark') ? 'dark' : 'light';
-  }
-  var savedTheme = null;
-  try { savedTheme = localStorage.getItem('argayes-theme'); } catch(e){}
-  applyTheme(savedTheme === 'dark' ? 'dark' : 'light'); // default: claro
-  themeSelect.addEventListener('change', function(){
-    applyTheme(this.value);
-    try { localStorage.setItem('argayes-theme', this.value); } catch(e){}
-  });
-
-  // Si nunca se configuró a mano (por ejemplo, la primera vez que se abre
-  // la página en un dominio nuevo), usa el backend real de ARGAYES en vez
-  // de dejar el panel sin poder conectar.
-  function getBackendUrl(){
-    try { return localStorage.getItem('argayes-backend-url') || 'https://argayes-backend.onrender.com'; } catch(e){ return 'https://argayes-backend.onrender.com'; }
-  }
-  function setBackendUrl(v){
-    try { localStorage.setItem('argayes-backend-url', v); } catch(e){}
-  }
-  function getToken(){
-    try { return sessionStorage.getItem('argayes-token') || ''; } catch(e){ return ''; }
-  }
-  function setToken(v){
-    try {
-      if(v) sessionStorage.setItem('argayes-token', v);
-      else sessionStorage.removeItem('argayes-token');
-    } catch(e){}
-  }
-  function getEmpresaCache(){
-    try { return JSON.parse(sessionStorage.getItem('argayes-empresa') || 'null'); } catch(e){ return null; }
-  }
-  function setEmpresaCache(v){
-    try { sessionStorage.setItem('argayes-empresa', JSON.stringify(v)); } catch(e){}
-  }
-
-  var backendInput = document.getElementById('backendUrl');
-  backendInput.value = getBackendUrl();
-  document.getElementById('saveBackend').addEventListener('click', function(){
-    setBackendUrl(backendInput.value.trim().replace(/\/$/, ''));
-  });
-  // Mismo campo, repetido en Ajustes para no tener que cerrar sesión para cambiar el backend.
-  var backendInputAjustes = document.getElementById('backendUrlAjustes');
-  document.getElementById('saveBackendAjustes').addEventListener('click', function(){
-    setBackendUrl(backendInputAjustes.value.trim().replace(/\/$/, ''));
-    backendInput.value = getBackendUrl();
-    var hint = document.getElementById('savedHintBackend');
-    hint.classList.add('show');
-    setTimeout(function(){ hint.classList.remove('show'); }, 2000);
-  });
-
-  async function api(path, opts){
-    var base = getBackendUrl();
-    if(!base){
-      throw new Error('Primero configura la URL del backend en "Conexión al backend".');
-    }
-    opts = opts || {};
-    opts.headers = Object.assign({'Content-Type':'application/json'}, opts.headers || {});
-    var token = getToken();
-    if(token) opts.headers.Authorization = 'Bearer ' + token;
-    var res = await fetch(base + path, opts);
-    var data = null;
-    try { data = await res.json(); } catch(e){}
-    if(!res.ok){
-      throw new Error((data && data.error) || ('Error ' + res.status));
-    }
-    return data;
-  }
-
-  // ---- vistas raíz: auth vs app ----
-  var authView = document.getElementById('authView');
-  var appShell = document.getElementById('appShell');
-  var sessionName = document.getElementById('sessionName');
-
-  function pintarAvatarSidebar(empresa){
-    var img = document.getElementById('avatarImg');
-    var placeholder = document.getElementById('avatarPlaceholder');
-    if(empresa && empresa.logoUrl){
-      img.src = empresa.logoUrl; img.hidden = false; placeholder.hidden = true;
-    } else {
-      img.hidden = true; img.removeAttribute('src'); placeholder.hidden = false;
-    }
-  }
-
-  // ---- navegación entre secciones de la barra lateral ----
-  var navBtns = document.querySelectorAll('.nav-btn[data-view]');
-  function mostrarVista(nombre){
-    document.querySelectorAll('.view').forEach(function(v){ v.hidden = (v.id !== 'view-' + nombre); });
-    navBtns.forEach(function(b){ b.classList.toggle('active', b.dataset.view === nombre); });
-    if(nombre === 'escaner'){ /* nada que precargar */ }
-  }
-  navBtns.forEach(function(b){
-    b.addEventListener('click', function(){ mostrarVista(b.dataset.view); });
-  });
-
-  // Arma el link/QR de autorregistro, usando el slug (link con marca
-  // propia) cuando el negocio ya lo configuró, o el id de siempre si no.
-  function actualizarLinkRegistro(empresa){
-    var slugInput = document.getElementById('slugInput');
-    if(slugInput) slugInput.value = empresa.slug || '';
-    var regLink = document.getElementById('regLink');
-    var backend = getBackendUrl();
-    if(regLink){
-      var params = 'empresaId=' + encodeURIComponent(empresa.slug || empresa.id);
-      if(backend) params += '&backend=' + encodeURIComponent(backend);
-      // Usa la misma carpeta donde está corriendo este panel (sea Netlify,
-      // GitHub Pages o donde sea) en vez de un dominio fijo — así el link
-      // de registro sigue funcionando aunque cambie dónde está alojada la
-      // página.
-      var carpetaActual = location.origin + location.pathname.replace(/[^/]*$/, '');
-      var regUrl = carpetaActual + 'registro.html?' + params;
-      regLink.href = regUrl;
-      var regQrBox = document.getElementById('regQrBox');
-      if(regQrBox){
-        regQrBox.innerHTML = '';
-        new QRCode(regQrBox, {
-          text: regUrl,
-          width: 88,
-          height: 88,
-          colorDark: '#1b1f23',
-          colorLight: '#ffffff',
-          correctLevel: QRCode.CorrectLevel.M
-        });
-      }
-    }
-  }
-
-  function mostrarDash(empresa){
-    setEmpresaCache(empresa);
-    authView.hidden = true;
-    appShell.classList.add('show');
-    sessionName.textContent = empresa.nombre;
-    pintarAvatarSidebar(empresa);
-    mostrarVista('panel');
-    cargarTarjetaDesdeEmpresa(empresa);
-    actualizarLinkRegistro(empresa);
-    backendInputAjustes.value = getBackendUrl();
-    cargarClientes();
-    cargarEstadisticas();
-    cargarEstadisticasAvanzadas();
-    cargarVisitasSemana();
-  }
-
-  function mostrarLogin(){
-    setToken('');
-    setEmpresaCache(null);
-    authView.hidden = false;
-    appShell.classList.remove('show');
-    detenerCamara();
-  }
-
-  document.getElementById('logoutBtn').addEventListener('click', mostrarLogin);
-  document.getElementById('logoutBtnAjustes').addEventListener('click', mostrarLogin);
-
-  // "Cambiar contraseña" en Ajustes reusa el flujo de "olvidé mi contraseña"
-  // (código por correo) — es el único mecanismo de cambio de password que ya
-  // existe en el backend, así que no se inventa uno nuevo: se cierra sesión
-  // y se abre esa vista con el email ya puesto.
-  document.getElementById('cambiarPasswordBtn').addEventListener('click', function(){
-    var empresa = getEmpresaCache();
-    var email = empresa ? empresa.email : '';
-    mostrarLogin();
-    authMode = 'forgot';
-    pintarAuthMode();
-    if(email) document.getElementById('forgotEmail').value = email;
-  });
-
-  // ---- mostrar/ocultar contraseña (aplica a login, registro y reset) ----
-  document.querySelectorAll('.pw-toggle').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var input = document.getElementById(btn.dataset.target);
-      if(!input) return;
-      var mostrando = input.type === 'text';
-      input.type = mostrando ? 'password' : 'text';
-      btn.querySelector('.icon-eye').hidden = !mostrando;
-      btn.querySelector('.icon-eye-off').hidden = mostrando;
-      btn.setAttribute('aria-label', mostrando ? 'Mostrar contraseña' : 'Ocultar contraseña');
-    });
-  });
-
-  // ---- login / registro / olvidé mi contraseña (toggle entre las 3 vistas) ----
-  var loginForm = document.getElementById('loginForm');
-  var registerForm = document.getElementById('registerForm');
-  var forgotForm = document.getElementById('forgotForm');
-  var toggleAuth = document.getElementById('toggleAuth');
-  var forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
-  var backToLoginBtn = document.getElementById('backToLoginBtn');
-  var authTitle = document.getElementById('authTitle');
-  var authSub = document.getElementById('authSub');
-  var authMode = 'login'; // 'login' | 'register' | 'forgot'
-
-  function pintarAuthMode(){
-    loginForm.hidden = authMode !== 'login';
-    registerForm.hidden = authMode !== 'register';
-    forgotForm.hidden = authMode !== 'forgot';
-    toggleAuth.hidden = authMode === 'forgot';
-    if(authMode === 'login'){
-      authTitle.textContent = 'Entrar a tu panel';
-      authSub.textContent = 'Solo tú ves esta información — cada negocio tiene su propia cuenta.';
-      toggleAuth.textContent = '¿No tienes cuenta? Crea una';
-    } else if(authMode === 'register'){
-      authTitle.textContent = 'Crea tu cuenta';
-      authSub.textContent = 'Esto envía tu solicitud de suscripción a ARGAYES. En cuanto la aprobemos, podrás entrar a tu panel.';
-      toggleAuth.textContent = '¿Ya tienes cuenta? Inicia sesión';
-    } else {
-      authTitle.textContent = 'Recuperar contraseña';
-      authSub.textContent = 'Solo para negocios — si eres cliente, tu tarjeta de lealtad no usa contraseña.';
-      document.getElementById('forgotStep1').hidden = false;
-      document.getElementById('forgotStep2').hidden = true;
-      document.getElementById('forgotSentHint').classList.remove('show');
-      document.getElementById('forgotError').classList.remove('show');
-      document.getElementById('resetError').classList.remove('show');
-      document.getElementById('resetCode').value = '';
-      document.getElementById('resetNewPassword').value = '';
-      document.getElementById('resetConfirmPassword').value = '';
-    }
-  }
-
-  toggleAuth.addEventListener('click', function(){
-    authMode = authMode === 'login' ? 'register' : 'login';
-    pintarAuthMode();
-  });
-  forgotPasswordBtn.addEventListener('click', function(){
-    authMode = 'forgot';
-    pintarAuthMode();
-  });
-  backToLoginBtn.addEventListener('click', function(){
-    authMode = 'login';
-    pintarAuthMode();
-  });
-
-  var ultimoEmailReset = '';
-  async function enviarCodigoReset(){
-    var email = document.getElementById('forgotEmail').value.trim();
-    var err = document.getElementById('forgotError');
-    var hint = document.getElementById('forgotSentHint');
-    err.classList.remove('show');
-    if(!email){
-      err.textContent = 'Escribe tu email.';
-      err.classList.add('show');
-      return;
-    }
-    var btn = document.getElementById('sendResetCodeBtn');
-    btn.disabled = true;
-    try {
-      await api('/api/auth/olvide-password', {
-        method: 'POST',
-        body: JSON.stringify({ email: email })
-      });
-      ultimoEmailReset = email;
-      hint.classList.add('show');
-      document.getElementById('forgotStep1').hidden = true;
-      document.getElementById('forgotStep2').hidden = false;
-    } catch(e){
-      err.textContent = e.message;
-      err.classList.add('show');
-    } finally {
-      btn.disabled = false;
-    }
-  }
-  document.getElementById('sendResetCodeBtn').addEventListener('click', enviarCodigoReset);
-  document.getElementById('resendCodeBtn').addEventListener('click', async function(){
-    var err = document.getElementById('resetError');
-    err.classList.remove('show');
-    try {
-      await api('/api/auth/olvide-password', {
-        method: 'POST',
-        body: JSON.stringify({ email: ultimoEmailReset })
-      });
-      err.textContent = 'Te mandamos un código nuevo.';
-      err.style.color = 'var(--good)';
-      err.classList.add('show');
-    } catch(e){
-      err.style.color = '';
-      err.textContent = e.message;
-      err.classList.add('show');
-    }
-  });
-
-  forgotForm.addEventListener('submit', async function(ev){
-    ev.preventDefault();
-    if(document.getElementById('forgotStep2').hidden) return;
-    var err = document.getElementById('resetError');
-    err.style.color = '';
-    err.classList.remove('show');
-    var codigo = document.getElementById('resetCode').value.trim();
-    var nueva = document.getElementById('resetNewPassword').value;
-    var confirmar = document.getElementById('resetConfirmPassword').value;
-    if(nueva !== confirmar){
-      err.textContent = 'Las dos contraseñas no coinciden.';
-      err.classList.add('show');
-      return;
-    }
-    if(nueva.length < 6){
-      err.textContent = 'La contraseña debe tener al menos 6 caracteres.';
-      err.classList.add('show');
-      return;
-    }
-    try {
-      await api('/api/auth/restablecer-password', {
-        method: 'POST',
-        body: JSON.stringify({ email: ultimoEmailReset, codigo: codigo, nuevaPassword: nueva })
-      });
-      authMode = 'login';
-      pintarAuthMode();
-      document.getElementById('loginEmail').value = ultimoEmailReset;
-      var loginErr = document.getElementById('loginError');
-      loginErr.textContent = 'Contraseña actualizada — ya puedes iniciar sesión.';
-      loginErr.style.color = 'var(--good)';
-      loginErr.classList.add('show');
-    } catch(e){
-      err.textContent = e.message;
-      err.classList.add('show');
-    }
-  });
-
-  loginForm.addEventListener('submit', async function(ev){
-    ev.preventDefault();
-    var err = document.getElementById('loginError');
-    err.style.color = '';
-    err.classList.remove('show');
-    try {
-      var data = await api('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({
-          email: document.getElementById('loginEmail').value.trim(),
-          password: document.getElementById('loginPassword').value
-        })
-      });
-      setToken(data.token);
-      mostrarDash(data.empresa);
-    } catch(e){
-      err.textContent = e.message;
-      err.classList.add('show');
-    }
-  });
-
-  registerForm.addEventListener('submit', async function(ev){
-    ev.preventDefault();
-    var err = document.getElementById('registerError');
-    err.style.color = '';
-    err.classList.remove('show');
-    try {
-      var emailRegistrado = document.getElementById('regEmail').value.trim();
-      var data = await api('/api/auth/registro', {
-        method: 'POST',
-        body: JSON.stringify({
-          nombre: document.getElementById('regNombre').value.trim(),
-          email: emailRegistrado,
-          password: document.getElementById('regPassword').value,
-          recompensa: document.getElementById('regRecompensa').value.trim(),
-          umbral: Math.min(20, Math.max(1, Number(document.getElementById('regUmbral').value) || 10))
-        })
-      });
-      registerForm.reset();
-      authMode = 'login';
-      pintarAuthMode();
-      document.getElementById('loginEmail').value = emailRegistrado;
-      var loginErr = document.getElementById('loginError');
-      loginErr.style.color = 'var(--good)';
-      loginErr.textContent = data.mensaje || 'Solicitud de suscripción enviada. Te avisaremos en cuanto tu cuenta sea aprobada.';
-      loginErr.classList.add('show');
-    } catch(e){
-      err.textContent = e.message;
-      err.classList.add('show');
-    }
-  });
-
-  // ======================================================================
-  // Tarjeta de fidelidad: pestañas, vista previa en vivo y guardado
-  // ======================================================================
-  var tarjeta = {
-    nombre: '', logoUrl: null, fuente: 'IBM Plex Sans',
-    color: '#b8872b', colorBoton: '#1b1f23',
-    selloForma: 'circulo', selloTamano: 'mediano',
-    recompensa: '', umbral: 10
-  };
-
-  // Cada pestaña (Marca, Colores, Sellos, Recompensa, Foto) tiene su propio
-  // botón "Guardar cambios", pero "tarjeta" lleva TODOS los campos en vivo
-  // sin importar en qué pestaña estés parado. Antes cada botón solo mandaba
-  // los campos de su propia pestaña, y como cargarTarjetaDesdeEmpresa()
-  // vuelve a llenar TODO el formulario con lo que regresa el servidor, lo
-  // editado en las otras pestañas (que nunca se mandó) se veía "borrado" —
-  // como si no se hubiera hecho nada. Por eso cualquier botón manda siempre
-  // el paquete completo: así el negocio puede editar varias pestañas y con
-  // un solo clic en cualquiera de ellas queda todo guardado.
-  function datosTarjetaParaGuardar(){
-    return {
-      nombre: (tarjeta.nombre || '').trim(),
-      fuente: tarjeta.fuente,
-      logoUrl: tarjeta.logoUrl,
-      color: tarjeta.color,
-      colorBoton: tarjeta.colorBoton,
-      selloForma: tarjeta.selloForma,
-      selloTamano: tarjeta.selloTamano,
-      recompensa: (tarjeta.recompensa || '').trim(),
-      umbral: Math.min(20, Math.max(1, Number(tarjeta.umbral) || 10))
-    };
-  }
-
-  function cargarTarjetaDesdeEmpresa(empresa){
-    tarjeta.nombre = empresa.nombre || '';
-    tarjeta.logoUrl = empresa.logoUrl || null;
-    tarjeta.fuente = empresa.fuente || 'IBM Plex Sans';
-    tarjeta.color = empresa.color || '#b8872b';
-    tarjeta.colorBoton = empresa.colorBoton || '#1b1f23';
-    tarjeta.selloForma = empresa.selloForma || 'circulo';
-    tarjeta.selloTamano = empresa.selloTamano || 'mediano';
-    tarjeta.recompensa = empresa.recompensa || '';
-    // Por si el negocio ya tenía guardado un umbral fuera de 1-20 de antes de
-    // que existiera este límite (como pasó aquí: se guardó un umbral de 765),
-    // se recorta al mostrarlo — así no se intenta dibujar cientos de sellos.
-    tarjeta.umbral = Math.min(20, Math.max(1, Number(empresa.umbral) || 10));
-
-    document.getElementById('cfgNombre').value = tarjeta.nombre;
-    document.getElementById('cfgFuente').value = tarjeta.fuente;
-    document.getElementById('cfgColor').value = tarjeta.color;
-    document.getElementById('cfgColorTxt').value = tarjeta.color;
-    document.getElementById('cfgColorBoton').value = tarjeta.colorBoton;
-    document.getElementById('cfgColorBotonTxt').value = tarjeta.colorBoton;
-    document.getElementById('cfgRecompensa').value = tarjeta.recompensa;
-    document.getElementById('cfgUmbral').value = tarjeta.umbral;
-    marcarFormaSeleccionada(tarjeta.selloForma);
-    marcarSeleccionado('selloTamanoGrid', tarjeta.selloTamano);
-    pintarLogoDropzone();
-    pintarTarjetaPreview();
-  }
-
-  function marcarSeleccionado(contenedorId, valor){
-    document.querySelectorAll('#' + contenedorId + ' > *').forEach(function(el){
-      el.classList.toggle('active', el.dataset.valor === valor);
-    });
-  }
-
-  var TAMANOS_PX = { pequeno: 22, mediano: 30, grande: 40 };
-
-  // Catálogo de sellos extra, agrupado para el panel "Más +" — comida y
-  // bebida, y negocios/servicios comunes. Debe tener EXACTAMENTE los
-  // mismos slugs que SELLO_FORMAS_VALIDAS en lib/db.js — si un slug no
-  // está también allá, el backend lo rechaza silenciosamente al guardar
-  // (vuelve al valor por defecto).
-  var CATALOGO_SELLOS_EXTRA = [
-    { grupo: 'Comida y bebida', items: [
-      ['pizza','🍕','Pizza'], ['hamburguesa','🍔','Hamburguesa'], ['hotdog','🌭','Hot dog'],
-      ['taco','🌮','Taco'], ['burrito','🌯','Burrito'], ['sushi','🍣','Sushi'], ['bento','🍱','Bento'],
-      ['ramen','🍜','Ramen'], ['ensalada','🥗','Ensalada'], ['papas','🍟','Papas'], ['pollo','🍗','Pollo'],
-      ['carne','🥩','Carne'], ['sandwich','🥪','Sándwich'], ['cuernito','🥐','Cuernito'], ['bagel','🥯','Bagel'],
-      ['pan','🍞','Pan'], ['queso','🧀','Queso'], ['hotcakes','🥞','Hotcakes'], ['waffle','🧇','Waffle'],
-      ['huevo','🍳','Huevo'], ['dona','🍩','Dona'], ['galleta','🍪','Galleta'], ['pastel','🎂','Pastel'],
-      ['cupcake','🧁','Cupcake'], ['rebanada','🍰','Rebanada'], ['chocolate','🍫','Chocolate'],
-      ['dulce','🍬','Dulce'], ['paleta','🍭','Paleta'], ['helado','🍦','Helado'], ['copahelado','🍨','Copa helado'],
-      ['raspado','🍧','Raspado'], ['sandia','🍉','Sandía'], ['fresa','🍓','Fresa'], ['uvas','🍇','Uvas'],
-      ['limon','🍋','Limón'], ['aguacate','🥑','Aguacate'], ['cafe','☕','Café'], ['te','🍵','Té'],
-      ['bubbletea','🧋','Bubble tea'], ['refresco','🥤','Refresco'], ['cerveza','🍺','Cerveza'],
-      ['vino','🍷','Vino'], ['coctel','🍸','Coctel'], ['brindis','🥂','Brindis'], ['champan','🍾','Champán']
-    ]},
-    { grupo: 'Negocios y servicios', items: [
-      ['tijeras','✂️','Tijeras'], ['barberia','💈','Barbería'], ['corte','💇','Corte'], ['unas','💅','Uñas'],
-      ['labial','💄','Labial'], ['locion','🧴','Loción'], ['jabon','🧼','Jabón'], ['lavanderia','🧺','Lavandería'],
-      ['camisa','👕','Camisa'], ['vestido','👗','Vestido'], ['tenis','👟','Tenis'], ['bolsa','👜','Bolsa'],
-      ['anillo','💍','Anillo'], ['lentes','🕶️','Lentes'], ['reloj','⌚','Reloj'], ['celular','📱','Celular'],
-      ['laptop','💻','Laptop'], ['impresion','🖨️','Impresión'], ['camara','📷','Cámara'],
-      ['videojuego','🎮','Videojuego'], ['libros','📚','Libros'], ['pluma','🖊️','Pluma'], ['arte','🎨','Arte'],
-      ['musica','🎵','Música'], ['cine','🎬','Cine'], ['gym','🏋️','Gym'], ['futbol','⚽','Fútbol'],
-      ['basquet','🏀','Básquet'], ['yoga','🧘','Yoga'], ['auto','🚗','Auto'], ['bici','🚲','Bici'],
-      ['gasolina','⛽','Gasolina'], ['mascota','🐾','Mascota'], ['perro','🐶','Perro'], ['gato','🐱','Gato'],
-      ['planta','🌿','Planta'], ['flor','🌸','Flor'], ['ramo','💐','Ramo'], ['regalo','🎁','Regalo'],
-      ['globo','🎈','Globo'], ['fiesta','🎉','Fiesta'], ['casa','🏠','Casa'], ['llave','🔑','Llave'],
-      ['herramientas','🛠️','Herramientas'], ['tuercas','🔧','Tuercas'], ['foco','💡','Foco'],
-      ['salud','🏥','Salud'], ['medicina','💊','Medicina'], ['dental','🦷','Dental'], ['spa','💆','Spa'],
-      ['bano','🛀','Baño']
-    ]}
-  ];
-  var EMOJI_SELLOS = {};
-  CATALOGO_SELLOS_EXTRA.forEach(function(g){ g.items.forEach(function(it){ EMOJI_SELLOS[it[0]] = it[1]; }); });
-
-  function svgSello(forma, relleno, px){
-    if(EMOJI_SELLOS[forma]){
-      var atenuado = relleno ? '' : 'opacity:.35;filter:grayscale(60%);';
-      return '<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;' +
-        'font-size:' + Math.round((px || 30) * 0.82) + 'px;line-height:1;' + atenuado + '">' + EMOJI_SELLOS[forma] + '</span>';
-    }
-    var comun = 'viewBox="0 0 24 24"';
-    if(!relleno){
-      if(forma === 'estrella') return '<svg ' + comun + ' fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.9 6.3 6.9.9-5 4.8 1.3 6.8L12 17.6 5.9 20.8l1.3-6.8-5-4.8 6.9-.9z"/></svg>';
-      if(forma === 'corazon') return '<svg ' + comun + ' fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20.3s-7.8-4.7-9.8-9.3C.9 7.6 2.6 4 6.2 4c2 0 3.5 1.1 4.3 2.6.3.5.5 1 .5 1 0 0 .2-.5.5-1C12.3 5.1 13.8 4 15.8 4c3.6 0 5.3 3.6 4 7-2 4.6-9.8 9.3-9.8 9.3z"/></svg>';
-      if(forma === 'cuadrado') return '<svg ' + comun + ' fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="4"/></svg>';
-      return '<svg ' + comun + ' fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>';
-    }
-    if(forma === 'estrella') return '<svg ' + comun + ' fill="currentColor"><path d="M12 2l2.9 6.3 6.9.9-5 4.8 1.3 6.8L12 17.6 5.9 20.8l1.3-6.8-5-4.8 6.9-.9z"/></svg>';
-    if(forma === 'corazon') return '<svg ' + comun + ' fill="currentColor"><path d="M12 20.3s-7.8-4.7-9.8-9.3C.9 7.6 2.6 4 6.2 4c2 0 3.5 1.1 4.3 2.6.3.5.5 1 .5 1 0 0 .2-.5.5-1C12.3 5.1 13.8 4 15.8 4c3.6 0 5.3 3.6 4 7-2 4.6-9.8 9.3-9.8 9.3z"/></svg>';
-    if(forma === 'cuadrado') return '<svg ' + comun + ' fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="4"/></svg>';
-    return '<svg ' + comun + ' fill="currentColor"><circle cx="12" cy="12" r="9"/></svg>';
-  }
-
-  function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, function(c){
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
-    });
-  }
-
-  function pintarTarjetaPreview(){
-    var card = document.getElementById('tcCard');
-    card.style.background = tarjeta.color;
-    card.style.fontFamily = "'" + tarjeta.fuente + "', " + 'var(--font-body)';
-
-    document.getElementById('tcNombre').textContent = tarjeta.nombre || 'Nombre de tu negocio';
-    var logoWrap = document.getElementById('tcLogoWrap');
-    logoWrap.innerHTML = tarjeta.logoUrl
-      ? '<img src="' + tarjeta.logoUrl + '" alt="">'
-      : '';
-
-    var umbral = Math.min(20, Math.max(1, Number(tarjeta.umbral) || 10));
-    var ejemploSellos = Math.min(3, umbral); // ejemplo de un cliente a medio camino
-    document.getElementById('tcContador').textContent = ejemploSellos + '/' + umbral;
-
-    var px = TAMANOS_PX[tarjeta.selloTamano] || TAMANOS_PX.mediano;
-    var grid = document.getElementById('tcSellosGrid');
-    var html = '';
-    for(var i = 0; i < umbral; i++){
-      var lleno = i < ejemploSellos;
-      html += '<span style="width:' + px + 'px;height:' + px + 'px;display:flex;color:' + (lleno ? '#fff' : 'rgba(255,255,255,.45)') + '">' + svgSello(tarjeta.selloForma, lleno, px) + '</span>';
-    }
-    grid.innerHTML = html;
-
-    document.getElementById('tcRecompensa').textContent = tarjeta.recompensa || 'Sin definir todavía';
-
-    var qrWrap = document.getElementById('tcQrWrap');
-    qrWrap.innerHTML = '';
-    try {
-      new QRCode(qrWrap, {
-        text: 'EJEMPLO-' + (getEmpresaCache() ? getEmpresaCache().id : 'demo'),
-        width: 72, height: 72,
-        colorDark: tarjeta.colorBoton || '#1b1f23',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M
-      });
-    } catch(e){ /* si la librería no carga, se deja el espacio vacío */ }
-
-    // Los botones de "primary" dentro de este formulario no deben pintarse
-    // del color de la tarjeta — solo es una referencia visual que se usa en
-    // la vista previa y en el color del QR.
-  }
-
-  // Actualiza las 3 vistas que muestran el logo a la vez (barra lateral,
-  // pestaña Marca y Ajustes) — es el mismo archivo en los 3 lados, así que
-  // cambiarlo en cualquiera de los 3 se ve reflejado de inmediato en todos.
-  function pintarLogoDropzone(){
-    [['dzAvatarImg','dzAvatarPlaceholder'], ['ajustesAvatarImg','ajustesAvatarPlaceholder']].forEach(function(par){
-      var img = document.getElementById(par[0]);
-      var placeholder = document.getElementById(par[1]);
-      if(tarjeta.logoUrl){
-        img.src = tarjeta.logoUrl; img.hidden = false; placeholder.hidden = true;
-      } else {
-        img.hidden = true; img.removeAttribute('src'); placeholder.hidden = false;
-      }
-    });
-    pintarAvatarSidebar({ logoUrl: tarjeta.logoUrl });
-  }
-
-  // ---- pestañas de la tarjeta ----
-  document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      document.querySelectorAll('.tab-btn[data-tab]').forEach(function(b){ b.classList.remove('active'); });
-      document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
-      btn.classList.add('active');
-      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
-    });
-  });
-
-  // ---- Marca: nombre, tipografía y logo (arrastrar y soltar) ----
-  document.getElementById('cfgNombre').addEventListener('input', function(){
-    tarjeta.nombre = this.value;
-    pintarTarjetaPreview();
-  });
-  document.getElementById('cfgFuente').addEventListener('change', function(){
-    tarjeta.fuente = this.value;
-    pintarTarjetaPreview();
-  });
-
-  var LOGO_MAX_BYTES = 8 * 1024 * 1024;
-  var logoErrorEl = document.getElementById('logoError');
-  var logoDropzone = document.getElementById('logoDropzone');
-  var logoFileInput = document.getElementById('logoFileInput');
-
-  function redimensionarImagen(file, maxDim, callback){
-    var reader = new FileReader();
-    reader.onload = function(){
-      var img = new Image();
-      img.onload = function(){
-        var w = img.width, h = img.height;
-        if(w > maxDim || h > maxDim){
-          var ratio = Math.min(maxDim / w, maxDim / h);
-          w = Math.round(w * ratio); h = Math.round(h * ratio);
-        }
-        var canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        callback(canvas.toDataURL('image/png'));
-      };
-      img.onerror = function(){ callback(null); };
-      img.src = reader.result;
-    };
-    reader.onerror = function(){ callback(null); };
-    reader.readAsDataURL(file);
-  }
-
-  function procesarArchivoLogo(file){
-    if(!file) return;
-    logoErrorEl.hidden = true;
-    if(file.size > LOGO_MAX_BYTES){
-      logoErrorEl.hidden = false;
-      return;
-    }
-    // Se reduce a 480px de lado máximo antes de convertir a base64: un logo
-    // no necesita más resolución que esa, y así el archivo que se guarda en
-    // la base de datos pesa mucho menos que la foto original del celular.
-    redimensionarImagen(file, 480, function(dataUrl){
-      if(!dataUrl){ logoErrorEl.hidden = false; return; }
-      tarjeta.logoUrl = dataUrl;
-      pintarLogoDropzone();
-      pintarTarjetaPreview();
-    });
-  }
-
-  logoDropzone.addEventListener('click', function(){ logoFileInput.click(); });
-  logoFileInput.addEventListener('change', function(){
-    procesarArchivoLogo(logoFileInput.files[0]);
-    logoFileInput.value = '';
-  });
-  ['dragenter','dragover'].forEach(function(evName){
-    logoDropzone.addEventListener(evName, function(ev){
-      ev.preventDefault();
-      logoDropzone.classList.add('drag');
-    });
-  });
-  ['dragleave','drop'].forEach(function(evName){
-    logoDropzone.addEventListener(evName, function(ev){
-      ev.preventDefault();
-      logoDropzone.classList.remove('drag');
-    });
-  });
-  logoDropzone.addEventListener('drop', function(ev){
-    var file = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0];
-    if(file) procesarArchivoLogo(file);
-  });
-
-  // ---- el mismo dropzone, repetido en Ajustes ----
-  var ajustesLogoDropzone = document.getElementById('ajustesLogoDropzone');
-  var ajustesLogoFileInput = document.getElementById('ajustesLogoFileInput');
-  var ajustesLogoErrorEl = document.getElementById('ajustesLogoError');
-
-  function procesarArchivoLogoAjustes(file){
-    if(!file) return;
-    ajustesLogoErrorEl.hidden = true;
-    if(file.size > LOGO_MAX_BYTES){
-      ajustesLogoErrorEl.hidden = false;
-      return;
-    }
-    redimensionarImagen(file, 480, function(dataUrl){
-      if(!dataUrl){ ajustesLogoErrorEl.hidden = false; return; }
-      tarjeta.logoUrl = dataUrl;
-      pintarLogoDropzone();
-      pintarTarjetaPreview();
-    });
-  }
-
-  ajustesLogoDropzone.addEventListener('click', function(){ ajustesLogoFileInput.click(); });
-  ajustesLogoFileInput.addEventListener('change', function(){
-    procesarArchivoLogoAjustes(ajustesLogoFileInput.files[0]);
-    ajustesLogoFileInput.value = '';
-  });
-  ['dragenter','dragover'].forEach(function(evName){
-    ajustesLogoDropzone.addEventListener(evName, function(ev){
-      ev.preventDefault();
-      ajustesLogoDropzone.classList.add('drag');
-    });
-  });
-  ['dragleave','drop'].forEach(function(evName){
-    ajustesLogoDropzone.addEventListener(evName, function(ev){
-      ev.preventDefault();
-      ajustesLogoDropzone.classList.remove('drag');
-    });
-  });
-  ajustesLogoDropzone.addEventListener('drop', function(ev){
-    var file = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0];
-    if(file) procesarArchivoLogoAjustes(file);
-  });
-
-  document.getElementById('saveFotoBtn').addEventListener('click', async function(){
-    var hint = document.getElementById('savedHintFoto');
-    hint.classList.remove('show');
-    try {
-      var empresa = await api('/api/mi-empresa', {
-        method: 'PATCH',
-        body: JSON.stringify(datosTarjetaParaGuardar())
-      });
-      setEmpresaCache(empresa);
-      cargarTarjetaDesdeEmpresa(empresa);
-      hint.classList.add('show');
-      setTimeout(function(){ hint.classList.remove('show'); }, 2000);
-    } catch(e){ alert(e.message); }
-  });
-
-  document.getElementById('saveMarcaBtn').addEventListener('click', async function(){
-    var hint = document.getElementById('savedHintMarca');
-    hint.classList.remove('show');
-    try {
-      var empresa = await api('/api/mi-empresa', {
-        method: 'PATCH',
-        body: JSON.stringify(datosTarjetaParaGuardar())
-      });
-      setEmpresaCache(empresa);
-      sessionName.textContent = empresa.nombre;
-      pintarAvatarSidebar(empresa);
-      cargarTarjetaDesdeEmpresa(empresa);
-      hint.classList.add('show');
-      setTimeout(function(){ hint.classList.remove('show'); }, 2000);
-    } catch(e){ alert(e.message); }
-  });
-
-  // ---- Colores ----
-  function sincronizarColor(inputColorId, inputTxtId, campo){
-    var inColor = document.getElementById(inputColorId);
-    var inTxt = document.getElementById(inputTxtId);
-    inColor.addEventListener('input', function(){
-      inTxt.value = this.value;
-      tarjeta[campo] = this.value;
-      pintarTarjetaPreview();
-    });
-    inTxt.addEventListener('input', function(){
-      var v = this.value.trim();
-      if(/^#[0-9a-f]{6}$/i.test(v)){
-        inColor.value = v;
-        tarjeta[campo] = v;
-        pintarTarjetaPreview();
-      }
-    });
-  }
-  sincronizarColor('cfgColor', 'cfgColorTxt', 'color');
-  sincronizarColor('cfgColorBoton', 'cfgColorBotonTxt', 'colorBoton');
-
-  document.getElementById('saveColoresBtn').addEventListener('click', async function(){
-    var hint = document.getElementById('savedHintColores');
-    hint.classList.remove('show');
-    try {
-      var empresa = await api('/api/mi-empresa', {
-        method: 'PATCH',
-        body: JSON.stringify(datosTarjetaParaGuardar())
-      });
-      setEmpresaCache(empresa);
-      cargarTarjetaDesdeEmpresa(empresa);
-      hint.classList.add('show');
-      setTimeout(function(){ hint.classList.remove('show'); }, 2000);
-    } catch(e){ alert(e.message); }
-  });
-
-  // ---- Sellos ----
-  // El catálogo extra ("Más +") vive en un contenedor aparte del de las 4
-  // formas de siempre, pero las dos son el MISMO campo (selloForma) — por
-  // eso marcarFormaSeleccionada actualiza ambos a la vez, en vez de usar
-  // el marcarSeleccionado genérico que solo conoce un contenedor.
-  var formaExtraGrid = document.getElementById('selloFormaGridExtra');
-  var masFormasBtn = document.getElementById('masFormasBtn');
-  CATALOGO_SELLOS_EXTRA.forEach(function(g){
-    var titulo = document.createElement('div');
-    titulo.className = 'shape-group-title';
-    titulo.textContent = g.grupo;
-    formaExtraGrid.appendChild(titulo);
-    var fila = document.createElement('div');
-    fila.className = 'shape-grid';
-    g.items.forEach(function(it){
-      var opt = document.createElement('div');
-      opt.className = 'shape-opt';
-      opt.dataset.valor = it[0];
-      opt.innerHTML = '<span style="font-size:22px;line-height:1">' + it[1] + '</span>' + it[2];
-      fila.appendChild(opt);
-    });
-    formaExtraGrid.appendChild(fila);
-  });
-  function marcarFormaSeleccionada(valor){
-    marcarSeleccionado('selloFormaGrid', valor);
-    document.querySelectorAll('#selloFormaGridExtra .shape-opt').forEach(function(el){
-      el.classList.toggle('active', el.dataset.valor === valor);
-    });
-    // Si lo que ya tenía guardado el negocio es uno de los de "Más +", se
-    // abre solo para que se vea marcado en vez de parecer que no hay nada
-    // elegido.
-    if(EMOJI_SELLOS[valor] && formaExtraGrid.hidden){
-      formaExtraGrid.hidden = false;
-      masFormasBtn.textContent = 'Menos –';
-    }
-  }
-  masFormasBtn.addEventListener('click', function(){
-    var abierto = !formaExtraGrid.hidden;
-    formaExtraGrid.hidden = abierto;
-    masFormasBtn.textContent = abierto ? 'Más +' : 'Menos –';
-  });
-
-  function cablearGrupoOpciones(contenedorId, campo){
-    // Usa "[data-valor]" (no "> *") para que también funcione con el
-    // catálogo extra de sellos, donde las opciones quedan anidadas dentro
-    // de un sub-grid por categoría y no como hijos directos del contenedor.
-    document.querySelectorAll('#' + contenedorId + ' [data-valor]').forEach(function(el){
-      el.addEventListener('click', function(){
-        tarjeta[campo] = el.dataset.valor;
-        if(campo === 'selloForma') marcarFormaSeleccionada(el.dataset.valor);
-        else marcarSeleccionado(contenedorId, el.dataset.valor);
-        pintarTarjetaPreview();
-      });
-    });
-  }
-  cablearGrupoOpciones('selloFormaGrid', 'selloForma');
-  cablearGrupoOpciones('selloFormaGridExtra', 'selloForma');
-  cablearGrupoOpciones('selloTamanoGrid', 'selloTamano');
-
-  document.getElementById('saveSellosBtn').addEventListener('click', async function(){
-    var hint = document.getElementById('savedHintSellos');
-    hint.classList.remove('show');
-    try {
-      var empresa = await api('/api/mi-empresa', {
-        method: 'PATCH',
-        body: JSON.stringify(datosTarjetaParaGuardar())
-      });
-      setEmpresaCache(empresa);
-      cargarTarjetaDesdeEmpresa(empresa);
-      hint.classList.add('show');
-      setTimeout(function(){ hint.classList.remove('show'); }, 2000);
-    } catch(e){ alert(e.message); }
-  });
-
-  // ---- Recompensa ----
-  document.getElementById('cfgRecompensa').addEventListener('input', function(){
-    tarjeta.recompensa = this.value;
-    pintarTarjetaPreview();
-  });
-  document.getElementById('cfgUmbral').addEventListener('input', function(){
-    // Tope de 20 también aquí: sin esto, mientras la persona todavía está
-    // escribiendo (ej. tecleó "7" de camino a "7" nada más, o se le fue la
-    // mano) la vista previa llegaba a dibujar cientos de sellos antes de que
-    // el backend pudiera avisar que el máximo es 20.
-    var n = Math.min(20, Math.max(1, Number(this.value) || 1));
-    tarjeta.umbral = n;
-    pintarTarjetaPreview();
-  });
-
-  document.getElementById('saveRecompensaBtn').addEventListener('click', async function(){
-    var hint = document.getElementById('savedHintRecompensa');
-    hint.classList.remove('show');
-    try {
-      var empresa = await api('/api/mi-empresa', {
-        method: 'PATCH',
-        body: JSON.stringify(datosTarjetaParaGuardar())
-      });
-      setEmpresaCache(empresa);
-      cargarTarjetaDesdeEmpresa(empresa);
-      hint.classList.add('show');
-      setTimeout(function(){ hint.classList.remove('show'); }, 2000);
-    } catch(e){ alert(e.message); }
-  });
-
-  // ======================================================================
-  // Clientes y estadísticas (Panel / Clientes)
-  // ======================================================================
-  async function cargarClientes(){
-    var tbody = document.getElementById('clientesBody');
-    var table = document.getElementById('clientesTable');
-    var empty = document.getElementById('clientesEmpty');
-    try {
-      var clientes = await api('/api/mis-clientes');
-      if(!clientes.length){ table.hidden = true; empty.hidden = false; return; }
-      table.hidden = false; empty.hidden = true;
-      tbody.innerHTML = '';
-      var backend = getBackendUrl();
-      clientes.forEach(function(c){
-        var tr = document.createElement('tr');
-        var fecha = (c.creado || '').slice(0,10);
-        var tarjetaUrl = 'mi-tarjeta.html?id=' + encodeURIComponent(c.id) + '&backend=' + encodeURIComponent(backend);
-        tr.innerHTML =
-          '<td>' + escapeHtml(c.nombre) + '</td>' +
-          '<td>' + escapeHtml(c.contacto || '—') + '</td>' +
-          '<td class="pts">' + c.puntos + '</td>' +
-          '<td>' + fecha + '</td>' +
-          '<td><a href="' + escapeHtml(tarjetaUrl) + '" target="_blank" rel="noopener">Ver</a></td>' +
-          '<td><button type="button" class="danger-link" data-borrar-cliente="' + escapeHtml(c.id) + '" data-nombre-cliente="' + escapeHtml(c.nombre) + '">Borrar</button></td>';
-        tbody.appendChild(tr);
-      });
-    } catch(e){
-      empty.textContent = 'No se pudo cargar: ' + e.message;
-      empty.hidden = false;
-      table.hidden = true;
-    }
-  }
-
-  async function cargarEstadisticas(){
-    try {
-      var s = await api('/api/mis-estadisticas');
-      document.getElementById('statClientes').textContent = s.totalClientes;
-      document.getElementById('statVisitas').textContent = s.visitasHoy;
-      document.getElementById('statCanjes').textContent = s.canjesPendientes;
-      document.getElementById('statPuntos').textContent = s.puntosRepartidos;
-    } catch(e){ /* los tiles se quedan en "—" si falla */ }
-  }
-
-  // ---- borrar cliente ----
-  var clientesBody = document.getElementById('clientesBody');
-  clientesBody.addEventListener('click', async function(ev){
-    var btn = ev.target.closest('[data-borrar-cliente]');
-    if(!btn) return;
-    var id = btn.dataset.borrarCliente;
-    var nombre = btn.dataset.nombreCliente;
-    if(!confirm('¿Borrar a "' + nombre + '"? Se pierden sus puntos, visitas y canjes — esto no se puede deshacer.')) return;
-    btn.disabled = true;
-    try {
-      await api('/api/mis-clientes/' + encodeURIComponent(id), { method: 'DELETE' });
-      cargarClientes();
-      cargarEstadisticas();
-      cargarEstadisticasAvanzadas();
-      cargarVisitasSemana();
-    } catch(e){
-      alert('No se pudo borrar: ' + e.message);
-      btn.disabled = false;
-    }
-  });
-
-  // ======================================================================
-  // "Tus números claros" — KPIs del periodo elegido + gráfica semanal
-  // ======================================================================
-  var periodoActual = 30;
-  var historicoActivo = false;
-
-  function pintarDelta(el, valor, unidad, invertirColor){
-    el.classList.remove('up','down','flat');
-    if(valor === null || valor === undefined){
-      el.textContent = 'Sin datos del periodo anterior';
-      el.classList.add('flat');
-      return;
-    }
-    var positivo = valor > 0;
-    var esBueno = invertirColor ? !positivo : positivo;
-    var signo = positivo ? '+' : '';
-    el.textContent = signo + valor + unidad + ' contra el periodo anterior';
-    if(valor === 0){ el.classList.add('flat'); }
-    else { el.classList.add(esBueno ? 'up' : 'down'); }
-  }
-
-  async function cargarEstadisticasAvanzadas(){
-    try {
-      var s = await api('/api/mis-estadisticas-avanzadas?dias=' + periodoActual);
-      document.getElementById('kpiVinieronNum').textContent = s.vinieron.actual;
-      document.getElementById('kpiVinieronCap').textContent = 'vinieron de ' + s.totalMiembros + ' miembros';
-      pintarDelta(document.getElementById('kpiVinieronDelta'), s.vinieron.deltaPct, '%', false);
-
-      document.getElementById('kpiRetencionNum').textContent = (s.retencion.pct === null ? '—' : s.retencion.pct + '%');
-      document.getElementById('kpiRetencionCap').textContent = 'regresan en ' + s.dias + ' días tras su primera visita';
-      pintarDelta(document.getElementById('kpiRetencionDelta'), s.retencion.deltaPuntos, ' pts', false);
-
-      document.getElementById('kpiNuevosNum').textContent = s.nuevosMiembros.actual;
-      document.getElementById('kpiNuevosCap').textContent = 'miembros nuevos en ' + s.dias + ' días';
-      pintarDelta(document.getElementById('kpiNuevosDelta'), s.nuevosMiembros.deltaPct, '%', false);
-
-      var frecuenciaVal = s.promedioDiasEntreVisitas.valor;
-      document.getElementById('kpiFrecuenciaNum').textContent = frecuenciaVal === null ? '—' : frecuenciaVal + ' días';
-      document.getElementById('kpiFrecuenciaCap').textContent = 'en promedio entre visitas';
-      // Menos días entre visitas = vienen más seguido = es una mejora, así
-      // que aquí el color se invierte: bajar el número es "verde".
-      pintarDelta(document.getElementById('kpiFrecuenciaDelta'), s.promedioDiasEntreVisitas.deltaDias, ' días', true);
-    } catch(e){ /* los KPIs se quedan en "—" si falla */ }
-  }
-
-  document.querySelectorAll('.periodo-pill').forEach(function(pill){
-    pill.addEventListener('click', function(){
-      document.querySelectorAll('.periodo-pill').forEach(function(p){ p.classList.remove('active'); });
-      pill.classList.add('active');
-      periodoActual = Number(pill.dataset.dias);
-      cargarEstadisticasAvanzadas();
-    });
-  });
-
-  // ---- gráfica: visitas por semana, apiladas (regresan abajo, primera visita arriba) ----
-  var COLOR_REGRESAN = { light: '#2a78d6', dark: '#3987e5' };
-  var COLOR_PRIMERA = { light: '#eb6834', dark: '#d95926' };
-  function colorActual(par){
-    var tema = root.getAttribute('data-theme');
-    var oscuro = tema === 'dark' || (tema !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    return oscuro ? par.dark : par.light;
-  }
-
-  // ---- descargar el QR de autorregistro como PNG (para imprimirlo) ----
-  document.getElementById('regQrDownloadBtn').addEventListener('click', function(){
-    var box = document.getElementById('regQrBox');
-    var canvas = box.querySelector('canvas');
-    var dataUrl = canvas ? canvas.toDataURL('image/png') : (box.querySelector('img') || {}).src;
-    if(!dataUrl) return;
-    var a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = 'qr-registro-argayes.png';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  });
-
-  // ---- link con marca propia (slug) ----
-  document.getElementById('slugGuardarBtn').addEventListener('click', async function(){
-    var btn = this;
-    var hint = document.getElementById('slugHint');
-    var guardadoHint = document.getElementById('slugGuardadoHint');
-    var valor = document.getElementById('slugInput').value.trim().toLowerCase();
-    hint.textContent = '';
-    hint.classList.remove('error');
-    guardadoHint.classList.remove('show');
-    if(!valor){
-      hint.textContent = 'Escribe un link antes de guardar.';
-      hint.classList.add('error');
-      return;
-    }
-    btn.disabled = true;
-    try {
-      var empresa = await api('/api/mi-empresa', {
-        method: 'PATCH',
-        body: JSON.stringify({ slug: valor })
-      });
-      setEmpresaCache(empresa);
-      actualizarLinkRegistro(empresa);
-      guardadoHint.classList.add('show');
-      setTimeout(function(){ guardadoHint.classList.remove('show'); }, 2000);
-    } catch(e){
-      hint.textContent = e.message;
-      hint.classList.add('error');
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  // ---- recordatorio manual a clientes inactivos ----
-  document.getElementById('recordatorioBtn').addEventListener('click', async function(){
-    var btn = this;
-    var hint = document.getElementById('recordatorioHint');
-    var dias = document.getElementById('recordatorioDias').value;
-    btn.disabled = true;
-    hint.classList.remove('error');
-    hint.textContent = 'Enviando…';
-    try {
-      var r = await api('/api/mis-recordatorios', { method: 'POST', body: JSON.stringify({ dias: Number(dias) }) });
-      if (r.totalInactivos === 0) {
-        hint.textContent = 'No hay clientes inactivos con correo registrado en ese periodo.';
-      } else {
-        hint.textContent = 'Enviado a ' + r.enviados + ' de ' + r.totalInactivos + ' clientes inactivos' + (r.fallidos.length ? ' (' + r.fallidos.length + ' fallaron)' : '') + '.';
-      }
-    } catch(e) {
-      hint.textContent = 'No se pudo enviar: ' + e.message;
-      hint.classList.add('error');
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  var toggleHistoricoBtn = document.getElementById('toggleHistoricoBtn');
-  toggleHistoricoBtn.addEventListener('click', function(){
-    historicoActivo = !historicoActivo;
-    toggleHistoricoBtn.textContent = historicoActivo ? 'Ver últimas 12 semanas' : 'Ver histórico';
-    document.getElementById('chartSub').textContent = historicoActivo
-      ? 'Desde que te diste de alta'
-      : 'Las últimas 12 semanas';
-    cargarVisitasSemana();
-  });
-
-  function dibujarGraficaSemanas(semanas){
-    var wrap = document.getElementById('chartWrap');
-    var tooltip = document.getElementById('chartTooltip');
-    // El tooltip se vuelve a crear abajo (innerHTML lo borraría), así que se
-    // guarda aparte y se reinserta al final.
-    var colorRegresan = colorActual(COLOR_REGRESAN);
-    var colorPrimera = colorActual(COLOR_PRIMERA);
-    document.getElementById('legendRegresanColor').style.background = colorRegresan;
-    document.getElementById('legendPrimeraColor').style.background = colorPrimera;
-
-    if(!semanas.length){
-      wrap.innerHTML = '<p class="chart-empty">Todavía no hay visitas registradas.</p>';
-      return;
-    }
-
-    var maxTotal = Math.max(1, ...semanas.map(function(s){ return s.primeras + s.regresan; }));
-    var ancho = Math.max(560, semanas.length * 34);
-    var alto = 160;
-    var ejeAlto = 130;
-    var anchoBarra = Math.min(26, (ancho / semanas.length) * 0.55);
-
-    var svg = '<svg viewBox="0 0 ' + ancho + ' ' + (alto + 20) + '" style="width:100%;height:' + (alto + 20) + 'px;overflow:visible" preserveAspectRatio="none">';
-    semanas.forEach(function(s, i){
-      var total = s.primeras + s.regresan;
-      var x = (i + 0.5) * (ancho / semanas.length) - anchoBarra / 2;
-      var hRegresan = total > 0 ? (s.regresan / maxTotal) * ejeAlto : 0;
-      var hPrimera = total > 0 ? (s.primeras / maxTotal) * ejeAlto : 0;
-      var gap = (hRegresan > 0 && hPrimera > 0) ? 2 : 0;
-      var yBase = ejeAlto;
-      var yRegresanTop = yBase - hRegresan;
-      var yPrimeraTop = yRegresanTop - gap - hPrimera;
-
-      svg += '<g class="barra-semana" data-i="' + i + '" style="cursor:pointer">';
-      svg += '<rect x="' + x + '" y="' + (yBase - Math.max(hRegresan, total > 0 ? 2 : 0)) + '" width="' + anchoBarra + '" height="' + Math.max(hRegresan, total > 0 ? 2 : 0) + '" rx="3" fill="' + colorRegresan + '"/>';
-      if(hPrimera > 0){
-        svg += '<rect x="' + x + '" y="' + yPrimeraTop + '" width="' + anchoBarra + '" height="' + hPrimera + '" rx="3" fill="' + colorPrimera + '"/>';
-      }
-      // Barra invisible más ancha, de toda la altura del eje, para que el
-      // mouse no tenga que acertarle exacto a la barra angosta.
-      svg += '<rect x="' + (x - 4) + '" y="0" width="' + (anchoBarra + 8) + '" height="' + ejeAlto + '" fill="transparent"/>';
-      svg += '</g>';
-
-      // Etiqueta del eje: solo el mes, y solo cuando cambia respecto a la barra anterior.
-      var fecha = new Date(s.semana + 'T00:00:00');
-      var mesTxt = fecha.toLocaleDateString('es-MX', { month: 'short' }).replace('.', '');
-      var mesAnterior = i > 0 ? new Date(semanas[i-1].semana + 'T00:00:00').getMonth() : -1;
-      if(fecha.getMonth() !== mesAnterior){
-        svg += '<text x="' + (x + anchoBarra / 2) + '" y="' + (ejeAlto + 16) + '" font-size="10" fill="var(--ink-dim)" text-anchor="middle">' + mesTxt + '</text>';
-      }
-    });
-    svg += '</svg>';
-
-    wrap.innerHTML = svg;
-    wrap.appendChild(tooltip);
-
-    wrap.querySelectorAll('.barra-semana').forEach(function(g){
-      g.addEventListener('mouseenter', function(ev){ mostrarTooltip(ev, g); });
-      g.addEventListener('mousemove', function(ev){ mostrarTooltip(ev, g); });
-      g.addEventListener('mouseleave', function(){ tooltip.classList.remove('show'); });
-    });
-
-    function mostrarTooltip(ev, g){
-      var i = Number(g.dataset.i);
-      var s = semanas[i];
-      var rectWrap = wrap.getBoundingClientRect();
-      tooltip.style.left = (ev.clientX - rectWrap.left) + 'px';
-      tooltip.style.top = (ev.clientY - rectWrap.top - 10) + 'px';
-      var fecha = new Date(s.semana + 'T00:00:00');
-      tooltip.innerHTML = 'Semana del ' + fecha.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) +
-        '<br>Primera visita: ' + s.primeras + ' · Regresan: ' + s.regresan;
-      tooltip.classList.add('show');
-    }
-  }
-
-  async function cargarVisitasSemana(){
-    try {
-      var semanas = await api('/api/mis-visitas-semana?historico=' + historicoActivo);
-      dibujarGraficaSemanas(semanas);
-    } catch(e){
-      document.getElementById('chartWrap').innerHTML = '<p class="chart-empty">No se pudo cargar: ' + e.message + '</p>';
-    }
-  }
-  // Si cambia el tema (claro/oscuro) mientras la gráfica ya está dibujada,
-  // se vuelve a pintar para usar los colores correctos de ese tema.
-  themeSelect.addEventListener('change', function(){ cargarVisitasSemana(); });
-
-  // ======================================================================
-  // Escáner — misma lógica que escanear.html, pero como sección del panel
-  // (usa la misma sesión: no vuelve a pedir login)
-  // ======================================================================
-  var html5QrCode = null;
-  var escaneando = false;
-  var escanerStartBtn = document.getElementById('escanerStartBtn');
-  var escanerStopBtn = document.getElementById('escanerStopBtn');
-  var escanerPlaceholder = document.getElementById('escanerPlaceholder');
-  var escanerHint = document.getElementById('escanerHint');
-
-  function escanerOcultarResultados(){
-    document.getElementById('escanerVisitaResult').hidden = true;
-    document.getElementById('escanerCanjeResult').hidden = true;
-    document.getElementById('escanerErrorResult').hidden = true;
-  }
-
-  async function iniciarCamara(){
-    escanerOcultarResultados();
-    escanerHint.classList.remove('error');
-    escanerHint.textContent = 'Apunta la cámara al código QR del cliente.';
-    try {
-      if(!html5QrCode){ html5QrCode = new Html5Qrcode('escanerReader'); }
-      escanerPlaceholder.hidden = true;
-      await html5QrCode.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 240, height: 240 } },
-        onScanSuccess,
-        function(){ /* onScanFailure: se ignora, sigue intentando frame a frame */ }
-      );
-      escaneando = true;
-      escanerStartBtn.hidden = true;
-      escanerStopBtn.hidden = false;
-    } catch(e){
-      escanerPlaceholder.hidden = false;
-      escanerHint.classList.add('error');
-      escanerHint.textContent = 'No se pudo abrir la cámara: ' + (e.message || e) + '. Revisa los permisos de cámara del navegador.';
-    }
-  }
-
-  async function detenerCamara(){
-    if(html5QrCode && escaneando){
-      try { await html5QrCode.stop(); } catch(e){}
-      escaneando = false;
-    }
-    escanerStartBtn.hidden = false;
-    escanerStopBtn.hidden = true;
-    escanerPlaceholder.hidden = false;
-  }
-
-  escanerStartBtn.addEventListener('click', iniciarCamara);
-  escanerStopBtn.addEventListener('click', detenerCamara);
-
-  var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  var procesando = false;
-
-  async function onScanSuccess(textoLeido){
-    if(procesando) return;
-    var clienteId = (textoLeido || '').trim();
-    if(!UUID_RE.test(clienteId)){
-      escanerMostrarError('Código no reconocido', 'Ese QR no es un código de cliente de ARGAYES.');
-      return;
-    }
-    procesando = true;
-    await detenerCamara();
-    await registrarVisita(clienteId);
-    procesando = false;
-  }
-
-  function escanerMostrarError(titulo, sub){
-    escanerOcultarResultados();
-    document.getElementById('escanerErrorTitle').textContent = titulo;
-    document.getElementById('escanerErrorSub').textContent = sub || '';
-    document.getElementById('escanerErrorResult').hidden = false;
-  }
-
-  document.getElementById('escanerReintentarBtn').addEventListener('click', function(){
-    escanerOcultarResultados();
-    iniciarCamara();
-  });
-  document.getElementById('escanerNuevoEscaneoBtn2').addEventListener('click', function(){
-    escanerOcultarResultados();
-    iniciarCamara();
-  });
-
-  function iconoSvg(nombre){
-    if(nombre === 'check'){
-      return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>';
-    }
-    return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 2 20h20z"/></svg>';
-  }
-
-  async function registrarVisita(clienteId){
-    var box = document.getElementById('escanerVisitaResult');
-    var icon = document.getElementById('escanerVisitaIcon');
-    var title = document.getElementById('escanerVisitaTitle');
-    var sub = document.getElementById('escanerVisitaSub');
-    var actions = document.getElementById('escanerVisitaActions');
-    actions.innerHTML = '';
-
-    try {
-      var r = await api('/api/visita', {
-        method: 'POST',
-        body: JSON.stringify({ clienteId: clienteId })
-      });
-      escanerOcultarResultados();
-      box.hidden = false;
-
-      if(r.listoParaCanje){
-        icon.className = 'result-icon warn';
-        icon.innerHTML = iconoSvg('gift');
-        title.textContent = '¡' + r.cliente.nombre + ' ya puede canjear su recompensa!';
-        sub.textContent = 'Puntos actuales: ' + r.cliente.puntos;
-        var btnCanjear = document.createElement('button');
-        btnCanjear.type = 'button';
-        btnCanjear.className = 'primary';
-        btnCanjear.textContent = 'Generar código de canje';
-        btnCanjear.addEventListener('click', function(){ generarCanje(clienteId); });
-        var btnOtro = document.createElement('button');
-        btnOtro.type = 'button';
-        btnOtro.className = 'ghost';
-        btnOtro.textContent = 'Escanear otro cliente';
-        btnOtro.addEventListener('click', function(){ escanerOcultarResultados(); iniciarCamara(); });
-        actions.appendChild(btnCanjear);
-        actions.appendChild(btnOtro);
-      } else {
-        icon.className = 'result-icon good';
-        icon.innerHTML = iconoSvg('check');
-        title.textContent = 'Punto sumado a ' + r.cliente.nombre;
-        sub.textContent = 'Puntos: ' + r.cliente.puntos + ' — se actualiza solo en su wallet.';
-        var btnOtro2 = document.createElement('button');
-        btnOtro2.type = 'button';
-        btnOtro2.className = 'primary';
-        btnOtro2.textContent = 'Escanear otro cliente';
-        btnOtro2.addEventListener('click', function(){ escanerOcultarResultados(); iniciarCamara(); });
-        actions.appendChild(btnOtro2);
-      }
-      cargarEstadisticas();
-      cargarClientes();
-    } catch(e){
-      var msg = e.message || 'Error desconocido';
-      var titulo = 'No se pudo registrar la visita';
-      if(/ya se registr[oó]/i.test(msg)) titulo = 'Ya se le sumó un punto hoy';
-      if(/no pertenece/i.test(msg)) titulo = 'Ese cliente es de otro negocio';
-      if(/no encontrado/i.test(msg)) titulo = 'Cliente no encontrado';
-      escanerMostrarError(titulo, msg);
-    }
-  }
-
-  var generandoCanje = false;
-  async function generarCanje(clienteId){
-    if(generandoCanje) return;
-    generandoCanje = true;
-    try {
-      var canje = await api('/api/canje', {
-        method: 'POST',
-        body: JSON.stringify({ clienteId: clienteId })
-      });
-      escanerOcultarResultados();
-      document.getElementById('escanerCanjeSub').textContent = 'Muéstraselo al cliente o confírmalo tú mismo al entregar la recompensa.';
-      document.getElementById('escanerCanjeCodigo').textContent = canje.codigo;
-      document.getElementById('escanerCanjeResult').hidden = false;
-      document.getElementById('escanerConfirmarCanjeBtn').onclick = function(){ confirmarCanje(canje.codigo); };
-    } catch(e){
-      escanerMostrarError('No se pudo generar el canje', e.message);
-    } finally {
-      generandoCanje = false;
-    }
-  }
-
-  async function confirmarCanje(codigo){
-    var btnConfirmar = document.getElementById('escanerConfirmarCanjeBtn');
-    if(btnConfirmar.disabled) return;
-    btnConfirmar.disabled = true;
-    try {
-      var r = await api('/api/canje/confirmar', {
-        method: 'POST',
-        body: JSON.stringify({ codigo: codigo })
-      });
-      escanerOcultarResultados();
-      var box = document.getElementById('escanerVisitaResult');
-      var icon = document.getElementById('escanerVisitaIcon');
-      icon.className = 'result-icon good';
-      icon.innerHTML = iconoSvg('check');
-      document.getElementById('escanerVisitaTitle').textContent = 'Canje confirmado';
-      document.getElementById('escanerVisitaSub').textContent = r.cliente ? ('Puntos restantes: ' + r.cliente.puntos) : 'Recompensa entregada.';
-      var actions = document.getElementById('escanerVisitaActions');
-      actions.innerHTML = '';
-      var btnOtro = document.createElement('button');
-      btnOtro.type = 'button';
-      btnOtro.className = 'primary';
-      btnOtro.textContent = 'Escanear otro cliente';
-      btnOtro.addEventListener('click', function(){ escanerOcultarResultados(); iniciarCamara(); });
-      actions.appendChild(btnOtro);
-      box.hidden = false;
-      cargarEstadisticas();
-      cargarClientes();
-    } catch(e){
-      var msg = e.message || 'Error desconocido';
-      var titulo = 'No se pudo confirmar el canje';
-      if(/ya_usado/i.test(msg)) titulo = 'Ese código ya se usó';
-      if(/codigo_no_existe/i.test(msg)) titulo = 'Código de canje no válido';
-      if(/no_pertenece/i.test(msg)) titulo = 'Ese código es de otro negocio';
-      escanerMostrarError(titulo, msg);
-    } finally {
-      btnConfirmar.disabled = false;
-    }
-  }
-
-  // ---- arranque: si ya hay sesión guardada, entra directo ----
-  var tokenGuardado = getToken();
-  var empresaGuardada = getEmpresaCache();
-  if(tokenGuardado && empresaGuardada){
-    mostrarDash(empresaGuardada);
-  }
-})();
-</script>
+    <h3 id="terminos">Términos y condiciones del servicio</h3>
+    <p>Última actualización: noviembre de 2026.</p>
+    <p>ARGAYES es una plataforma de lealtad digital operada por Angel Gabriel Hernández Aguilar ("ARGAYES", "nosotros"), que permite a negocios ("el Negocio", "tú") crear y administrar un programa de lealtad para sus propios clientes, usando tarjetas digitales compatibles con Apple Wallet y Google Wallet.</p>
+    <ul>
+      <li><strong>Suscripción y pago.</strong> El servicio tiene un costo de $800 MXN al mes por negocio, cobrado de forma recurrente a la tarjeta que registres, a través de nuestro proveedor de pagos. El cobro se mantiene activo hasta que canceles tu suscripción desde tu panel.</li>
+      <li><strong>Aprobación de cuentas.</strong> Toda solicitud de cuenta nueva pasa por una revisión antes de activarse. ARGAYES puede rechazar o dar de baja una cuenta que incumpla estos términos o la ley aplicable.</li>
+      <li><strong>Cancelación.</strong> Puedes cancelar tu suscripción en cualquier momento desde tu panel. El servicio sigue disponible hasta el final del periodo ya pagado; no se hacen reembolsos de periodos ya cobrados.</li>
+      <li><strong>Responsabilidad del Negocio.</strong> Eres responsable de contar con el consentimiento de tus propios clientes finales para registrar y usar sus datos dentro de tu programa de lealtad, y de cumplir con la normativa de protección de datos que te aplique frente a ellos.</li>
+      <li><strong>Disponibilidad del servicio.</strong> ARGAYES se ofrece "tal cual". Hacemos nuestro mejor esfuerzo para mantenerlo disponible y respaldado, pero no garantizamos un tiempo de actividad del 100% ni somos responsables de pérdidas de negocio derivadas de una interrupción del servicio.</li>
+      <li><strong>Cambios a estos términos.</strong> Podemos actualizar estos términos; los cambios importantes se avisarán por correo o dentro del panel antes de entrar en vigor.</li>
+    </ul>
+
+    <h3 id="privacidad">Aviso de privacidad</h3>
+    <p>Última actualización: noviembre de 2026.</p>
+    <p><strong>Responsable.</strong> Angel Gabriel Hernández Aguilar, operando bajo el nombre comercial ARGAYES, es responsable del tratamiento de tus datos personales conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP).</p>
+    <p><strong>Datos que recabamos.</strong> Del Negocio: nombre del negocio, nombre de contacto, correo electrónico y contraseña (almacenada de forma cifrada, nunca en texto plano). De los clientes finales del Negocio (capturados por el propio Negocio, no directamente por nosotros): nombre y un dato de contacto (teléfono o correo).</p>
+    <p><strong>Finalidades.</strong> Usamos estos datos para: operar tu cuenta y tu programa de lealtad, generar y actualizar las tarjetas digitales de tus clientes, enviarte avisos operativos del servicio (recuperación de contraseña, respaldos, estado de tu suscripción) y, si lo activas, enviar recordatorios a tus clientes en tu nombre.</p>
+    <p><strong>Con quién compartimos datos.</strong> No vendemos ni compartimos tus datos con terceros para fines publicitarios. Usamos proveedores que nos ayudan a operar el servicio (hospedaje del sistema, envío de correos transaccionales y procesamiento de pagos), quienes solo acceden a los datos necesarios para prestar ese servicio.</p>
+    <p><strong>Derechos ARCO.</strong> Puedes solicitar acceder, corregir, cancelar tus datos u oponerte a su uso, escribiéndonos por los medios de contacto al final de esta página.</p>
+    <p><strong>Cambios a este aviso.</strong> Cualquier cambio relevante se publicará en esta misma página.</p>
+  </div>
+</section>
+
+<section id="contacto" style="background:var(--surface-2);padding-bottom:88px">
+  <div class="wrap" style="text-align:center;max-width:480px">
+    <h2 class="section-title">¿Dudas antes de empezar?</h2>
+    <p class="section-sub">Escríbenos por WhatsApp y te respondemos directo.</p>
+    <a class="btn whatsapp" href="https://wa.me/5219984839441" target="_blank" rel="noopener">WhatsApp +52 998 483 9441</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>ARGAYES — Lealtad digital para negocios.</p>
+    <p><a href="#terminos">Términos y condiciones</a> · <a href="#privacidad">Aviso de privacidad</a> · <a href="https://wa.me/5219984839441" target="_blank" rel="noopener">Contacto</a></p>
+  </div>
+</footer>
+
+<a class="wa-float" href="https://wa.me/5219984839441" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp">💬</a>
+
+</body>
+</html>
