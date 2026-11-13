@@ -367,6 +367,7 @@
       <div class="rbrand" id="resBrand"></div>
       <div class="result-row">Cliente: <b id="resClient"></b></div>
       <div class="result-row">ID: <span class="code" id="resId"></span></div>
+      <p class="preview-note" id="yaExisteAviso" hidden style="border-color:var(--danger);color:var(--danger)"></p>
       <p class="preview-note" id="resNote"></p>
       <a href="#" class="copy-btn" id="addWalletLink" hidden style="text-decoration:none;display:inline-block;background:var(--accent);color:var(--accent-ink);border-color:var(--accent)">Agregar a Wallet</a>
       <a href="#" target="_blank" rel="noopener" class="copy-btn" id="verTarjetaLink" style="text-decoration:none;display:inline-block">Ver su tarjeta personalizada</a>
@@ -574,15 +575,22 @@
     try {
       // 1) Da de alta al cliente de verdad en el backend — a partir de
       // aquí ya aparece en "Mis clientes" del panel del negocio.
+      var nombreTecleado = custName.value.trim();
       var cliente = await api('/api/clientes', {
         method: 'POST',
         body: JSON.stringify({
           empresaId: empresaId,
-          nombre: custName.value.trim(),
+          nombre: nombreTecleado,
           contacto: custContact.value.trim(),
           consentimiento: custConsent.checked
         })
       });
+      // El backend evita duplicados: si ese teléfono/correo ya estaba
+      // registrado, regresa la tarjeta YA EXISTENTE de esa persona (con su
+      // nombre original) en vez de crear una nueva — para que no le queden
+      // dos tarjetas distintas al mismo cliente. Si eso pasó, se avisa aquí
+      // para que no parezca que se guardó mal el nombre que se tecleó.
+      var yaExistia = cliente.nombre !== nombreTecleado;
 
       // 2) El QR lleva el ID real del cliente — es lo que se escaneará
       // en tienda para sumarle visitas/puntos.
@@ -604,6 +612,13 @@
       resId.textContent = cliente.id;
       result.hidden = false;
       copyHint.hidden = true;
+      var yaExisteAviso = document.getElementById('yaExisteAviso');
+      if(yaExistia){
+        yaExisteAviso.textContent = 'Ese teléfono/correo ya estaba registrado como "' + cliente.nombre + '" — se usó su tarjeta ya existente (no se creó una nueva con el nombre "' + nombreTecleado + '").';
+        yaExisteAviso.hidden = false;
+      } else {
+        yaExisteAviso.hidden = true;
+      }
       // Link a la tarjeta personalizada (mi-tarjeta.html): es la que de verdad
       // refleja el diseño que el negocio armó en su panel (tipografía, forma y
       // tamaño de sellos) — el pase de Apple/Google Wallet no soporta eso.
