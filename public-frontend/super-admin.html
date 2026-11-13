@@ -103,8 +103,10 @@
   details.backend-settings summary{cursor:pointer}
   details.backend-settings .field{margin-top:8px}
 
-  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
-  @media (max-width:640px){ .stat-grid{grid-template-columns:repeat(1,1fr)} }
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+  @media (max-width:860px){ .stat-grid{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:480px){ .stat-grid{grid-template-columns:repeat(1,1fr)} }
+  .stat.pendiente .n{color:var(--accent)}
   .stat{
     background:var(--surface);border:1px solid var(--border);border-radius:12px;
     padding:16px;display:flex;flex-direction:column;gap:4px;min-width:0;
@@ -146,7 +148,30 @@
   button.toggle.activar{border-color:var(--good);color:var(--good)}
   button.toggle.desactivar{border-color:var(--danger);color:var(--danger)}
   button.toggle.aprobar{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft);font-weight:700}
+  button.toggle.ver{border-color:var(--ink-dim)}
   button.toggle:hover{filter:brightness(0.97)}
+  .row-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+  /* ---- modal de detalle de negocio ---- */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;
+    align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;z-index:20;
+  }
+  .modal-card{
+    width:100%;max-width:760px;background:var(--surface);border:1px solid var(--border);
+    border-radius:14px;padding:24px;
+  }
+  .modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px}
+  .modal-head h2{margin:0;font-size:18px;text-transform:none;letter-spacing:0;color:var(--ink)}
+  .modal-head p{margin:2px 0 0;font-size:13px;color:var(--ink-dim)}
+  .modal-close{
+    font-size:13px;font-weight:600;padding:6px 12px;border-radius:8px;
+    border:1px solid var(--border);background:var(--surface);color:var(--ink);cursor:pointer;flex-shrink:0;
+  }
+  .modal-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}
+  @media (max-width:560px){ .modal-stats{grid-template-columns:repeat(2,1fr)} }
+  .modal-stats .stat{padding:12px}
+  .modal-stats .stat .n{font-size:19px}
 
   /* ---- solicitudes pendientes: se resalta en dorado/amarillo a propósito,
      para que salte a la vista frente al resto de negocios ya conocidos ---- */
@@ -162,7 +187,10 @@
 
 <header>
   <div class="brand">ARGAYES<small>Super-admin · dueño de la plataforma</small></div>
-  <button class="ghost" id="logoutBtn" hidden>Cerrar sesión</button>
+  <div style="display:flex;gap:8px">
+    <button class="ghost" id="themeBtn" title="Cambiar tema">🌓 Tema</button>
+    <button class="ghost" id="logoutBtn" hidden>Cerrar sesión</button>
+  </div>
 </header>
 
 <main>
@@ -198,6 +226,7 @@
       <div class="stat"><span class="n" id="statTotal">—</span><span class="l">Negocios registrados</span></div>
       <div class="stat"><span class="n" id="statActivos">—</span><span class="l">Suscripciones activas</span></div>
       <div class="stat"><span class="n" id="statInactivos">—</span><span class="l">Suscripciones inactivas</span></div>
+      <div class="stat pendiente"><span class="n" id="statPendientes">—</span><span class="l">Solicitudes pendientes</span></div>
     </div>
 
     <div class="panel-section pendientes" id="pendientesSection" hidden>
@@ -222,6 +251,35 @@
       <p class="auth-error" id="listError"></p>
     </div>
   </section>
+
+  <!-- ---- Detalle de un negocio: sus clientes y su movimiento ---- -->
+  <div class="modal-backdrop" id="detalleModal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h2 id="detalleNombre">—</h2>
+          <p id="detalleEmail">—</p>
+        </div>
+        <button class="modal-close" id="detalleCerrar" type="button">Cerrar</button>
+      </div>
+
+      <div class="modal-stats">
+        <div class="stat"><span class="n" id="detStatClientes">—</span><span class="l">Clientes totales</span></div>
+        <div class="stat"><span class="n" id="detStatVisitas">—</span><span class="l">Visitas hoy</span></div>
+        <div class="stat"><span class="n" id="detStatCanjes">—</span><span class="l">Canjes pendientes</span></div>
+        <div class="stat"><span class="n" id="detStatPuntos">—</span><span class="l">Puntos repartidos</span></div>
+      </div>
+
+      <div class="table-wrap">
+        <table id="detalleClientesTable">
+          <thead><tr><th>Cliente</th><th>Contacto</th><th>Puntos</th><th>Alta</th></tr></thead>
+          <tbody id="detalleClientesBody"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="detalleClientesEmpty" hidden>Este negocio todavía no tiene clientes registrados.</p>
+      <p class="auth-error" id="detalleError"></p>
+    </div>
+  </div>
 </main>
 
 <script>
@@ -243,6 +301,22 @@
       else sessionStorage.removeItem('argayes-admin-secret');
     } catch(e){}
   }
+
+  // ---- tema claro/oscuro: ciclo manual -> claro -> oscuro -> automático (según el sistema) ----
+  function getTheme(){
+    try { return localStorage.getItem('argayes-admin-theme') || 'auto'; } catch(e){ return 'auto'; }
+  }
+  function aplicarTema(t){
+    if(t === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem('argayes-admin-theme', t); } catch(e){}
+  }
+  document.getElementById('themeBtn').addEventListener('click', function(){
+    var actual = getTheme();
+    var siguiente = actual === 'auto' ? 'light' : (actual === 'light' ? 'dark' : 'auto');
+    aplicarTema(siguiente);
+  });
+  aplicarTema(getTheme());
 
   var backendInput = document.getElementById('backendUrl');
   backendInput.value = getBackendUrl();
@@ -288,6 +362,8 @@
     var seccion = document.getElementById('pendientesSection');
     var body = document.getElementById('pendientesBody');
     body.innerHTML = '';
+
+    document.getElementById('statPendientes').textContent = pendientes.length;
 
     if(!pendientes.length){
       seccion.hidden = true;
@@ -380,6 +456,16 @@
       tr.appendChild(tdEstado);
 
       var tdBtn = document.createElement('td');
+      var acciones = document.createElement('div');
+      acciones.className = 'row-actions';
+
+      var verBtn = document.createElement('button');
+      verBtn.type = 'button';
+      verBtn.className = 'toggle ver';
+      verBtn.textContent = 'Ver';
+      verBtn.addEventListener('click', function(){ abrirDetalle(emp); });
+      acciones.appendChild(verBtn);
+
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'toggle ' + (activa ? 'desactivar' : 'activar');
@@ -396,10 +482,75 @@
           btn.disabled = false;
         });
       });
-      tdBtn.appendChild(btn);
+      acciones.appendChild(btn);
+
+      tdBtn.appendChild(acciones);
       tr.appendChild(tdBtn);
 
       body.appendChild(tr);
+    });
+  }
+
+  // ---- detalle de un negocio: sus clientes y su movimiento ----
+  var detalleModal = document.getElementById('detalleModal');
+
+  function cerrarDetalle(){
+    detalleModal.hidden = true;
+  }
+  document.getElementById('detalleCerrar').addEventListener('click', cerrarDetalle);
+  detalleModal.addEventListener('click', function(ev){
+    if(ev.target === detalleModal) cerrarDetalle();
+  });
+  document.addEventListener('keydown', function(ev){
+    if(ev.key === 'Escape' && !detalleModal.hidden) cerrarDetalle();
+  });
+
+  function abrirDetalle(emp){
+    document.getElementById('detalleNombre').textContent = emp.nombre || '—';
+    document.getElementById('detalleEmail').textContent = emp.email || '—';
+    ['detStatClientes','detStatVisitas','detStatCanjes','detStatPuntos'].forEach(function(id){
+      document.getElementById(id).textContent = '—';
+    });
+    var body = document.getElementById('detalleClientesBody');
+    var tabla = document.getElementById('detalleClientesTable');
+    var vacio = document.getElementById('detalleClientesEmpty');
+    var errorEl = document.getElementById('detalleError');
+    body.innerHTML = '';
+    tabla.hidden = true;
+    vacio.hidden = true;
+    errorEl.textContent = '';
+    errorEl.classList.remove('show');
+    detalleModal.hidden = false;
+
+    adminApi('/api/admin/empresas/' + emp.id + '/detalle').then(function(data){
+      var est = data.estadisticas || {};
+      document.getElementById('detStatClientes').textContent = est.totalClientes != null ? est.totalClientes : '—';
+      document.getElementById('detStatVisitas').textContent = est.visitasHoy != null ? est.visitasHoy : '—';
+      document.getElementById('detStatCanjes').textContent = est.canjesPendientes != null ? est.canjesPendientes : '—';
+      document.getElementById('detStatPuntos').textContent = est.puntosRepartidos != null ? est.puntosRepartidos : '—';
+
+      var clientes = data.clientes || [];
+      if(!clientes.length){
+        tabla.hidden = true;
+        vacio.hidden = false;
+        return;
+      }
+      tabla.hidden = false;
+      vacio.hidden = true;
+      clientes.forEach(function(c){
+        var tr = document.createElement('tr');
+        [c.nombre || '—', c.contacto || '—', (c.puntos != null ? c.puntos : 0),
+         c.creado ? new Date(c.creado).toLocaleDateString('es-MX') : '—'
+        ].forEach(function(valor){
+          var td = document.createElement('td');
+          td.textContent = valor;
+          tr.appendChild(td);
+        });
+        body.appendChild(tr);
+      });
+    }).catch(function(err){
+      errorEl.textContent = err.message;
+      errorEl.classList.add('show');
     });
   }
 

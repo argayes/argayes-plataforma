@@ -206,6 +206,21 @@ app.patch('/api/admin/empresas/:id/activa', requireAdmin, ah(async (req, res) =>
       res.json(sinDatosSensibles(empresa));
 }));
 
+// Detalle de un negocio para el panel de super-admin: sus datos, sus
+// clientes registrados (con puntos) y sus estadísticas de movimiento —
+// todo junto, para verlo desde una sola pantalla sin tener que entrar
+// con la cuenta del negocio.
+app.get('/api/admin/empresas/:id/detalle', requireAdmin, ah(async (req, res) => {
+      if (!esUuidValido(req.params.id)) return res.status(400).json({ error: 'Id inválido' });
+      const empresa = await db.obtenerEmpresa(req.params.id);
+      if (!empresa) return res.status(404).json({ error: 'Empresa no encontrada' });
+      const [clientes, estadisticas] = await Promise.all([
+              db.clientesDeEmpresa(req.params.id),
+              db.estadisticasDeEmpresa(req.params.id)
+            ]);
+      res.json({ empresa: sinDatosSensibles(empresa), clientes, estadisticas });
+}));
+
 // ---------- Panel: solo ve y toca lo de SU PROPIA empresa ----------
 app.get('/api/mi-empresa', requireAuth, ah(async (req, res) => {
       const empresa = await db.obtenerEmpresa(req.empresaId);
