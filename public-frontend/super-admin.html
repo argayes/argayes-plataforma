@@ -413,7 +413,7 @@
   "use strict";
 
   function getBackendUrl(){
-    try { return localStorage.getItem('argayes-backend-url') || ''; } catch(e){ return ''; }
+    try { return localStorage.getItem('argayes-backend-url') || 'https://argayes-backend.onrender.com'; } catch(e){ return 'https://argayes-backend.onrender.com'; }
   }
   function setBackendUrl(v){
     try { localStorage.setItem('argayes-backend-url', v); } catch(e){}

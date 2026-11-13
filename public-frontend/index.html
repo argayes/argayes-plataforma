@@ -986,8 +986,11 @@
     try { localStorage.setItem('argayes-theme', this.value); } catch(e){}
   });
 
+  // Si nunca se configuró a mano (por ejemplo, la primera vez que se abre
+  // la página en un dominio nuevo), usa el backend real de ARGAYES en vez
+  // de dejar el panel sin poder conectar.
   function getBackendUrl(){
-    try { return localStorage.getItem('argayes-backend-url') || ''; } catch(e){ return ''; }
+    try { return localStorage.getItem('argayes-backend-url') || 'https://argayes-backend.onrender.com'; } catch(e){ return 'https://argayes-backend.onrender.com'; }
   }
   function setBackendUrl(v){
     try { localStorage.setItem('argayes-backend-url', v); } catch(e){}
