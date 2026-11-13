@@ -435,7 +435,7 @@ app.get('/api/debug/pass-model/:clave', ah(async (req, res) => {
               cliente = { id: 'diagnostico-0000', nombre: 'Diagnóstico', puntos: 0 };
               empresa = { nombre: 'ARGAYES', color: '#b8872b' };
       }
-      const resultado = await appleWallet.diagnosticoModelo(empresa, cliente);
+      const resultado = await appleWallet.diagnosticoModelo(empresa, cliente, req.query.buffers === '1');
       res.json(resultado);
 }));
 
@@ -453,7 +453,7 @@ app.get('/api/debug/pass-model-view/:clave', ah(async (req, res) => {
               cliente = { id: 'diagnostico-0000', nombre: 'Diagnóstico', puntos: 0 };
               empresa = { nombre: 'ARGAYES', color: '#b8872b' };
       }
-      const r = await appleWallet.diagnosticoModelo(empresa, cliente);
+      const r = await appleWallet.diagnosticoModelo(empresa, cliente, req.query.buffers === '1');
       const filas = Object.keys(r.enPkpass || {})
               .filter((n) => n.endsWith('.png'))
               .map((n) => {
