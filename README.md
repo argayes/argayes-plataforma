@@ -109,20 +109,26 @@ guarda los últimos 3-7 días (point-in-time recovery) — no sirve para
 manda por correo, una vez al mes, un archivo con TODO lo que hay en la base
 de datos (negocios, clientes, visitas, canjes — sin contraseñas).
 
-Para activarlo (una sola vez, tarda 5 minutos):
-1. Render Dashboard → "New +" → "Cron Job"
-2. Conecta el repo `argayes-plataforma` (el mismo del backend)
-3. Build Command: `npm install` — Start Command: `npm run respaldo`
-4. Schedule: `0 9 1 * *` (el día 1 de cada mes, 9am UTC)
-5. En "Environment" de ese Cron Job, agrega:
-   - `DATABASE_URL` — cópiala igual que la tiene el servicio del backend
+Esto corre gratis con **GitHub Actions** (`.github/workflows/respaldo-mensual.yml`),
+no con un Cron Job de Render — así no hace falta dar tarjeta de crédito en
+ningún lado solo para mandar un correo una vez al mes.
+
+Para activarlo (una sola vez, tarda 2 minutos):
+1. En GitHub, entra al repo `argayes-plataforma` → **Settings** → **Secrets
+   and variables** → **Actions** → **New repository secret**
+2. Agrega estos 4, uno por uno:
+   - `DATABASE_URL` — cópiala igual que la tiene el servicio del backend en Render
    - `RESEND_API_KEY` y `EMAIL_FROM` — igual, cópialas del backend (si no
      las tienes configuradas todavía, revisa `lib/email.js`)
    - `BACKUP_EMAIL_TO` — el correo tuyo donde quieres recibir el respaldo
 
-De ahí en adelante, Render lo corre solo cada mes — no hace falta volver a
-tocarlo. Si alguna vez necesitas RESTAURAR un respaldo, pide ayuda para
-hacerlo bien: no es algo que convenga improvisar.
+De ahí en adelante, GitHub lo corre solo cada mes — no hace falta volver a
+tocarlo. También lo puedes correr a mano cuando quieras, para probar: en el
+repo, pestaña **Actions** → "Respaldo mensual de la base de datos" →
+**Run workflow**.
+
+Si alguna vez necesitas RESTAURAR un respaldo, pide ayuda para hacerlo
+bien: no es algo que convenga improvisar.
 
 ## 6. Conectarlo con la página web (`argayes-lealtad.html`)
 

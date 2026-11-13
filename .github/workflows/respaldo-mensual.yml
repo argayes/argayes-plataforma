@@ -1,0 +1,32 @@
+name: Respaldo mensual de la base de datos
+
+# Corre el día 1 de cada mes a las 9am UTC y manda por correo (via Resend)
+# un respaldo completo de la base de datos (negocios, clientes, visitas,
+# canjes — sin contraseñas). Ver README.md, sección 7, para el detalle de
+# por qué existe esto (Render no ofrece respaldos de largo plazo en el
+# plan gratis/básico de Postgres).
+#
+# No necesita servidor ni tarjeta de crédito: GitHub lo corre gratis con
+# su propio runner, solo por los segundos que tarda el script.
+on:
+  schedule:
+    - cron: '0 9 1 * *'
+  # Permite correrlo a mano desde la pestaña "Actions" del repo, para
+  # probar sin tener que esperar al día 1 del mes.
+  workflow_dispatch: {}
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install
+      - run: npm run respaldo
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          BACKUP_EMAIL_TO: ${{ secrets.BACKUP_EMAIL_TO }}
