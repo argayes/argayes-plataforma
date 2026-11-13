@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 const db = require('./lib/db');
 const googleWallet = require('./lib/google-wallet');
 const appleWallet = require('./lib/apple-wallet');
-const { enviarCodigoReset } = require('./lib/email');
+const { enviarCodigoReset, enviarRecordatorioInactividad } = require('./lib/email');
 
 // No hay valor "por default" para estas dos claves a propósito: si faltan,
 // el servidor se niega a arrancar en vez de arrancar inseguro sin avisar
@@ -287,6 +287,13 @@ app.patch('/api/mi-empresa', requireAuth, ah(async (req, res) => {
       const { nombre, color, colorBoton, fuente, selloForma, selloTamano, recompensa, umbral, logoUrl } = req.body;
       try {
               const empresa = await db.actualizarEmpresa(req.empresaId, { nombre, color, colorBoton, fuente, selloForma, selloTamano, recompensa, umbral, logoUrl });
+              // db.actualizarEmpresa ya marcó a todos los clientes de este
+              // negocio como "cambiados" si lo que se editó se ve en la
+              // tarjeta — aquí solo se les avisa a sus iPhones que la vuelvan
+              // a pedir. Mejor esfuerzo: no bloquea la respuesta del panel.
+              db.pushTokensDeEmpresa(req.empresaId)
+                      .then((tokens) => appleWallet.avisarActualizacion(tokens))
+                      .catch((e) => console.error('No se pudo avisar la actualización de Apple Wallet del negocio', req.empresaId, ':', e.message));
               res.json(sinDatosSensibles(empresa));
       } catch (e) {
               if (e.datosInvalidos) return res.status(400).json({ error: e.message });
@@ -321,6 +328,28 @@ app.delete('/api/mis-clientes/:id', requireAuth, ah(async (req, res) => {
       res.json({ ok: true });
 }));
 
+// Recordatorio manual a clientes inactivos: lo dispara el negocio desde el
+// panel (botón, no automático). Solo llega a quienes dejaron un correo (no
+// hay SMS todavía) y no han vuelto en "dias" días. Sigue mandando aunque
+// alguno falle (buzón inválido, etc.) — al final reporta cuántos sí y
+// cuáles no, en vez de tronar toda la operación por un correo malo.
+app.post('/api/mis-recordatorios', requireAuth, requireEmpresaActiva, ah(async (req, res) => {
+      const dias = Number(req.body && req.body.dias) || 14;
+      const empresa = req.empresa;
+      const inactivos = await db.clientesInactivos(req.empresaId, dias);
+      let enviados = 0;
+      const fallidos = [];
+      for (const cliente of inactivos) {
+              try {
+                      await enviarRecordatorioInactividad(cliente.contacto, cliente.nombre, empresa.nombre, empresa.recompensa);
+                      enviados++;
+              } catch (e) {
+                      fallidos.push({ cliente: cliente.nombre, error: e.message });
+              }
+      }
+      res.json({ totalInactivos: inactivos.length, enviados, fallidos });
+}));
+
 // Alta directa de empresa sin password (uso interno/pruebas con curl).
 app.get('/api/empresas/:id', ah(async (req, res) => {
       if (!esUuidValido(req.params.id)) return res.status(400).json({ error: 'Id inválido' });
@@ -332,11 +361,15 @@ app.get('/api/empresas/:id', ah(async (req, res) => {
 // ---------- Paso 6-B: alta de cliente (pública: la usa el cliente final
 // desde el link/QR que le da el negocio, sin necesitar cuenta ni login) ----------
 app.post('/api/clientes', limitadorClientes, ah(async (req, res) => {
-      const { empresaId, nombre, contacto } = req.body;
+      const { empresaId, nombre, contacto, consentimiento } = req.body;
       if (!empresaId || !nombre) return res.status(400).json({ error: 'Falta empresaId o nombre' });
       if (!esUuidValido(empresaId)) return res.status(400).json({ error: 'empresaId inválido' });
+      // El checkbox de privacidad es obligatorio: sin la aceptación explícita
+      // del cliente no se guarda su nombre y contacto. No aplica a clientes
+      // que ya existían antes de este checkbox (esos ya están creados).
+      if (!consentimiento) return res.status(400).json({ error: 'Falta aceptar el aviso de privacidad' });
       if (!(await db.obtenerEmpresa(empresaId))) return res.status(404).json({ error: 'Empresa no encontrada' });
-      const cliente = await db.crearCliente({ empresaId, nombre, contacto });
+      const cliente = await db.crearCliente({ empresaId, nombre, contacto, consentimiento: true });
       res.status(201).json(cliente);
 }));
 
@@ -376,6 +409,86 @@ app.get('/api/wallet/apple/:clienteId.pkpass', ah(async (req, res) => {
       }
 }));
 
+// ---------- Servicio web de Apple Wallet (actualizaciones automáticas) ----------
+// Estas 5 rutas las llama directo el iPhone del cliente (no el panel, no
+// nuestro frontend) — su forma exacta (nombres, verbos, status codes) la
+// define Apple, no nosotros: https://developer.apple.com/documentation/walletpasses/adding-a-web-service-to-update-passes
+// El iPhone las descubre solas porque el .pkpass lleva "webServiceURL"
+// apuntando aquí (ver lib/apple-wallet.js).
+//
+// "authenticationToken" que Apple manda en cada petición (como
+// "Authorization: ApplePass <token>") es el mismo id del cliente que se usó
+// al crear el pase — no es nada nuevo que haya que generar ni guardar aparte.
+function tokenDePasePeticion(req) {
+      const header = req.get('Authorization') || '';
+      const m = header.match(/^ApplePass (.+)$/);
+      return m ? m[1] : null;
+}
+
+// 1) El iPhone avisa "este dispositivo quiere actualizaciones para este pase".
+app.post('/api/apple/v1/devices/:deviceLibraryId/registrations/:passTypeId/:serialNumber', ah(async (req, res) => {
+      const { deviceLibraryId, passTypeId, serialNumber } = req.params;
+      if (!esUuidValido(serialNumber)) return res.status(400).end();
+      const token = tokenDePasePeticion(req);
+      if (!token || token !== serialNumber) return res.status(401).end();
+      const cliente = await db.obtenerCliente(serialNumber);
+      if (!cliente) return res.status(404).end();
+      const pushToken = req.body && req.body.pushToken;
+      if (!pushToken) return res.status(400).end();
+      const yaEstaba = await db.yaRegistradoDispositivoPase(deviceLibraryId, passTypeId, serialNumber);
+      await db.registrarDispositivoPase(deviceLibraryId, passTypeId, serialNumber, pushToken);
+      res.status(yaEstaba ? 200 : 201).end();
+}));
+
+// 2) El iPhone avisa "ya no quiero más actualizaciones" (quitó el pase, o lo
+//    sobrescribió con otro). Debe responder 200 aunque ya no existiera.
+app.delete('/api/apple/v1/devices/:deviceLibraryId/registrations/:passTypeId/:serialNumber', ah(async (req, res) => {
+      const { deviceLibraryId, passTypeId, serialNumber } = req.params;
+      const token = tokenDePasePeticion(req);
+      if (!token || token !== serialNumber) return res.status(401).end();
+      await db.borrarDispositivoPase(deviceLibraryId, passTypeId, serialNumber);
+      res.status(200).end();
+}));
+
+// 3) El iPhone pregunta "¿cuáles de mis pases de este tipo cambiaron desde
+//    tal fecha?" — esto es lo que Apple llama cuando llega el push silencioso.
+//    No lleva Authorization (es a nivel dispositivo, no a nivel de un pase).
+app.get('/api/apple/v1/devices/:deviceLibraryId/registrations/:passTypeId', ah(async (req, res) => {
+      const { deviceLibraryId, passTypeId } = req.params;
+      const desde = req.query.passesUpdatedSince || null;
+      const filas = await db.seriesActualizadasParaDispositivo(deviceLibraryId, passTypeId, desde);
+      if (filas.length === 0) return res.status(204).end();
+      const ultima = filas[filas.length - 1].actualizado_en.toISOString();
+      res.json({ lastUpdated: ultima, serialNumbers: filas.map((f) => f.id) });
+}));
+
+// 4) El iPhone pide el pase actualizado de verdad — aquí se regenera con los
+//    datos actuales del cliente y su negocio (igual que la descarga inicial).
+app.get('/api/apple/v1/passes/:passTypeId/:serialNumber', ah(async (req, res) => {
+      const { serialNumber } = req.params;
+      if (!esUuidValido(serialNumber)) return res.status(400).end();
+      const token = tokenDePasePeticion(req);
+      if (!token || token !== serialNumber) return res.status(401).end();
+      const cliente = await db.obtenerCliente(serialNumber);
+      if (!cliente) return res.status(404).end();
+      const empresa = await db.obtenerEmpresa(cliente.empresaId);
+      try {
+              const buffer = await appleWallet.generarPkpass(empresa, cliente);
+              res.set('Content-Type', 'application/vnd.apple.pkpass');
+              res.set('Last-Modified', new Date().toUTCString());
+              res.send(buffer);
+      } catch (e) {
+              res.status(500).json({ error: e.message });
+      }
+}));
+
+// 5) Apple manda aquí cualquier error que le pase al iPhone con nuestro
+//    servicio web — no hace falta hacer nada con esto, solo no tronar.
+app.post('/api/apple/v1/log', (req, res) => {
+      console.log('[Apple Wallet log]', JSON.stringify(req.body));
+      res.status(200).end();
+});
+
 // ---------- Paso 7: escaneo en tienda, suma de puntos ----------
 // Requiere sesión de la empresa (el empleado entra con la cuenta del
 // negocio y escanea desde ahí) — así un cliente no puede llamar esto él
@@ -413,6 +526,12 @@ app.post('/api/visita', requireAuth, requireEmpresaActiva, ah(async (req, res) =
                                                                 googleWallet.patchPuntos(empresa, actualizado).catch((e) => {
                                                                         console.error('No se pudo actualizar el pase de Google Wallet del cliente', clienteId, ':', e.message);
                                                                 });
+                                                                // Mismo "mejor esfuerzo" para Apple Wallet: si el cliente ya tiene el
+                                                                // pase guardado con notificaciones automáticas, se le avisa a Apple
+                                                                // que vuelva a pedirlo (ver lib/apple-wallet.js y /api/apple/v1/...).
+                                                                db.pushTokensDeCliente(clienteId)
+                                                                        .then((tokens) => appleWallet.avisarActualizacion(tokens))
+                                                                        .catch((e) => console.error('No se pudo avisar la actualización de Apple Wallet del cliente', clienteId, ':', e.message));
 
                                                                 const listoParaCanje = actualizado.puntos >= empresa.umbral;
       res.json({ cliente: actualizado, listoParaCanje });
@@ -445,6 +564,9 @@ app.post('/api/canje/confirmar', requireAuth, requireEmpresaActiva, ah(async (re
               const status = resultado.razon === 'no_pertenece' ? 403 : 409;
               return res.status(status).json({ error: resultado.razon });
       }
+      db.pushTokensDeCliente(resultado.cliente.id)
+              .then((tokens) => appleWallet.avisarActualizacion(tokens))
+              .catch((e) => console.error('No se pudo avisar la actualización de Apple Wallet tras el canje:', e.message));
       res.json(resultado);
 }));
 

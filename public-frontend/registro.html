@@ -208,6 +208,11 @@
   button.wallet-btn:disabled{opacity:.45;cursor:not-allowed}
   .hint{font-size:12px;color:var(--ink-dim)}
   .hint.error{color:var(--danger)}
+  .consent-row{
+    display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--ink-dim);
+    cursor:pointer;line-height:1.4;margin-top:2px;
+  }
+  .consent-row input{margin-top:2px;flex:none;width:auto;padding:0}
 
   .result{
     margin-top:30px;
@@ -331,6 +336,10 @@
           <label for="custContact">Teléfono o email</label>
           <input id="custContact" name="custContact" placeholder="55 1234 5678">
         </div>
+        <label class="consent-row">
+          <input type="checkbox" id="custConsent">
+          <span>Acepto que mi nombre y contacto se usen para este programa de lealtad.</span>
+        </label>
       </section>
     </div>
 
@@ -488,6 +497,7 @@
   var formHint = document.getElementById('formHint');
   var custName = document.getElementById('custName');
   var custContact = document.getElementById('custContact');
+  var custConsent = document.getElementById('custConsent');
 
   var result = document.getElementById('result');
   var qrbox = document.getElementById('qrbox');
@@ -536,6 +546,11 @@
       formHint.classList.add('error');
       return;
     }
+    if(!custConsent.checked){
+      formHint.textContent = 'Falta aceptar el aviso de privacidad';
+      formHint.classList.add('error');
+      return;
+    }
     formHint.classList.remove('error');
     formHint.textContent = 'Registrando cliente…';
     generating = true;
@@ -550,7 +565,8 @@
         body: JSON.stringify({
           empresaId: empresaId,
           nombre: custName.value.trim(),
-          contacto: custContact.value.trim()
+          contacto: custContact.value.trim(),
+          consentimiento: custConsent.checked
         })
       });
 

@@ -37,6 +37,15 @@ cp .env.example .env
 Sin estas dos cosas, el backend igual corre y guarda los registros — solo las
 rutas de `/api/wallet/...` responderán con un error explicando qué falta.
 
+**Actualizaciones automáticas del pase de Apple Wallet**: ya no hace falta
+configurar nada aparte — reutiliza los mismos certificados de arriba. En
+cuanto el cliente agrega el pase con las notificaciones activadas, su
+iPhone se registra solo (`/api/apple/v1/...`) y cada vez que cambian sus
+puntos o el negocio edita su tarjeta, el pase que ya tiene guardado se
+actualiza solo, sin que vuelva a escanear nada. Si `PUBLIC_URL` no está
+configurado en `.env`, el pase se genera igual pero sin esta parte (no
+lleva `webServiceURL`, así que el iPhone nunca pregunta por actualizaciones).
+
 ## 3. Correr local
 
 ```
