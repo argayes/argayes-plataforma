@@ -30,9 +30,12 @@ cp .env.example .env
    ```
 4. Descarga el certificado WWDR de Apple (G4) y guárdalo como `certs/wwdr.pem`
 5. En `.env`, llena `APPLE_TEAM_ID` y `APPLE_PASS_TYPE_ID`
-6. Agrega a `pass-model/` las imágenes que Apple exige: `icon.png` (29×29),
-   `icon@2x.png` (58×58), `logo.png` (160×50) y `logo@2x.png` (320×100), con
-   el logo de ARGAYES. Sin estas imágenes el `.pkpass` no se genera.
+6. Agrega a `pass-model.pass/` las imágenes que Apple exige: `icon.png`
+   (29×29), `icon@2x.png` (58×58), `logo.png` (160×50) y `logo@2x.png`
+   (320×100), con el logo de ARGAYES. Sin estas imágenes el `.pkpass` no se
+   genera. Importante: el folder DEBE llamarse con la extensión `.pass` —
+   sin ella, passkit-generator no avisa con un error, simplemente arma el
+   pase con imágenes de relleno en vez de las reales.
 
 Sin estas dos cosas, el backend igual corre y guarda los registros — solo las
 rutas de `/api/wallet/...` responderán con un error explicando qué falta.
