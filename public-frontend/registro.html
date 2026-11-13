@@ -1,4 +1,5 @@
 <meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ARGAYES Lealtad</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -561,6 +562,13 @@
     appleBtn.disabled = true;
     googleBtn.disabled = true;
 
+    // Se abre la pestaña AQUÍ, de forma síncrona, dentro del mismo clic del
+    // usuario — si se abriera después de los "await" de abajo, el celular
+    // (sobre todo iPhone) la bloquea como si fuera un pop-up no deseado y
+    // el cliente solo ve el link, nunca la pantalla de "agregar a Wallet".
+    // Se le asigna la URL real más abajo, una vez que ya se sabe cuál es.
+    var walletTab = window.open('', '_blank');
+
     try {
       // 1) Da de alta al cliente de verdad en el backend — a partir de
       // aquí ya aparece en "Mis clientes" del panel del negocio.
@@ -601,13 +609,24 @@
         'mi-tarjeta.html?id=' + encodeURIComponent(cliente.id) + '&backend=' + encodeURIComponent(backendUrl);
 
       // 3) Pase real: Apple se descarga directo, Google abre el link de guardado.
+      //    Se usa la pestaña ya abierta (walletTab) en vez de abrir una nueva
+      //    aquí, para que el celular no la bloquee.
+      var walletUrl;
       if(wallet === 'apple'){
         resNote.textContent = WALLET_NOTES.apple;
-        window.open(backendUrl.replace(/\/$/, '') + '/api/wallet/apple/' + cliente.id + '.pkpass', '_blank');
+        walletUrl = backendUrl.replace(/\/$/, '') + '/api/wallet/apple/' + cliente.id + '.pkpass';
       } else {
         var w = await api('/api/wallet/google/' + cliente.id);
         resNote.textContent = WALLET_NOTES.google;
-        window.open(w.saveUrl, '_blank');
+        walletUrl = w.saveUrl;
+      }
+      if(walletTab){
+        try { walletTab.location = walletUrl; } catch(e){ walletTab = null; }
+      }
+      if(!walletTab){
+        // El celular bloqueó la pestaña (o algo falló) — se deja el link
+        // de "Ver su tarjeta" y además se intenta una vez más, directo.
+        window.open(walletUrl, '_blank');
       }
 
       entries.push({ id: cliente.id, cliente: cliente.nombre, empresa: empresaActual.nombre });
@@ -617,6 +636,7 @@
       formHint.textContent = 'Cliente registrado. Completa el nombre del cliente';
       result.scrollIntoView({behavior:'smooth', block:'nearest'});
     } catch(e){
+      if(walletTab){ try { walletTab.close(); } catch(e2){} }
       formHint.textContent = 'No se pudo registrar: ' + e.message;
       formHint.classList.add('error');
     } finally {
