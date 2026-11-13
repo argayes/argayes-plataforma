@@ -2,12 +2,12 @@
 <title>Panel ARGAYES</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Poppins:wght@400;600;700&family=Montserrat:wght@400;600;700&family=Playfair+Display:wght@400;700&family=Roboto+Slab:wght@400;700&family=Quicksand:wght@400;600;700&family=Oswald:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  /* Layout: top bar (brand + sesión) over a one-column stack — stat tiles,
-     a settings strip for the backend URL, then the client table. The login
-     screen is a single centered card shown instead of the dashboard until
-     there's a valid session token. */
+  /* Layout nuevo: una barra lateral FIJA (no hamburguesa) con 5 secciones —
+     Panel, Clientes, Escáner, Tarjeta de fidelidad y Ajustes — y a la
+     derecha el contenido de la sección activa. Antes de iniciar sesión se
+     muestra una sola tarjeta de login/registro centrada, sin barra lateral. */
   :root{
     --bg:#f3f1ec;
     --surface:#ffffff;
@@ -25,6 +25,8 @@
     --font-display:"Times New Roman", Times, Georgia, serif;
     --font-body:"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sidebar-w:230px;
+    --sidebar-w-collapsed:72px;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark){
@@ -47,115 +49,35 @@
   }
 
   *{box-sizing:border-box}
+  html,body{margin:0}
   body{
     background:var(--bg);
     color:var(--ink);
     font-family:var(--font-body);
-    padding-left:max(16px, env(safe-area-inset-left,0px));
-    padding-right:max(16px, env(safe-area-inset-right,0px));
   }
   body::before{
     content:"";position:fixed;inset:0 0 auto;
-    height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface);
+    height:env(safe-area-inset-top,0px);z-index:40;background:var(--surface);
   }
 
-  header{
-    position:sticky;top:env(safe-area-inset-top,0px);z-index:5;
-    display:flex;align-items:center;justify-content:space-between;gap:14px;
-    padding:14px 0;background:var(--bg);border-bottom:1px solid var(--border);
-    margin-bottom:24px;
+  /* ======================================================================
+     Login / registro / recuperar contraseña — sin barra lateral
+     ====================================================================== */
+  #authView{
+    display:flex;justify-content:center;padding:calc(40px + env(safe-area-inset-top,0px)) 16px 40px;
+    min-height:100vh;
   }
-  .brand{
+  .auth-brand{
     font-family:var(--font-display);text-transform:uppercase;letter-spacing:.12em;
-    font-size:20px;font-weight:700;display:flex;flex-direction:column;line-height:1.1;
+    font-size:22px;font-weight:700;text-align:center;margin:0 0 4px;
   }
-  .brand small{
-    font-family:var(--font-body);text-transform:none;letter-spacing:0;
-    font-size:11px;font-weight:500;color:var(--ink-dim);margin-top:2px;
+  .auth-brand small{
+    display:block;font-family:var(--font-body);text-transform:none;letter-spacing:0;
+    font-size:12px;font-weight:500;color:var(--ink-dim);margin-top:4px;
   }
-  .header-left{display:flex;align-items:center;gap:14px}
-  .menu-btn{
-    width:40px;height:40px;flex:none;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
-    background:transparent;border:1px solid var(--border);border-radius:8px;cursor:pointer;
-  }
-  .menu-btn span{display:block;width:18px;height:2px;background:var(--ink);border-radius:1px}
-  .menu-btn:hover{border-color:var(--accent)}
-
-  /* ---- panel lateral: configuración / tema ---- */
-  .theme-scrim{
-    position:fixed;inset:0;background:rgba(0,0,0,.35);
-    opacity:0;pointer-events:none;transition:opacity .18s ease;z-index:28;
-  }
-  .theme-scrim.open{opacity:1;pointer-events:auto}
-  .side-panel{
-    position:fixed;top:0;bottom:0;left:0;
-    width:min(280px, 86vw);
-    background:var(--surface);border-right:1px solid var(--border);
-    transform:translateX(-100%);transition:transform .2s ease;z-index:29;
-    padding:calc(18px + env(safe-area-inset-top,0px)) 20px 20px max(20px, env(safe-area-inset-left,0px));
-    display:flex;flex-direction:column;gap:18px;
-  }
-  .side-panel.open{transform:translateX(0)}
-  .side-panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-dim);margin:0}
-  .side-panel-close{align-self:flex-end;background:none;border:none;color:var(--ink-dim);font-size:22px;line-height:1;cursor:pointer;margin:-6px -6px 0 0}
-  button.ghost{
-    font-family:var(--font-body);font-size:13px;font-weight:600;
-    padding:8px 14px;border-radius:8px;border:1px solid var(--border);
-    background:var(--surface);color:var(--ink);cursor:pointer;
-  }
-  button.ghost:hover{border-color:var(--accent)}
-
-  /* ---- menú de cuenta (avatar + nombre) ---- */
-  .account-box{position:relative}
-  .account-chip{
-    display:flex;align-items:center;gap:9px;
-    background:var(--surface);border:1px solid var(--border);border-radius:999px;
-    padding:4px 14px 4px 4px;cursor:pointer;font-family:var(--font-body);
-  }
-  .account-chip:hover{border-color:var(--accent)}
-  .avatar{
-    width:30px;height:30px;border-radius:50%;flex:none;
-    background:var(--surface-2);color:var(--ink-dim);
-    display:flex;align-items:center;justify-content:center;overflow:hidden;
-  }
-  .avatar img{width:100%;height:100%;object-fit:cover;display:block}
-  .session-name{font-size:13px;font-weight:600;color:var(--ink)}
-  .account-menu{
-    position:absolute;top:calc(100% + 8px);right:0;z-index:30;
-    background:var(--surface);border:1px solid var(--border);border-radius:12px;
-    box-shadow:0 10px 28px rgba(0,0,0,.14);min-width:190px;overflow:hidden;
-    display:flex;flex-direction:column;padding:6px;
-  }
-  .account-menu button{
-    text-align:left;padding:10px 12px;border-radius:7px;border:none;background:none;
-    font-family:var(--font-body);font-size:13px;color:var(--ink);cursor:pointer;
-  }
-  .account-menu button:hover{background:var(--surface-2)}
-  .account-menu button.danger{color:var(--danger)}
-
-  /* ---- modal: editar negocio ---- */
-  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:25}
-  .modal{
-    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:26;
-    background:var(--surface);border:1px solid var(--border);border-radius:14px;
-    padding:24px;width:min(380px,calc(100vw - 32px));
-    display:flex;flex-direction:column;gap:18px;
-  }
-  .modal h2{margin:0;font-size:15px}
-  .avatar-edit-row{display:flex;align-items:center;gap:16px}
-  .avatar.big{width:64px;height:64px}
-  .avatar.big svg{width:30px;height:30px}
-  .modal .hint{font-size:12px;color:var(--ink-dim);margin:6px 0 0}
-  .modal .hint.error{color:var(--danger);font-weight:600}
-  .modal-actions{display:flex;justify-content:flex-end;gap:10px}
-
-  main{max-width:880px;margin:0 auto;padding-bottom:60px}
-
-  /* ---- login / registro ---- */
-  .auth-wrap{display:flex;justify-content:center;padding:40px 0}
+  .auth-col{width:100%;max-width:380px;display:flex;flex-direction:column;gap:18px}
   .auth-card{
-    width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);
+    width:100%;background:var(--surface);border:1px solid var(--border);
     border-radius:14px;padding:28px;display:flex;flex-direction:column;gap:16px;
   }
   .auth-card h1{font-size:17px;margin:0}
@@ -167,11 +89,19 @@
     border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--ink);
   }
   input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px}
+  input[type=color]{padding:3px;height:42px;width:64px;cursor:pointer}
   button.primary{
     font-family:var(--font-body);font-weight:600;font-size:15px;padding:12px 20px;
     border-radius:10px;border:none;background:var(--accent);color:var(--accent-ink);cursor:pointer;
   }
   button.primary:hover{filter:brightness(1.06)}
+  button.primary:disabled{opacity:.5;cursor:not-allowed}
+  button.ghost{
+    font-family:var(--font-body);font-size:13px;font-weight:600;
+    padding:8px 14px;border-radius:8px;border:1px solid var(--border);
+    background:var(--surface);color:var(--ink);cursor:pointer;
+  }
+  button.ghost:hover{border-color:var(--accent)}
   button.link{
     background:none;border:none;color:var(--accent);font-family:var(--font-body);
     font-size:13px;font-weight:600;cursor:pointer;padding:0;text-align:left;
@@ -181,7 +111,6 @@
   .auth-hint{font-size:13px;color:var(--good);display:none}
   .auth-hint.show{display:block}
 
-  /* ---- campo de contraseña con botón de mostrar/ocultar ---- */
   .pw-wrap{position:relative;display:flex}
   .pw-wrap input{flex:1;padding-right:40px}
   .pw-toggle{
@@ -196,16 +125,67 @@
   details.backend-settings summary{cursor:pointer}
   details.backend-settings .field{margin-top:8px}
 
-  /* ---- dashboard ---- */
-  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
-  @media (max-width:640px){ .stat-grid{grid-template-columns:repeat(2,1fr)} }
-  .stat{
-    background:var(--surface);border:1px solid var(--border);border-radius:12px;
-    padding:16px;display:flex;flex-direction:column;gap:4px;min-width:0;
-  }
-  .stat .n{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:24px;font-weight:600}
-  .stat .l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-dim)}
+  /* ======================================================================
+     App: barra lateral fija + contenido
+     ====================================================================== */
+  #appShell{display:none}
+  #appShell.show{display:flex;min-height:100vh}
 
+  .sidebar{
+    position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);
+    background:var(--surface);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;z-index:20;
+    padding-top:env(safe-area-inset-top,0px);
+  }
+  .sidebar-brand{
+    padding:20px 20px 16px;font-family:var(--font-display);text-transform:uppercase;
+    letter-spacing:.12em;font-size:18px;font-weight:700;line-height:1.15;
+    border-bottom:1px solid var(--border);
+  }
+  .sidebar-brand small{
+    display:block;font-family:var(--font-body);text-transform:none;letter-spacing:0;
+    font-size:11px;font-weight:500;color:var(--ink-dim);margin-top:3px;
+  }
+  .sidebar-nav{flex:1;display:flex;flex-direction:column;gap:2px;padding:14px 12px;overflow-y:auto}
+  .nav-btn{
+    display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:9px;
+    border:none;background:none;color:var(--ink-dim);font-family:var(--font-body);
+    font-size:14px;font-weight:600;cursor:pointer;text-align:left;width:100%;
+  }
+  .nav-btn svg{flex:none;width:19px;height:19px}
+  .nav-btn:hover{background:var(--surface-2);color:var(--ink)}
+  .nav-btn.active{background:var(--accent-soft);color:var(--accent-ink)}
+  .nav-label{white-space:nowrap}
+
+  .sidebar-foot{border-top:1px solid var(--border);padding:14px 12px;display:flex;flex-direction:column;gap:8px}
+  .sidebar-account{display:flex;align-items:center;gap:10px;padding:6px 8px}
+  .avatar{
+    width:34px;height:34px;border-radius:50%;flex:none;
+    background:var(--surface-2);color:var(--ink-dim);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block}
+  .sidebar-account-name{font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nav-logout{color:var(--danger)}
+  .nav-logout:hover{background:var(--danger-soft);color:var(--danger)}
+
+  .main{flex:1;margin-left:var(--sidebar-w);padding:calc(26px + env(safe-area-inset-top,0px)) 28px 60px;min-width:0}
+  .view{max-width:900px;margin:0 auto}
+  .view-title{font-size:20px;font-weight:700;margin:0 0 20px}
+
+  @media (max-width:760px){
+    :root{--sidebar-w:72px}
+    .sidebar-brand{padding:16px 10px;text-align:center;font-size:0}
+    .sidebar-brand::before{content:"A";font-size:20px}
+    .sidebar-brand small{display:none}
+    .nav-label{display:none}
+    .nav-btn{justify-content:center;padding:12px}
+    .sidebar-account-name{display:none}
+    .sidebar-account{justify-content:center}
+    .main{padding:calc(20px + env(safe-area-inset-top,0px)) 14px 50px}
+  }
+
+  /* ---- paneles / tarjetas de contenido reutilizables ---- */
   .panel-section{
     background:var(--surface);border:1px solid var(--border);border-radius:14px;
     padding:20px;margin-bottom:20px;
@@ -218,6 +198,15 @@
   .config-actions{display:flex;align-items:center;gap:12px;margin-top:14px}
   .saved-hint{font-size:12px;color:var(--good);display:none}
   .saved-hint.show{display:inline}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+  @media (max-width:640px){ .stat-grid{grid-template-columns:repeat(2,1fr)} }
+  .stat{
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:16px;display:flex;flex-direction:column;gap:4px;min-width:0;
+  }
+  .stat .n{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:24px;font-weight:600}
+  .stat .l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-dim)}
 
   table{width:100%;border-collapse:collapse;font-size:13px}
   th{
@@ -236,68 +225,109 @@
     padding:9px 14px;border-radius:8px;text-decoration:none;
   }
 
+  /* ---- Tarjeta de fidelidad: pestañas + vista previa ---- */
+  .tarjeta-layout{display:grid;grid-template-columns:260px 1fr;gap:24px;align-items:start}
+  @media (max-width:860px){ .tarjeta-layout{grid-template-columns:1fr} }
+
+  .tarjeta-tabs{display:flex;flex-direction:column;gap:6px}
+  @media (max-width:860px){ .tarjeta-tabs{flex-direction:row;flex-wrap:wrap} }
+  .tab-btn{
+    display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;
+    border:1px solid var(--border);background:var(--surface);color:var(--ink);
+    font-family:var(--font-body);font-size:14px;font-weight:600;cursor:pointer;text-align:left;
+  }
+  .tab-btn svg{flex:none;width:17px;height:17px}
+  .tab-btn:hover{border-color:var(--accent)}
+  .tab-btn.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink)}
+
+  .tab-panel{display:none}
+  .tab-panel.active{display:block}
+
+  .dropzone{
+    border:2px dashed var(--border);border-radius:12px;padding:18px;
+    display:flex;align-items:center;gap:14px;cursor:pointer;background:var(--bg);
+  }
+  .dropzone.drag{border-color:var(--accent);background:var(--accent-soft)}
+  .dropzone .avatar{width:48px;height:48px}
+  .dropzone .dz-text{font-size:12px;color:var(--ink-dim)}
+  .dropzone .dz-text b{color:var(--ink);font-size:13px;display:block;margin-bottom:2px}
+
+  .color-row{display:flex;align-items:center;gap:12px}
+  .color-row input[type=text]{width:110px;font-family:var(--font-mono)}
+
+  .shape-grid, .size-grid{display:flex;gap:10px;flex-wrap:wrap}
+  .shape-opt, .size-opt{
+    display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 14px;
+    border:1px solid var(--border);border-radius:10px;background:var(--surface);
+    cursor:pointer;font-size:12px;color:var(--ink-dim);min-width:72px;
+  }
+  .shape-opt:hover, .size-opt:hover{border-color:var(--accent)}
+  .shape-opt.active, .size-opt.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
+  .shape-opt svg{width:26px;height:26px}
+
+  /* ---- la tarjeta misma (vista previa) ---- */
+  .tarjeta-preview-wrap{display:flex;flex-direction:column;gap:10px}
+  .tarjeta-preview-hint{font-size:12px;color:var(--ink-dim);font-style:italic}
+  .tarjeta-card{
+    border-radius:18px;padding:20px;min-height:260px;color:#fff;
+    display:flex;flex-direction:column;justify-content:space-between;gap:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,.18);
+  }
+  .tc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .tc-brand{display:flex;align-items:center;gap:10px;min-width:0}
+  .tc-logo{width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,.18);flex:none;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .tc-logo img{width:100%;height:100%;object-fit:cover}
+  .tc-nombre{font-size:17px;font-weight:700;line-height:1.2;overflow:hidden;text-overflow:ellipsis}
+  .tc-sellos-head{text-align:right}
+  .tc-sellos-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;opacity:.8}
+  .tc-sellos-contador{font-family:var(--font-mono);font-size:18px;font-weight:700}
+  .tc-sellos-grid{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .tc-bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+  .tc-col{min-width:0}
+  .tc-col.right{text-align:right}
+  .tc-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;opacity:.8;margin-bottom:2px}
+  .tc-value{font-size:13px;font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis}
+  .tc-qr{background:#fff;border-radius:10px;padding:6px;flex:none}
+  .tc-qr canvas, .tc-qr img{display:block;width:72px!important;height:72px!important}
+
+  /* ---- Escáner ---- */
+  .scan-wrap{
+    position:relative;background:#000;border-radius:12px;overflow:hidden;
+    aspect-ratio:1/1;max-width:320px;margin:0 auto;
+  }
+  #escanerReader{width:100%;height:100%}
+  #escanerReader video{width:100% !important;height:100% !important;object-fit:cover}
+  .scan-placeholder{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:var(--ink-dim);background:var(--surface-2);font-size:13px;text-align:center;padding:20px;
+  }
+  .scan-actions{display:flex;justify-content:center;gap:10px;margin-top:16px}
+  .hint{font-size:12px;color:var(--ink-dim);text-align:center;margin-top:10px}
+  .hint.error{color:var(--danger)}
+  .result-card{text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+  .result-icon{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
+  .result-icon svg{width:28px;height:28px}
+  .result-icon.good{background:var(--good-soft);color:var(--good)}
+  .result-icon.warn{background:var(--accent-soft);color:var(--accent-ink)}
+  .result-icon.bad{background:var(--danger-soft);color:var(--danger)}
+  .result-title{font-size:16px;font-weight:700;margin:0}
+  .result-sub{font-size:13px;color:var(--ink-dim);margin:0}
+  .result-code{
+    font-family:var(--font-mono);font-size:13px;letter-spacing:.04em;
+    background:var(--surface-2);border:1px solid var(--border);border-radius:8px;
+    padding:10px 14px;word-break:break-all;
+  }
+  .result-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+
   [hidden]{display:none!important}
 </style>
 
-<div class="theme-scrim" id="themeScrim"></div>
-<nav class="side-panel" id="themePanel" aria-label="Configuración">
-  <button class="side-panel-close" id="themePanelClose" aria-label="Cerrar menú" type="button">&times;</button>
-  <h2>Configuración</h2>
-  <div class="field">
-    <label for="themeSelect">Tema</label>
-    <select id="themeSelect">
-      <option value="light">Claro</option>
-      <option value="dark">Oscuro</option>
-    </select>
-  </div>
-</nav>
-
-<header>
-  <div class="header-left">
-    <button class="menu-btn" id="menuBtn" aria-label="Abrir menú" type="button">
-      <span></span><span></span><span></span>
-    </button>
-    <div class="brand">ARGAYES<small>Panel de administración</small></div>
-  </div>
-  <div class="account-box" id="accountBox" hidden>
-    <button class="account-chip" id="accountChip" type="button" aria-haspopup="true" aria-expanded="false">
-      <span class="avatar" id="avatarWrap">
-        <img id="avatarImg" alt="" hidden>
-        <svg id="avatarPlaceholder" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 12.2c2.8 0 5-2.2 5-5s-2.2-5-5-5-5 2.2-5 5 2.2 5 5 5zm0 2.4c-3.3 0-10 1.7-10 5v1.2C2 21.9 2.6 22.5 3.4 22.5h17.2c.8 0 1.4-.6 1.4-1.4V19.6c0-3.3-6.7-5-10-5z"/></svg>
-      </span>
-      <span class="session-name" id="sessionName"></span>
-    </button>
-    <nav class="account-menu" id="accountMenu" hidden>
-      <button type="button" id="editBizBtn">Editar negocio</button>
-      <button type="button" class="danger" id="logoutBtn">Cerrar sesión</button>
-    </nav>
-  </div>
-</header>
-
-<div class="scrim" id="editScrim" hidden></div>
-<div class="modal" id="editBizModal" hidden role="dialog" aria-label="Editar negocio">
-  <h2>Editar negocio</h2>
-  <div class="avatar-edit-row">
-    <span class="avatar big" id="avatarBigWrap">
-      <img id="avatarBigImg" alt="" hidden>
-      <svg id="avatarBigPlaceholder" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 12.2c2.8 0 5-2.2 5-5s-2.2-5-5-5-5 2.2-5 5 2.2 5 5 5zm0 2.4c-3.3 0-10 1.7-10 5v1.2C2 21.9 2.6 22.5 3.4 22.5h17.2c.8 0 1.4-.6 1.4-1.4V19.6c0-3.3-6.7-5-10-5z"/></svg>
-    </span>
-    <div>
-      <input type="file" id="avatarFileInput" accept="image/png,image/jpeg" hidden>
-      <button type="button" class="ghost" id="chooseAvatarBtn">Cambiar foto</button>
-      <p class="hint" id="avatarHint">PNG o JPG, máximo 5MB. Se ve mejor cuadrada.</p>
-      <p class="hint error" id="avatarError" hidden>El archivo supera los 5MB.</p>
-    </div>
-  </div>
-  <div class="modal-actions">
-    <button type="button" class="ghost" id="cancelEditBiz">Cancelar</button>
-    <button type="button" class="primary" id="saveAvatarBtn">Guardar</button>
-  </div>
-</div>
-
-<main>
-  <!-- ---- Login / registro ---- -->
-  <section class="auth-wrap" id="authView">
+<!-- ======================================================================
+     Login / registro / recuperar contraseña
+     ====================================================================== -->
+<section id="authView">
+  <div class="auth-col">
+    <h1 class="auth-brand">ARGAYES<small>Panel de administración</small></h1>
     <div class="auth-card">
       <h1 id="authTitle">Entrar a tu panel</h1>
       <p class="sub" id="authSub">Solo tú ves esta información — cada negocio tiene su propia cuenta.</p>
@@ -409,60 +439,351 @@
         <button class="link" id="saveBackend" style="margin-top:8px">Guardar</button>
       </details>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- ---- Dashboard ---- -->
-  <section id="dashView" hidden>
-    <div class="stat-grid">
-      <div class="stat"><span class="n" id="statClientes">—</span><span class="l">Clientes</span></div>
-      <div class="stat"><span class="n" id="statVisitas">—</span><span class="l">Visitas hoy</span></div>
-      <div class="stat"><span class="n" id="statCanjes">—</span><span class="l">Canjes pendientes</span></div>
-      <div class="stat"><span class="n" id="statPuntos">—</span><span class="l">Puntos repartidos</span></div>
+<!-- ======================================================================
+     App: barra lateral + contenido
+     ====================================================================== -->
+<div id="appShell">
+  <nav class="sidebar" aria-label="Navegación principal">
+    <div class="sidebar-brand">ARGAYES<small>Panel de administración</small></div>
+    <div class="sidebar-nav">
+      <button class="nav-btn active" type="button" data-view="panel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        <span class="nav-label">Panel</span>
+      </button>
+      <button class="nav-btn" type="button" data-view="clientes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17.5" cy="9" r="2.4"/><path d="M15.8 14.2c2.6.4 4.2 2.1 4.2 4.8"/></svg>
+        <span class="nav-label">Clientes</span>
+      </button>
+      <button class="nav-btn" type="button" data-view="escaner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
+        <span class="nav-label">Escáner</span>
+      </button>
+      <button class="nav-btn" type="button" data-view="tarjeta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 9.5h19"/><path d="M6 14h4"/></svg>
+        <span class="nav-label">Tarjeta de fidelidad</span>
+      </button>
+      <button class="nav-btn" type="button" data-view="ajustes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4.6a7.7 7.7 0 0 0-1.7-1l-.4-2.6h-4l-.4 2.6a7.7 7.7 0 0 0-1.7 1l-2.4-.6-2 3.4 2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-.6a7.7 7.7 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.7 7.7 0 0 0 1.7-1l2.4.6 2-3.4z"/></svg>
+        <span class="nav-label">Ajustes</span>
+      </button>
     </div>
+    <div class="sidebar-foot">
+      <div class="sidebar-account">
+        <span class="avatar" id="avatarWrap">
+          <img id="avatarImg" alt="" hidden>
+          <svg id="avatarPlaceholder" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 12.2c2.8 0 5-2.2 5-5s-2.2-5-5-5-5 2.2-5 5 2.2 5 5 5zm0 2.4c-3.3 0-10 1.7-10 5v1.2C2 21.9 2.6 22.5 3.4 22.5h17.2c.8 0 1.4-.6 1.4-1.4V19.6c0-3.3-6.7-5-10-5z"/></svg>
+        </span>
+        <span class="sidebar-account-name" id="sessionName"></span>
+      </div>
+      <button class="nav-btn nav-logout" type="button" id="logoutBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        <span class="nav-label">Cerrar sesión</span>
+      </button>
+    </div>
+  </nav>
 
-    <div class="panel-section">
-      <h2>Configuración del programa</h2>
-      <div class="config-grid">
+  <main class="main">
+    <!-- ---- Panel ---- -->
+    <section class="view" id="view-panel">
+      <h1 class="view-title">Panel</h1>
+      <div class="stat-grid">
+        <div class="stat"><span class="n" id="statClientes">—</span><span class="l">Clientes</span></div>
+        <div class="stat"><span class="n" id="statVisitas">—</span><span class="l">Visitas hoy</span></div>
+        <div class="stat"><span class="n" id="statCanjes">—</span><span class="l">Canjes pendientes</span></div>
+        <div class="stat"><span class="n" id="statPuntos">—</span><span class="l">Puntos repartidos</span></div>
+      </div>
+      <div class="panel-section">
+        <h2>Accesos rápidos</h2>
+        <div class="links-row">
+          <a href="https://argayes.netlify.app/registro.html" target="_blank" rel="noopener" id="regLink">Página de registro de clientes</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---- Clientes ---- -->
+    <section class="view" id="view-clientes" hidden>
+      <h1 class="view-title">Clientes</h1>
+      <div class="panel-section">
+        <div class="table-wrap">
+          <table id="clientesTable" hidden>
+            <thead><tr><th>Nombre</th><th>Contacto</th><th>Puntos</th><th>Alta</th></tr></thead>
+            <tbody id="clientesBody"></tbody>
+          </table>
+        </div>
+        <p class="empty" id="clientesEmpty">Todavía no hay clientes registrados.</p>
+      </div>
+    </section>
+
+    <!-- ---- Escáner ---- -->
+    <section class="view" id="view-escaner" hidden>
+      <h1 class="view-title">Escáner</h1>
+      <div class="panel-section">
+        <h2>Escanear código QR del cliente</h2>
+        <div class="scan-wrap" id="escanerScanWrap">
+          <div id="escanerReader"></div>
+          <div class="scan-placeholder" id="escanerPlaceholder">Toca "Iniciar cámara" para escanear el QR del cliente</div>
+        </div>
+        <div class="scan-actions">
+          <button type="button" class="primary" id="escanerStartBtn">Iniciar cámara</button>
+          <button type="button" class="ghost" id="escanerStopBtn" hidden>Detener</button>
+        </div>
+        <p class="hint" id="escanerHint">Pide al cliente que muestre el QR de su Apple o Google Wallet.</p>
+      </div>
+
+      <div class="panel-section result-card" id="escanerVisitaResult" hidden>
+        <div class="result-icon" id="escanerVisitaIcon"></div>
+        <p class="result-title" id="escanerVisitaTitle"></p>
+        <p class="result-sub" id="escanerVisitaSub"></p>
+        <div class="result-actions" id="escanerVisitaActions"></div>
+      </div>
+
+      <div class="panel-section result-card" id="escanerCanjeResult" hidden>
+        <div class="result-icon warn">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 6h-2.18A3 3 0 0 0 12 4a3 3 0 0 0-5.82 2H4a2 2 0 0 0-2 2v2a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V8a2 2 0 0 0-2-2zm-8-2a1 1 0 1 1-1 1 1 1 0 0 1 1-1zM3 13v6a2 2 0 0 0 2 2h6v-8zm10 0v8h6a2 2 0 0 0 2-2v-6z"/></svg>
+        </div>
+        <p class="result-title">Código de canje generado</p>
+        <p class="result-sub" id="escanerCanjeSub"></p>
+        <div class="result-code" id="escanerCanjeCodigo"></div>
+        <p class="hint">Dale este código al cliente, o confírmalo aquí mismo cuando entregues la recompensa.</p>
+        <div class="result-actions">
+          <button type="button" class="primary" id="escanerConfirmarCanjeBtn">Confirmar entrega</button>
+          <button type="button" class="ghost" id="escanerNuevoEscaneoBtn2">Escanear otro cliente</button>
+        </div>
+      </div>
+
+      <div class="panel-section result-card" id="escanerErrorResult" hidden>
+        <div class="result-icon bad">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-2h2zm0-4h-2V7h2z"/></svg>
+        </div>
+        <p class="result-title" id="escanerErrorTitle">No se pudo registrar</p>
+        <p class="result-sub" id="escanerErrorSub"></p>
+        <div class="result-actions">
+          <button type="button" class="primary" id="escanerReintentarBtn">Escanear otro cliente</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---- Tarjeta de fidelidad ---- -->
+    <section class="view" id="view-tarjeta" hidden>
+      <h1 class="view-title">Tarjeta de fidelidad</h1>
+      <div class="tarjeta-layout">
+        <div class="tarjeta-tabs">
+          <button class="tab-btn active" type="button" data-tab="marca">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 5.5L20 9l-4.5 4 1.3 6.5L12 16.8 7.2 19.5l1.3-6.5L4 9l5.6-1.5z"/></svg>
+            Marca
+          </button>
+          <button class="tab-btn" type="button" data-tab="colores">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1.3" fill="currentColor"/><circle cx="12" cy="8" r="1.3" fill="currentColor"/><circle cx="15" cy="10" r="1.3" fill="currentColor"/><path d="M8 15c1 1.3 2.4 2 4 2 2.8 0 4-1.5 4-3 0-1-1-1-2-1h-2"/></svg>
+            Colores
+          </button>
+          <button class="tab-btn" type="button" data-tab="sellos">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="3.2"/><circle cx="17" cy="7" r="3.2"/><circle cx="7" cy="17" r="3.2"/><circle cx="17" cy="17" r="3.2"/></svg>
+            Sellos
+          </button>
+          <button class="tab-btn" type="button" data-tab="recompensa">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-2.2A3 3 0 0 0 12 5a3 3 0 0 0-5.8 2H4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zM4 13v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"/></svg>
+            Recompensa
+          </button>
+        </div>
+
+        <div>
+          <!-- preview, siempre visible encima de la pestaña activa -->
+          <div class="tarjeta-preview-wrap">
+            <div class="tarjeta-card" id="tcCard">
+              <div class="tc-top">
+                <div class="tc-brand">
+                  <span class="tc-logo" id="tcLogoWrap"></span>
+                  <span class="tc-nombre" id="tcNombre">Nombre de tu negocio</span>
+                </div>
+                <div class="tc-sellos-head">
+                  <div class="tc-sellos-label">Sellos</div>
+                  <div class="tc-sellos-contador" id="tcContador">3/10</div>
+                </div>
+              </div>
+              <div class="tc-sellos-grid" id="tcSellosGrid"></div>
+              <div class="tc-bottom">
+                <div class="tc-col">
+                  <div class="tc-label">Recompensa</div>
+                  <div class="tc-value" id="tcRecompensa">—</div>
+                </div>
+                <div class="tc-qr" id="tcQrWrap"></div>
+                <div class="tc-col right">
+                  <div class="tc-label">Cliente</div>
+                  <div class="tc-value" id="tcCliente">Nombre del cliente</div>
+                </div>
+              </div>
+            </div>
+            <p class="tarjeta-preview-hint">Así se verá la tarjeta de un cliente de ejemplo — se actualiza mientras editas.</p>
+          </div>
+
+          <!-- ---- Marca ---- -->
+          <div class="tab-panel active" id="panel-marca">
+            <div class="panel-section">
+              <h2>Logo y nombre</h2>
+              <div class="field">
+                <label>Logo del negocio</label>
+                <div class="dropzone" id="logoDropzone">
+                  <span class="avatar" id="dzAvatarWrap" style="width:48px;height:48px">
+                    <img id="dzAvatarImg" alt="" hidden>
+                    <svg id="dzAvatarPlaceholder" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 12.2c2.8 0 5-2.2 5-5s-2.2-5-5-5-5 2.2-5 5 2.2 5 5 5zm0 2.4c-3.3 0-10 1.7-10 5v1.2C2 21.9 2.6 22.5 3.4 22.5h17.2c.8 0 1.4-.6 1.4-1.4V19.6c0-3.3-6.7-5-10-5z"/></svg>
+                  </span>
+                  <div class="dz-text">
+                    <b>Arrastra una imagen aquí</b>
+                    o toca para elegir un archivo — PNG o JPG, máximo 8MB
+                  </div>
+                  <input type="file" id="logoFileInput" accept="image/png,image/jpeg" hidden>
+                </div>
+                <p class="auth-error" id="logoError" hidden>El archivo supera los 8MB.</p>
+              </div>
+              <div class="field" style="margin-top:14px">
+                <label for="cfgNombre">Nombre de la empresa</label>
+                <input id="cfgNombre">
+              </div>
+              <div class="field" style="margin-top:14px">
+                <label for="cfgFuente">Tipografía del nombre</label>
+                <select id="cfgFuente">
+                  <option value="IBM Plex Sans">IBM Plex Sans</option>
+                  <option value="Poppins">Poppins</option>
+                  <option value="Montserrat">Montserrat</option>
+                  <option value="Playfair Display">Playfair Display</option>
+                  <option value="Roboto Slab">Roboto Slab</option>
+                  <option value="Quicksand">Quicksand</option>
+                  <option value="Oswald">Oswald</option>
+                  <option value="Nunito">Nunito</option>
+                </select>
+              </div>
+              <div class="config-actions">
+                <button class="primary" id="saveMarcaBtn">Guardar cambios</button>
+                <span class="saved-hint" id="savedHintMarca">Guardado</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ---- Colores ---- -->
+          <div class="tab-panel" id="panel-colores">
+            <div class="panel-section">
+              <h2>Colores de la tarjeta</h2>
+              <div class="field">
+                <label for="cfgColor">Color de fondo de la tarjeta</label>
+                <div class="color-row">
+                  <input type="color" id="cfgColor" value="#b8872b">
+                  <input type="text" id="cfgColorTxt" value="#b8872b">
+                </div>
+              </div>
+              <div class="field" style="margin-top:14px">
+                <label for="cfgColorBoton">Color de los botones</label>
+                <div class="color-row">
+                  <input type="color" id="cfgColorBoton" value="#1b1f23">
+                  <input type="text" id="cfgColorBotonTxt" value="#1b1f23">
+                </div>
+              </div>
+              <div class="config-actions">
+                <button class="primary" id="saveColoresBtn">Guardar cambios</button>
+                <span class="saved-hint" id="savedHintColores">Guardado</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ---- Sellos ---- -->
+          <div class="tab-panel" id="panel-sellos">
+            <div class="panel-section">
+              <h2>Forma y tamaño de los sellos</h2>
+              <p class="sub" style="font-size:12px;color:var(--ink-dim);margin:-6px 0 14px">
+                La cantidad de sellos la decide el umbral de puntos (lo editas en la pestaña "Recompensa").
+              </p>
+              <div class="field">
+                <label>Forma</label>
+                <div class="shape-grid" id="selloFormaGrid">
+                  <div class="shape-opt" data-valor="circulo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>Círculo</div>
+                  <div class="shape-opt" data-valor="estrella"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.9 6.3 6.9.9-5 4.8 1.3 6.8L12 17.6 5.9 20.8l1.3-6.8-5-4.8 6.9-.9z"/></svg>Estrella</div>
+                  <div class="shape-opt" data-valor="corazon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20.3s-7.8-4.7-9.8-9.3C.9 7.6 2.6 4 6.2 4c2 0 3.5 1.1 4.3 2.6.3.5.5 1 .5 1 0 0 .2-.5.5-1C12.3 5.1 13.8 4 15.8 4c3.6 0 5.3 3.6 4 7-2 4.6-9.8 9.3-9.8 9.3z"/></svg>Corazón</div>
+                  <div class="shape-opt" data-valor="cuadrado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="4"/></svg>Cuadrado</div>
+                </div>
+              </div>
+              <div class="field" style="margin-top:14px">
+                <label>Tamaño</label>
+                <div class="size-grid" id="selloTamanoGrid">
+                  <div class="size-opt" data-valor="pequeno">Pequeño</div>
+                  <div class="size-opt" data-valor="mediano">Mediano</div>
+                  <div class="size-opt" data-valor="grande">Grande</div>
+                </div>
+              </div>
+              <div class="config-actions">
+                <button class="primary" id="saveSellosBtn">Guardar cambios</button>
+                <span class="saved-hint" id="savedHintSellos">Guardado</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ---- Recompensa ---- -->
+          <div class="tab-panel" id="panel-recompensa">
+            <div class="panel-section">
+              <h2>Recompensa y umbral de puntos</h2>
+              <div class="field">
+                <label for="cfgRecompensa">¿Qué gana el cliente?</label>
+                <input id="cfgRecompensa" placeholder="Ej. servicio de publicidad gratis">
+              </div>
+              <div class="field" style="margin-top:14px">
+                <label for="cfgUmbral">Umbral de puntos (cuántos sellos pide la tarjeta)</label>
+                <input id="cfgUmbral" type="number" min="1">
+              </div>
+              <div class="config-actions">
+                <button class="primary" id="saveRecompensaBtn">Guardar cambios</button>
+                <span class="saved-hint" id="savedHintRecompensa">Guardado</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---- Ajustes ---- -->
+    <section class="view" id="view-ajustes" hidden>
+      <h1 class="view-title">Ajustes</h1>
+
+      <div class="panel-section">
+        <h2>Apariencia</h2>
         <div class="field">
-          <label for="cfgNombre">Nombre de la empresa</label>
-          <input id="cfgNombre">
+          <label for="themeSelect">Tema del panel</label>
+          <select id="themeSelect">
+            <option value="light">Claro</option>
+            <option value="dark">Oscuro</option>
+          </select>
         </div>
+      </div>
+
+      <div class="panel-section">
+        <h2>Cuenta</h2>
         <div class="field">
-          <label for="cfgUmbral">Umbral de puntos</label>
-          <input id="cfgUmbral" type="number" min="1">
+          <label>Contraseña</label>
+          <div><button class="ghost" type="button" id="cambiarPasswordBtn">Cambiar contraseña</button></div>
         </div>
-        <div class="field" style="grid-column:1 / -1">
-          <label for="cfgRecompensa">Recompensa</label>
-          <input id="cfgRecompensa">
+        <div class="field" style="margin-top:14px">
+          <label>Sesión</label>
+          <div><button class="ghost" type="button" id="logoutBtnAjustes">Cerrar sesión</button></div>
         </div>
       </div>
-      <div class="config-actions">
-        <button class="primary" id="saveConfigBtn">Guardar cambios</button>
-        <span class="saved-hint" id="savedHint">Guardado</span>
-      </div>
-    </div>
 
-    <div class="panel-section">
-      <h2>Clientes</h2>
-      <div class="table-wrap">
-        <table id="clientesTable" hidden>
-          <thead><tr><th>Nombre</th><th>Contacto</th><th>Puntos</th><th>Alta</th></tr></thead>
-          <tbody id="clientesBody"></tbody>
-        </table>
+      <div class="panel-section">
+        <h2>Conexión al backend</h2>
+        <div class="field">
+          <label for="backendUrlAjustes">URL del backend</label>
+          <input id="backendUrlAjustes">
+        </div>
+        <div class="config-actions">
+          <button class="ghost" id="saveBackendAjustes">Guardar</button>
+          <span class="saved-hint" id="savedHintBackend">Guardado</span>
+        </div>
       </div>
-      <p class="empty" id="clientesEmpty">Todavía no hay clientes registrados.</p>
-    </div>
+    </section>
+  </main>
+</div>
 
-    <div class="panel-section">
-      <h2>Accesos rápidos</h2>
-      <div class="links-row">
-        <a href="https://argayes.netlify.app/registro.html" target="_blank" rel="noopener" id="regLink">Página de registro de clientes</a>
-        <a href="https://argayes.netlify.app/escanear.html" target="_blank" rel="noopener" id="scanLink">Escanear clientes (sumar puntos)</a>
-      </div>
-    </div>
-  </section>
-</main>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 (function(){
   "use strict";
@@ -482,17 +803,6 @@
     applyTheme(this.value);
     try { localStorage.setItem('argayes-theme', this.value); } catch(e){}
   });
-
-  // ---- panel lateral de configuración ----
-  var menuBtn = document.getElementById('menuBtn');
-  var themePanel = document.getElementById('themePanel');
-  var themeScrim = document.getElementById('themeScrim');
-  var themePanelClose = document.getElementById('themePanelClose');
-  function openThemePanel(){ themePanel.classList.add('open'); themeScrim.classList.add('open'); }
-  function closeThemePanel(){ themePanel.classList.remove('open'); themeScrim.classList.remove('open'); }
-  menuBtn.addEventListener('click', openThemePanel);
-  themePanelClose.addEventListener('click', closeThemePanel);
-  themeScrim.addEventListener('click', closeThemePanel);
 
   function getBackendUrl(){
     try { return localStorage.getItem('argayes-backend-url') || ''; } catch(e){ return ''; }
@@ -521,11 +831,20 @@
   document.getElementById('saveBackend').addEventListener('click', function(){
     setBackendUrl(backendInput.value.trim().replace(/\/$/, ''));
   });
+  // Mismo campo, repetido en Ajustes para no tener que cerrar sesión para cambiar el backend.
+  var backendInputAjustes = document.getElementById('backendUrlAjustes');
+  document.getElementById('saveBackendAjustes').addEventListener('click', function(){
+    setBackendUrl(backendInputAjustes.value.trim().replace(/\/$/, ''));
+    backendInput.value = getBackendUrl();
+    var hint = document.getElementById('savedHintBackend');
+    hint.classList.add('show');
+    setTimeout(function(){ hint.classList.remove('show'); }, 2000);
+  });
 
   async function api(path, opts){
     var base = getBackendUrl();
     if(!base){
-      throw new Error('Primero configura la URL del backend en "Conexión al backend" (abajo del formulario).');
+      throw new Error('Primero configura la URL del backend en "Conexión al backend".');
     }
     opts = opts || {};
     opts.headers = Object.assign({'Content-Type':'application/json'}, opts.headers || {});
@@ -540,41 +859,40 @@
     return data;
   }
 
-  // ---- vistas ----
+  // ---- vistas raíz: auth vs app ----
   var authView = document.getElementById('authView');
-  var dashView = document.getElementById('dashView');
-  var accountBox = document.getElementById('accountBox');
+  var appShell = document.getElementById('appShell');
   var sessionName = document.getElementById('sessionName');
 
-  function pintarAvatar(empresa){
-    [['avatarImg','avatarPlaceholder'], ['avatarBigImg','avatarBigPlaceholder']].forEach(function(pair){
-      var img = document.getElementById(pair[0]);
-      var placeholder = document.getElementById(pair[1]);
-      if(empresa && empresa.logoUrl){
-        img.src = empresa.logoUrl;
-        img.hidden = false;
-        placeholder.hidden = true;
-      } else {
-        img.hidden = true;
-        img.removeAttribute('src');
-        placeholder.hidden = false;
-      }
-    });
+  function pintarAvatarSidebar(empresa){
+    var img = document.getElementById('avatarImg');
+    var placeholder = document.getElementById('avatarPlaceholder');
+    if(empresa && empresa.logoUrl){
+      img.src = empresa.logoUrl; img.hidden = false; placeholder.hidden = true;
+    } else {
+      img.hidden = true; img.removeAttribute('src'); placeholder.hidden = false;
+    }
   }
+
+  // ---- navegación entre secciones de la barra lateral ----
+  var navBtns = document.querySelectorAll('.nav-btn[data-view]');
+  function mostrarVista(nombre){
+    document.querySelectorAll('.view').forEach(function(v){ v.hidden = (v.id !== 'view-' + nombre); });
+    navBtns.forEach(function(b){ b.classList.toggle('active', b.dataset.view === nombre); });
+    if(nombre === 'escaner'){ /* nada que precargar */ }
+  }
+  navBtns.forEach(function(b){
+    b.addEventListener('click', function(){ mostrarVista(b.dataset.view); });
+  });
 
   function mostrarDash(empresa){
     setEmpresaCache(empresa);
     authView.hidden = true;
-    dashView.hidden = false;
-    accountBox.hidden = false;
+    appShell.classList.add('show');
     sessionName.textContent = empresa.nombre;
-    pintarAvatar(empresa);
-    document.getElementById('cfgNombre').value = empresa.nombre || '';
-    document.getElementById('cfgUmbral').value = empresa.umbral || 10;
-    document.getElementById('cfgRecompensa').value = empresa.recompensa || '';
-    // El link de registro lleva el id de ESTE negocio y el backend que ya
-    // configuraste, para que la página de registro sepa en qué negocio dar
-    // de alta al cliente sin que tengas que explicárselo a nadie.
+    pintarAvatarSidebar(empresa);
+    mostrarVista('panel');
+    cargarTarjetaDesdeEmpresa(empresa);
     var regLink = document.getElementById('regLink');
     var backend = getBackendUrl();
     if(regLink){
@@ -582,10 +900,7 @@
       if(backend) params += '&backend=' + encodeURIComponent(backend);
       regLink.href = 'https://argayes.netlify.app/registro.html?' + params;
     }
-    var scanLink = document.getElementById('scanLink');
-    if(scanLink && backend){
-      scanLink.href = 'https://argayes.netlify.app/escanear.html?backend=' + encodeURIComponent(backend);
-    }
+    backendInputAjustes.value = backend;
     cargarClientes();
     cargarEstadisticas();
   }
@@ -594,94 +909,24 @@
     setToken('');
     setEmpresaCache(null);
     authView.hidden = false;
-    dashView.hidden = true;
-    accountBox.hidden = true;
-    cerrarMenuCuenta();
+    appShell.classList.remove('show');
+    detenerCamara();
   }
 
   document.getElementById('logoutBtn').addEventListener('click', mostrarLogin);
+  document.getElementById('logoutBtnAjustes').addEventListener('click', mostrarLogin);
 
-  // ---- menú de cuenta (avatar + nombre) ----
-  var accountChip = document.getElementById('accountChip');
-  var accountMenu = document.getElementById('accountMenu');
-
-  function cerrarMenuCuenta(){
-    accountMenu.hidden = true;
-    accountChip.setAttribute('aria-expanded', 'false');
-  }
-  accountChip.addEventListener('click', function(ev){
-    ev.stopPropagation();
-    var abierto = !accountMenu.hidden;
-    if(abierto){ cerrarMenuCuenta(); }
-    else { accountMenu.hidden = false; accountChip.setAttribute('aria-expanded', 'true'); }
-  });
-  document.addEventListener('click', function(ev){
-    if(!accountBox.contains(ev.target)) cerrarMenuCuenta();
-  });
-
-  // ---- modal: editar negocio ----
-  var editScrim = document.getElementById('editScrim');
-  var editBizModal = document.getElementById('editBizModal');
-  var avatarFileInput = document.getElementById('avatarFileInput');
-  var nuevoLogoDataUrl = null;
-
-  function abrirEditBiz(){
-    cerrarMenuCuenta();
-    nuevoLogoDataUrl = null;
-    pintarAvatar(getEmpresaCache());
-    document.getElementById('avatarError').hidden = true;
-    editScrim.hidden = false;
-    editBizModal.hidden = false;
-  }
-  function cerrarEditBiz(){
-    editScrim.hidden = true;
-    editBizModal.hidden = true;
-  }
-
-  document.getElementById('editBizBtn').addEventListener('click', abrirEditBiz);
-  document.getElementById('cancelEditBiz').addEventListener('click', cerrarEditBiz);
-  editScrim.addEventListener('click', cerrarEditBiz);
-
-  document.getElementById('chooseAvatarBtn').addEventListener('click', function(){
-    avatarFileInput.click();
-  });
-
-  var AVATAR_MAX_BYTES = 5 * 1024 * 1024; // 5MB — deja margen bajo el límite de 8MB del backend (el base64 pesa ~33% más que el archivo original)
-  var avatarErrorEl = document.getElementById('avatarError');
-
-  avatarFileInput.addEventListener('change', function(){
-    var file = avatarFileInput.files[0];
-    if(!file) return;
-    if(file.size > AVATAR_MAX_BYTES){
-      avatarErrorEl.hidden = false;
-      avatarFileInput.value = '';
-      return;
-    }
-    avatarErrorEl.hidden = true;
-    var reader = new FileReader();
-    reader.onload = function(){
-      nuevoLogoDataUrl = reader.result;
-      var img = document.getElementById('avatarBigImg');
-      img.src = nuevoLogoDataUrl;
-      img.hidden = false;
-      document.getElementById('avatarBigPlaceholder').hidden = true;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  document.getElementById('saveAvatarBtn').addEventListener('click', async function(){
-    if(!nuevoLogoDataUrl){ cerrarEditBiz(); return; }
-    try {
-      var empresa = await api('/api/mi-empresa', {
-        method: 'PATCH',
-        body: JSON.stringify({ logoUrl: nuevoLogoDataUrl })
-      });
-      setEmpresaCache(empresa);
-      pintarAvatar(empresa);
-      cerrarEditBiz();
-    } catch(e){
-      alert(e.message);
-    }
+  // "Cambiar contraseña" en Ajustes reusa el flujo de "olvidé mi contraseña"
+  // (código por correo) — es el único mecanismo de cambio de password que ya
+  // existe en el backend, así que no se inventa uno nuevo: se cierra sesión
+  // y se abre esa vista con el email ya puesto.
+  document.getElementById('cambiarPasswordBtn').addEventListener('click', function(){
+    var empresa = getEmpresaCache();
+    var email = empresa ? empresa.email : '';
+    mostrarLogin();
+    authMode = 'forgot';
+    pintarAuthMode();
+    if(email) document.getElementById('forgotEmail').value = email;
   });
 
   // ---- mostrar/ocultar contraseña (aplica a login, registro y reset) ----
@@ -724,13 +969,11 @@
     } else {
       authTitle.textContent = 'Recuperar contraseña';
       authSub.textContent = 'Solo para negocios — si eres cliente, tu tarjeta de lealtad no usa contraseña.';
-      // Siempre reinicia al paso 1 cada vez que se entra a esta vista.
       document.getElementById('forgotStep1').hidden = false;
       document.getElementById('forgotStep2').hidden = true;
       document.getElementById('forgotSentHint').classList.remove('show');
       document.getElementById('forgotError').classList.remove('show');
       document.getElementById('resetError').classList.remove('show');
-      document.getElementById('forgotEmail').value = '';
       document.getElementById('resetCode').value = '';
       document.getElementById('resetNewPassword').value = '';
       document.getElementById('resetConfirmPassword').value = '';
@@ -750,7 +993,6 @@
     pintarAuthMode();
   });
 
-  // ---- olvidé mi contraseña: paso 1, enviar código por correo ----
   var ultimoEmailReset = '';
   async function enviarCodigoReset(){
     var email = document.getElementById('forgotEmail').value.trim();
@@ -799,10 +1041,9 @@
     }
   });
 
-  // ---- olvidé mi contraseña: paso 2, código + nueva contraseña ----
   forgotForm.addEventListener('submit', async function(ev){
     ev.preventDefault();
-    if(document.getElementById('forgotStep2').hidden) return; // el paso 1 no envía el form
+    if(document.getElementById('forgotStep2').hidden) return;
     var err = document.getElementById('resetError');
     err.style.color = '';
     err.classList.remove('show');
@@ -875,9 +1116,6 @@
           umbral: Number(document.getElementById('regUmbral').value) || 10
         })
       });
-      // Ya no se entra directo al panel: la cuenta queda pendiente de que
-      // ARGAYES la apruebe, así que se regresa a la vista de login con un
-      // aviso en vez de abrir el dashboard.
       registerForm.reset();
       authMode = 'login';
       pintarAuthMode();
@@ -892,29 +1130,325 @@
     }
   });
 
-  // ---- config ----
-  document.getElementById('saveConfigBtn').addEventListener('click', async function(){
-    var hint = document.getElementById('savedHint');
+  // ======================================================================
+  // Tarjeta de fidelidad: pestañas, vista previa en vivo y guardado
+  // ======================================================================
+  var tarjeta = {
+    nombre: '', logoUrl: null, fuente: 'IBM Plex Sans',
+    color: '#b8872b', colorBoton: '#1b1f23',
+    selloForma: 'circulo', selloTamano: 'mediano',
+    recompensa: '', umbral: 10
+  };
+
+  function cargarTarjetaDesdeEmpresa(empresa){
+    tarjeta.nombre = empresa.nombre || '';
+    tarjeta.logoUrl = empresa.logoUrl || null;
+    tarjeta.fuente = empresa.fuente || 'IBM Plex Sans';
+    tarjeta.color = empresa.color || '#b8872b';
+    tarjeta.colorBoton = empresa.colorBoton || '#1b1f23';
+    tarjeta.selloForma = empresa.selloForma || 'circulo';
+    tarjeta.selloTamano = empresa.selloTamano || 'mediano';
+    tarjeta.recompensa = empresa.recompensa || '';
+    tarjeta.umbral = empresa.umbral || 10;
+
+    document.getElementById('cfgNombre').value = tarjeta.nombre;
+    document.getElementById('cfgFuente').value = tarjeta.fuente;
+    document.getElementById('cfgColor').value = tarjeta.color;
+    document.getElementById('cfgColorTxt').value = tarjeta.color;
+    document.getElementById('cfgColorBoton').value = tarjeta.colorBoton;
+    document.getElementById('cfgColorBotonTxt').value = tarjeta.colorBoton;
+    document.getElementById('cfgRecompensa').value = tarjeta.recompensa;
+    document.getElementById('cfgUmbral').value = tarjeta.umbral;
+    marcarSeleccionado('selloFormaGrid', tarjeta.selloForma);
+    marcarSeleccionado('selloTamanoGrid', tarjeta.selloTamano);
+    pintarLogoDropzone();
+    pintarTarjetaPreview();
+  }
+
+  function marcarSeleccionado(contenedorId, valor){
+    document.querySelectorAll('#' + contenedorId + ' > *').forEach(function(el){
+      el.classList.toggle('active', el.dataset.valor === valor);
+    });
+  }
+
+  var TAMANOS_PX = { pequeno: 22, mediano: 30, grande: 40 };
+
+  function svgSello(forma, relleno){
+    var comun = 'viewBox="0 0 24 24"';
+    if(!relleno){
+      if(forma === 'estrella') return '<svg ' + comun + ' fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.9 6.3 6.9.9-5 4.8 1.3 6.8L12 17.6 5.9 20.8l1.3-6.8-5-4.8 6.9-.9z"/></svg>';
+      if(forma === 'corazon') return '<svg ' + comun + ' fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20.3s-7.8-4.7-9.8-9.3C.9 7.6 2.6 4 6.2 4c2 0 3.5 1.1 4.3 2.6.3.5.5 1 .5 1 0 0 .2-.5.5-1C12.3 5.1 13.8 4 15.8 4c3.6 0 5.3 3.6 4 7-2 4.6-9.8 9.3-9.8 9.3z"/></svg>';
+      if(forma === 'cuadrado') return '<svg ' + comun + ' fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="4"/></svg>';
+      return '<svg ' + comun + ' fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>';
+    }
+    if(forma === 'estrella') return '<svg ' + comun + ' fill="currentColor"><path d="M12 2l2.9 6.3 6.9.9-5 4.8 1.3 6.8L12 17.6 5.9 20.8l1.3-6.8-5-4.8 6.9-.9z"/></svg>';
+    if(forma === 'corazon') return '<svg ' + comun + ' fill="currentColor"><path d="M12 20.3s-7.8-4.7-9.8-9.3C.9 7.6 2.6 4 6.2 4c2 0 3.5 1.1 4.3 2.6.3.5.5 1 .5 1 0 0 .2-.5.5-1C12.3 5.1 13.8 4 15.8 4c3.6 0 5.3 3.6 4 7-2 4.6-9.8 9.3-9.8 9.3z"/></svg>';
+    if(forma === 'cuadrado') return '<svg ' + comun + ' fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="4"/></svg>';
+    return '<svg ' + comun + ' fill="currentColor"><circle cx="12" cy="12" r="9"/></svg>';
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function pintarTarjetaPreview(){
+    var card = document.getElementById('tcCard');
+    card.style.background = tarjeta.color;
+    card.style.fontFamily = "'" + tarjeta.fuente + "', " + 'var(--font-body)';
+
+    document.getElementById('tcNombre').textContent = tarjeta.nombre || 'Nombre de tu negocio';
+    var logoWrap = document.getElementById('tcLogoWrap');
+    logoWrap.innerHTML = tarjeta.logoUrl
+      ? '<img src="' + tarjeta.logoUrl + '" alt="">'
+      : '';
+
+    var umbral = Math.max(1, Number(tarjeta.umbral) || 10);
+    var ejemploSellos = Math.min(3, umbral); // ejemplo de un cliente a medio camino
+    document.getElementById('tcContador').textContent = ejemploSellos + '/' + umbral;
+
+    var px = TAMANOS_PX[tarjeta.selloTamano] || TAMANOS_PX.mediano;
+    var grid = document.getElementById('tcSellosGrid');
+    var html = '';
+    for(var i = 0; i < umbral; i++){
+      var lleno = i < ejemploSellos;
+      html += '<span style="width:' + px + 'px;height:' + px + 'px;display:flex;color:' + (lleno ? '#fff' : 'rgba(255,255,255,.45)') + '">' + svgSello(tarjeta.selloForma, lleno) + '</span>';
+    }
+    grid.innerHTML = html;
+
+    document.getElementById('tcRecompensa').textContent = tarjeta.recompensa || 'Sin definir todavía';
+
+    var qrWrap = document.getElementById('tcQrWrap');
+    qrWrap.innerHTML = '';
+    try {
+      new QRCode(qrWrap, {
+        text: 'EJEMPLO-' + (getEmpresaCache() ? getEmpresaCache().id : 'demo'),
+        width: 72, height: 72,
+        colorDark: tarjeta.colorBoton || '#1b1f23',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } catch(e){ /* si la librería no carga, se deja el espacio vacío */ }
+
+    // Los botones de "primary" dentro de este formulario no deben pintarse
+    // del color de la tarjeta — solo es una referencia visual que se usa en
+    // la vista previa y en el color del QR.
+  }
+
+  function pintarLogoDropzone(){
+    var img = document.getElementById('dzAvatarImg');
+    var placeholder = document.getElementById('dzAvatarPlaceholder');
+    if(tarjeta.logoUrl){
+      img.src = tarjeta.logoUrl; img.hidden = false; placeholder.hidden = true;
+    } else {
+      img.hidden = true; img.removeAttribute('src'); placeholder.hidden = false;
+    }
+  }
+
+  // ---- pestañas de la tarjeta ----
+  document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.tab-btn[data-tab]').forEach(function(b){ b.classList.remove('active'); });
+      document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---- Marca: nombre, tipografía y logo (arrastrar y soltar) ----
+  document.getElementById('cfgNombre').addEventListener('input', function(){
+    tarjeta.nombre = this.value;
+    pintarTarjetaPreview();
+  });
+  document.getElementById('cfgFuente').addEventListener('change', function(){
+    tarjeta.fuente = this.value;
+    pintarTarjetaPreview();
+  });
+
+  var LOGO_MAX_BYTES = 8 * 1024 * 1024;
+  var logoErrorEl = document.getElementById('logoError');
+  var logoDropzone = document.getElementById('logoDropzone');
+  var logoFileInput = document.getElementById('logoFileInput');
+
+  function redimensionarImagen(file, maxDim, callback){
+    var reader = new FileReader();
+    reader.onload = function(){
+      var img = new Image();
+      img.onload = function(){
+        var w = img.width, h = img.height;
+        if(w > maxDim || h > maxDim){
+          var ratio = Math.min(maxDim / w, maxDim / h);
+          w = Math.round(w * ratio); h = Math.round(h * ratio);
+        }
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        callback(canvas.toDataURL('image/png'));
+      };
+      img.onerror = function(){ callback(null); };
+      img.src = reader.result;
+    };
+    reader.onerror = function(){ callback(null); };
+    reader.readAsDataURL(file);
+  }
+
+  function procesarArchivoLogo(file){
+    if(!file) return;
+    logoErrorEl.hidden = true;
+    if(file.size > LOGO_MAX_BYTES){
+      logoErrorEl.hidden = false;
+      return;
+    }
+    // Se reduce a 480px de lado máximo antes de convertir a base64: un logo
+    // no necesita más resolución que esa, y así el archivo que se guarda en
+    // la base de datos pesa mucho menos que la foto original del celular.
+    redimensionarImagen(file, 480, function(dataUrl){
+      if(!dataUrl){ logoErrorEl.hidden = false; return; }
+      tarjeta.logoUrl = dataUrl;
+      pintarLogoDropzone();
+      pintarTarjetaPreview();
+    });
+  }
+
+  logoDropzone.addEventListener('click', function(){ logoFileInput.click(); });
+  logoFileInput.addEventListener('change', function(){
+    procesarArchivoLogo(logoFileInput.files[0]);
+    logoFileInput.value = '';
+  });
+  ['dragenter','dragover'].forEach(function(evName){
+    logoDropzone.addEventListener(evName, function(ev){
+      ev.preventDefault();
+      logoDropzone.classList.add('drag');
+    });
+  });
+  ['dragleave','drop'].forEach(function(evName){
+    logoDropzone.addEventListener(evName, function(ev){
+      ev.preventDefault();
+      logoDropzone.classList.remove('drag');
+    });
+  });
+  logoDropzone.addEventListener('drop', function(ev){
+    var file = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0];
+    if(file) procesarArchivoLogo(file);
+  });
+
+  document.getElementById('saveMarcaBtn').addEventListener('click', async function(){
+    var hint = document.getElementById('savedHintMarca');
     hint.classList.remove('show');
     try {
       var empresa = await api('/api/mi-empresa', {
         method: 'PATCH',
         body: JSON.stringify({
           nombre: document.getElementById('cfgNombre').value.trim(),
-          umbral: Number(document.getElementById('cfgUmbral').value) || 10,
-          recompensa: document.getElementById('cfgRecompensa').value.trim()
+          fuente: document.getElementById('cfgFuente').value,
+          logoUrl: tarjeta.logoUrl
         })
       });
       setEmpresaCache(empresa);
       sessionName.textContent = empresa.nombre;
+      pintarAvatarSidebar(empresa);
+      cargarTarjetaDesdeEmpresa(empresa);
       hint.classList.add('show');
       setTimeout(function(){ hint.classList.remove('show'); }, 2000);
-    } catch(e){
-      alert(e.message);
-    }
+    } catch(e){ alert(e.message); }
   });
 
-  // ---- clientes y estadísticas ----
+  // ---- Colores ----
+  function sincronizarColor(inputColorId, inputTxtId, campo){
+    var inColor = document.getElementById(inputColorId);
+    var inTxt = document.getElementById(inputTxtId);
+    inColor.addEventListener('input', function(){
+      inTxt.value = this.value;
+      tarjeta[campo] = this.value;
+      pintarTarjetaPreview();
+    });
+    inTxt.addEventListener('input', function(){
+      var v = this.value.trim();
+      if(/^#[0-9a-f]{6}$/i.test(v)){
+        inColor.value = v;
+        tarjeta[campo] = v;
+        pintarTarjetaPreview();
+      }
+    });
+  }
+  sincronizarColor('cfgColor', 'cfgColorTxt', 'color');
+  sincronizarColor('cfgColorBoton', 'cfgColorBotonTxt', 'colorBoton');
+
+  document.getElementById('saveColoresBtn').addEventListener('click', async function(){
+    var hint = document.getElementById('savedHintColores');
+    hint.classList.remove('show');
+    try {
+      var empresa = await api('/api/mi-empresa', {
+        method: 'PATCH',
+        body: JSON.stringify({ color: tarjeta.color, colorBoton: tarjeta.colorBoton })
+      });
+      setEmpresaCache(empresa);
+      cargarTarjetaDesdeEmpresa(empresa);
+      hint.classList.add('show');
+      setTimeout(function(){ hint.classList.remove('show'); }, 2000);
+    } catch(e){ alert(e.message); }
+  });
+
+  // ---- Sellos ----
+  function cablearGrupoOpciones(contenedorId, campo){
+    document.querySelectorAll('#' + contenedorId + ' > *').forEach(function(el){
+      el.addEventListener('click', function(){
+        tarjeta[campo] = el.dataset.valor;
+        marcarSeleccionado(contenedorId, el.dataset.valor);
+        pintarTarjetaPreview();
+      });
+    });
+  }
+  cablearGrupoOpciones('selloFormaGrid', 'selloForma');
+  cablearGrupoOpciones('selloTamanoGrid', 'selloTamano');
+
+  document.getElementById('saveSellosBtn').addEventListener('click', async function(){
+    var hint = document.getElementById('savedHintSellos');
+    hint.classList.remove('show');
+    try {
+      var empresa = await api('/api/mi-empresa', {
+        method: 'PATCH',
+        body: JSON.stringify({ selloForma: tarjeta.selloForma, selloTamano: tarjeta.selloTamano })
+      });
+      setEmpresaCache(empresa);
+      cargarTarjetaDesdeEmpresa(empresa);
+      hint.classList.add('show');
+      setTimeout(function(){ hint.classList.remove('show'); }, 2000);
+    } catch(e){ alert(e.message); }
+  });
+
+  // ---- Recompensa ----
+  document.getElementById('cfgRecompensa').addEventListener('input', function(){
+    tarjeta.recompensa = this.value;
+    pintarTarjetaPreview();
+  });
+  document.getElementById('cfgUmbral').addEventListener('input', function(){
+    tarjeta.umbral = Number(this.value) || 1;
+    pintarTarjetaPreview();
+  });
+
+  document.getElementById('saveRecompensaBtn').addEventListener('click', async function(){
+    var hint = document.getElementById('savedHintRecompensa');
+    hint.classList.remove('show');
+    try {
+      var empresa = await api('/api/mi-empresa', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          recompensa: document.getElementById('cfgRecompensa').value.trim(),
+          umbral: Number(document.getElementById('cfgUmbral').value) || 10
+        })
+      });
+      setEmpresaCache(empresa);
+      cargarTarjetaDesdeEmpresa(empresa);
+      hint.classList.add('show');
+      setTimeout(function(){ hint.classList.remove('show'); }, 2000);
+    } catch(e){ alert(e.message); }
+  });
+
+  // ======================================================================
+  // Clientes y estadísticas (Panel / Clientes)
+  // ======================================================================
   async function cargarClientes(){
     var tbody = document.getElementById('clientesBody');
     var table = document.getElementById('clientesTable');
@@ -951,10 +1485,213 @@
     } catch(e){ /* los tiles se quedan en "—" si falla */ }
   }
 
-  function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, function(c){
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
-    });
+  // ======================================================================
+  // Escáner — misma lógica que escanear.html, pero como sección del panel
+  // (usa la misma sesión: no vuelve a pedir login)
+  // ======================================================================
+  var html5QrCode = null;
+  var escaneando = false;
+  var escanerStartBtn = document.getElementById('escanerStartBtn');
+  var escanerStopBtn = document.getElementById('escanerStopBtn');
+  var escanerPlaceholder = document.getElementById('escanerPlaceholder');
+  var escanerHint = document.getElementById('escanerHint');
+
+  function escanerOcultarResultados(){
+    document.getElementById('escanerVisitaResult').hidden = true;
+    document.getElementById('escanerCanjeResult').hidden = true;
+    document.getElementById('escanerErrorResult').hidden = true;
+  }
+
+  async function iniciarCamara(){
+    escanerOcultarResultados();
+    escanerHint.classList.remove('error');
+    escanerHint.textContent = 'Apunta la cámara al código QR del cliente.';
+    try {
+      if(!html5QrCode){ html5QrCode = new Html5Qrcode('escanerReader'); }
+      escanerPlaceholder.hidden = true;
+      await html5QrCode.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 240, height: 240 } },
+        onScanSuccess,
+        function(){ /* onScanFailure: se ignora, sigue intentando frame a frame */ }
+      );
+      escaneando = true;
+      escanerStartBtn.hidden = true;
+      escanerStopBtn.hidden = false;
+    } catch(e){
+      escanerPlaceholder.hidden = false;
+      escanerHint.classList.add('error');
+      escanerHint.textContent = 'No se pudo abrir la cámara: ' + (e.message || e) + '. Revisa los permisos de cámara del navegador.';
+    }
+  }
+
+  async function detenerCamara(){
+    if(html5QrCode && escaneando){
+      try { await html5QrCode.stop(); } catch(e){}
+      escaneando = false;
+    }
+    escanerStartBtn.hidden = false;
+    escanerStopBtn.hidden = true;
+    escanerPlaceholder.hidden = false;
+  }
+
+  escanerStartBtn.addEventListener('click', iniciarCamara);
+  escanerStopBtn.addEventListener('click', detenerCamara);
+
+  var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  var procesando = false;
+
+  async function onScanSuccess(textoLeido){
+    if(procesando) return;
+    var clienteId = (textoLeido || '').trim();
+    if(!UUID_RE.test(clienteId)){
+      escanerMostrarError('Código no reconocido', 'Ese QR no es un código de cliente de ARGAYES.');
+      return;
+    }
+    procesando = true;
+    await detenerCamara();
+    await registrarVisita(clienteId);
+    procesando = false;
+  }
+
+  function escanerMostrarError(titulo, sub){
+    escanerOcultarResultados();
+    document.getElementById('escanerErrorTitle').textContent = titulo;
+    document.getElementById('escanerErrorSub').textContent = sub || '';
+    document.getElementById('escanerErrorResult').hidden = false;
+  }
+
+  document.getElementById('escanerReintentarBtn').addEventListener('click', function(){
+    escanerOcultarResultados();
+    iniciarCamara();
+  });
+  document.getElementById('escanerNuevoEscaneoBtn2').addEventListener('click', function(){
+    escanerOcultarResultados();
+    iniciarCamara();
+  });
+
+  function iconoSvg(nombre){
+    if(nombre === 'check'){
+      return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>';
+    }
+    return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 2 20h20z"/></svg>';
+  }
+
+  async function registrarVisita(clienteId){
+    var box = document.getElementById('escanerVisitaResult');
+    var icon = document.getElementById('escanerVisitaIcon');
+    var title = document.getElementById('escanerVisitaTitle');
+    var sub = document.getElementById('escanerVisitaSub');
+    var actions = document.getElementById('escanerVisitaActions');
+    actions.innerHTML = '';
+
+    try {
+      var r = await api('/api/visita', {
+        method: 'POST',
+        body: JSON.stringify({ clienteId: clienteId })
+      });
+      escanerOcultarResultados();
+      box.hidden = false;
+
+      if(r.listoParaCanje){
+        icon.className = 'result-icon warn';
+        icon.innerHTML = iconoSvg('gift');
+        title.textContent = '¡' + r.cliente.nombre + ' ya puede canjear su recompensa!';
+        sub.textContent = 'Puntos actuales: ' + r.cliente.puntos;
+        var btnCanjear = document.createElement('button');
+        btnCanjear.type = 'button';
+        btnCanjear.className = 'primary';
+        btnCanjear.textContent = 'Generar código de canje';
+        btnCanjear.addEventListener('click', function(){ generarCanje(clienteId); });
+        var btnOtro = document.createElement('button');
+        btnOtro.type = 'button';
+        btnOtro.className = 'ghost';
+        btnOtro.textContent = 'Escanear otro cliente';
+        btnOtro.addEventListener('click', function(){ escanerOcultarResultados(); iniciarCamara(); });
+        actions.appendChild(btnCanjear);
+        actions.appendChild(btnOtro);
+      } else {
+        icon.className = 'result-icon good';
+        icon.innerHTML = iconoSvg('check');
+        title.textContent = 'Punto sumado a ' + r.cliente.nombre;
+        sub.textContent = 'Puntos: ' + r.cliente.puntos + ' — se actualiza solo en su wallet.';
+        var btnOtro2 = document.createElement('button');
+        btnOtro2.type = 'button';
+        btnOtro2.className = 'primary';
+        btnOtro2.textContent = 'Escanear otro cliente';
+        btnOtro2.addEventListener('click', function(){ escanerOcultarResultados(); iniciarCamara(); });
+        actions.appendChild(btnOtro2);
+      }
+      cargarEstadisticas();
+      cargarClientes();
+    } catch(e){
+      var msg = e.message || 'Error desconocido';
+      var titulo = 'No se pudo registrar la visita';
+      if(/ya se registr[oó]/i.test(msg)) titulo = 'Ya se le sumó un punto hoy';
+      if(/no pertenece/i.test(msg)) titulo = 'Ese cliente es de otro negocio';
+      if(/no encontrado/i.test(msg)) titulo = 'Cliente no encontrado';
+      escanerMostrarError(titulo, msg);
+    }
+  }
+
+  var generandoCanje = false;
+  async function generarCanje(clienteId){
+    if(generandoCanje) return;
+    generandoCanje = true;
+    try {
+      var canje = await api('/api/canje', {
+        method: 'POST',
+        body: JSON.stringify({ clienteId: clienteId })
+      });
+      escanerOcultarResultados();
+      document.getElementById('escanerCanjeSub').textContent = 'Muéstraselo al cliente o confírmalo tú mismo al entregar la recompensa.';
+      document.getElementById('escanerCanjeCodigo').textContent = canje.codigo;
+      document.getElementById('escanerCanjeResult').hidden = false;
+      document.getElementById('escanerConfirmarCanjeBtn').onclick = function(){ confirmarCanje(canje.codigo); };
+    } catch(e){
+      escanerMostrarError('No se pudo generar el canje', e.message);
+    } finally {
+      generandoCanje = false;
+    }
+  }
+
+  async function confirmarCanje(codigo){
+    var btnConfirmar = document.getElementById('escanerConfirmarCanjeBtn');
+    if(btnConfirmar.disabled) return;
+    btnConfirmar.disabled = true;
+    try {
+      var r = await api('/api/canje/confirmar', {
+        method: 'POST',
+        body: JSON.stringify({ codigo: codigo })
+      });
+      escanerOcultarResultados();
+      var box = document.getElementById('escanerVisitaResult');
+      var icon = document.getElementById('escanerVisitaIcon');
+      icon.className = 'result-icon good';
+      icon.innerHTML = iconoSvg('check');
+      document.getElementById('escanerVisitaTitle').textContent = 'Canje confirmado';
+      document.getElementById('escanerVisitaSub').textContent = r.cliente ? ('Puntos restantes: ' + r.cliente.puntos) : 'Recompensa entregada.';
+      var actions = document.getElementById('escanerVisitaActions');
+      actions.innerHTML = '';
+      var btnOtro = document.createElement('button');
+      btnOtro.type = 'button';
+      btnOtro.className = 'primary';
+      btnOtro.textContent = 'Escanear otro cliente';
+      btnOtro.addEventListener('click', function(){ escanerOcultarResultados(); iniciarCamara(); });
+      actions.appendChild(btnOtro);
+      box.hidden = false;
+      cargarEstadisticas();
+      cargarClientes();
+    } catch(e){
+      var msg = e.message || 'Error desconocido';
+      var titulo = 'No se pudo confirmar el canje';
+      if(/ya_usado/i.test(msg)) titulo = 'Ese código ya se usó';
+      if(/codigo_no_existe/i.test(msg)) titulo = 'Código de canje no válido';
+      if(/no_pertenece/i.test(msg)) titulo = 'Ese código es de otro negocio';
+      escanerMostrarError(titulo, msg);
+    } finally {
+      btnConfirmar.disabled = false;
+    }
   }
 
   // ---- arranque: si ya hay sesión guardada, entra directo ----

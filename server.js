@@ -284,9 +284,9 @@ app.get('/api/mi-empresa', requireAuth, ah(async (req, res) => {
 }));
 
 app.patch('/api/mi-empresa', requireAuth, ah(async (req, res) => {
-      const { nombre, color, recompensa, umbral, logoUrl } = req.body;
+      const { nombre, color, colorBoton, fuente, selloForma, selloTamano, recompensa, umbral, logoUrl } = req.body;
       try {
-              const empresa = await db.actualizarEmpresa(req.empresaId, { nombre, color, recompensa, umbral, logoUrl });
+              const empresa = await db.actualizarEmpresa(req.empresaId, { nombre, color, colorBoton, fuente, selloForma, selloTamano, recompensa, umbral, logoUrl });
               res.json(sinDatosSensibles(empresa));
       } catch (e) {
               if (e.datosInvalidos) return res.status(400).json({ error: e.message });
