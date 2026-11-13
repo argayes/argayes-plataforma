@@ -101,6 +101,29 @@ estático. Opciones gratis/baratas que sí lo soportan:
 
 Una vez desplegado, copia la URL pública que te den y ponla en `PUBLIC_URL`.
 
+## 7. Respaldo mensual de la base de datos
+
+El Postgres gratis de Render no hace respaldos. El de pago sí, pero solo
+guarda los últimos 3-7 días (point-in-time recovery) — no sirve para
+"quiero poder recuperar lo de hace 2 meses". Para eso, `scripts/respaldo-mensual.js`
+manda por correo, una vez al mes, un archivo con TODO lo que hay en la base
+de datos (negocios, clientes, visitas, canjes — sin contraseñas).
+
+Para activarlo (una sola vez, tarda 5 minutos):
+1. Render Dashboard → "New +" → "Cron Job"
+2. Conecta el repo `argayes-plataforma` (el mismo del backend)
+3. Build Command: `npm install` — Start Command: `npm run respaldo`
+4. Schedule: `0 9 1 * *` (el día 1 de cada mes, 9am UTC)
+5. En "Environment" de ese Cron Job, agrega:
+   - `DATABASE_URL` — cópiala igual que la tiene el servicio del backend
+   - `RESEND_API_KEY` y `EMAIL_FROM` — igual, cópialas del backend (si no
+     las tienes configuradas todavía, revisa `lib/email.js`)
+   - `BACKUP_EMAIL_TO` — el correo tuyo donde quieres recibir el respaldo
+
+De ahí en adelante, Render lo corre solo cada mes — no hace falta volver a
+tocarlo. Si alguna vez necesitas RESTAURAR un respaldo, pide ayuda para
+hacerlo bien: no es algo que convenga improvisar.
+
 ## 6. Conectarlo con la página web (`argayes-lealtad.html`)
 
 En la página, al generar el QR, en vez de armar el JSON con los datos
