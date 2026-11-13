@@ -1,0 +1,18 @@
+# Dependencias (se reinstalan con "npm install" — Render las instala solas)
+node_modules/
+
+# Variables de entorno y credenciales reales — NUNCA deben subirse a GitHub.
+# Esto es solo una red de seguridad (antes no existía este archivo): si algún
+# día creas un .env local, o bajas aquí el google-service-account.json o los
+# certificados .pem de Apple, git los ignora automáticamente en vez de
+# dejarlos listos para subirse con un "git add ." sin querer.
+.env
+.env.*
+google-service-account.json
+certs/
+*.pem
+*.p12
+*.key
+
+# Archivos del sistema
+.DS_Store

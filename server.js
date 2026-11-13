@@ -57,6 +57,31 @@ const limitadorReset = rateLimit({
       message: { error: 'Demasiados intentos. Espera unos minutos e intenta de nuevo.' }
 });
 
+// Freno para solicitudes de registro de NEGOCIO: sin esto, cualquiera podía
+// mandar miles de solicitudes de suscripción falsas sin límite (no cuesta
+// nada intentarlo, solo llenaría tu lista de "pendientes" de basura).
+const limitadorRegistro = rateLimit({
+      windowMs: 60 * 60 * 1000,
+      limit: 10,
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: { error: 'Demasiadas solicitudes de registro desde esta conexión. Intenta de nuevo más tarde.' }
+});
+
+// Freno para alta de CLIENTES: esta ruta es pública a propósito (la usa
+// cualquier cliente final desde el link de registro, sin cuenta ni login),
+// así que sin límite alguien podría automatizar la creación de miles de
+// clientes falsos para un negocio. El número es generoso a propósito: un
+// stand de registro real puede tener a varias personas dándose de alta
+// seguido desde el mismo wifi.
+const limitadorClientes = rateLimit({
+      windowMs: 15 * 60 * 1000,
+      limit: 40,
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: { error: 'Demasiadas solicitudes. Espera unos minutos e intenta de nuevo.' }
+});
+
 // IMPORTANTE: con Postgres, cada ruta ahora es "async" y puede rechazar su
 // promesa (por ejemplo si alguien manda un id que no es un UUID válido, o si
 // la base de datos tiene un hipo momentáneo). Express 4 NO atrapa esos
@@ -120,8 +145,14 @@ function esUuidValido(id) {
       return typeof id === 'string' && UUID_RE.test(id);
 }
 
+// Ruta mínima para saber que el backend está vivo (healthcheck de Render /
+// de quien sea) — sin esto, visitar la URL del backend a secas solo daba 404.
+app.get('/', (req, res) => {
+      res.json({ ok: true, servicio: 'ARGAYES backend' });
+});
+
 // ---------- Cuenta del negocio: alta y login (Paso 6-A) ----------
-app.post('/api/auth/registro', ah(async (req, res) => {
+app.post('/api/auth/registro', limitadorRegistro, ah(async (req, res) => {
       const { nombre, email, password, recompensa, umbral, color } = req.body;
       if (!nombre || !email || !password) {
               return res.status(400).json({ error: 'Falta nombre, email o password' });
@@ -254,8 +285,13 @@ app.get('/api/mi-empresa', requireAuth, ah(async (req, res) => {
 
 app.patch('/api/mi-empresa', requireAuth, ah(async (req, res) => {
       const { nombre, color, recompensa, umbral, logoUrl } = req.body;
-      const empresa = await db.actualizarEmpresa(req.empresaId, { nombre, color, recompensa, umbral, logoUrl });
-      res.json(sinDatosSensibles(empresa));
+      try {
+              const empresa = await db.actualizarEmpresa(req.empresaId, { nombre, color, recompensa, umbral, logoUrl });
+              res.json(sinDatosSensibles(empresa));
+      } catch (e) {
+              if (e.datosInvalidos) return res.status(400).json({ error: e.message });
+              throw e;
+      }
 }));
 
 app.get('/api/mis-clientes', requireAuth, ah(async (req, res) => {
@@ -276,7 +312,7 @@ app.get('/api/empresas/:id', ah(async (req, res) => {
 
 // ---------- Paso 6-B: alta de cliente (pública: la usa el cliente final
 // desde el link/QR que le da el negocio, sin necesitar cuenta ni login) ----------
-app.post('/api/clientes', ah(async (req, res) => {
+app.post('/api/clientes', limitadorClientes, ah(async (req, res) => {
       const { empresaId, nombre, contacto } = req.body;
       if (!empresaId || !nombre) return res.status(400).json({ error: 'Falta empresaId o nombre' });
       if (!esUuidValido(empresaId)) return res.status(400).json({ error: 'empresaId inválido' });
@@ -338,13 +374,26 @@ app.post('/api/visita', requireAuth, requireEmpresaActiva, ah(async (req, res) =
                                                                         return res.status(409).json({ error: 'Ya se registró una visita hoy para este cliente' });
                                                                 }
 
-                                                                const actualizado = await db.registrarVisita(clienteId);
+                                                                let actualizado;
+                                                                try {
+                                                                        actualizado = await db.registrarVisita(clienteId);
+                                                                } catch (e) {
+                                                                        // Ver comentario en db.registrarVisita: esto solo puede pasar si otra
+                                                                        // petición para el mismo cliente ganó la carrera justo entre el
+                                                                        // "yaVisitoHoy" de arriba y este registro.
+                                                                        if (e.yaVisito) return res.status(409).json({ error: e.message });
+                                                                        throw e;
+                                                                }
       const empresa = req.empresa;
 
                                                                 // Mejor esfuerzo: si hay credenciales de Google, empuja el saldo nuevo al
                                                                 // pase que el cliente ya tiene guardado (Paso 8). Si falla, la visita ya
-                                                                // quedó registrada en la base de datos de todas formas.
-                                                                googleWallet.patchPuntos(empresa, actualizado).catch(() => {});
+                                                                // quedó registrada en la base de datos de todas formas — pero sí se
+                                                                // registra en los logs de Render, para poder notar si Google Wallet deja
+                                                                // de actualizar pases sin que nadie se dé cuenta.
+                                                                googleWallet.patchPuntos(empresa, actualizado).catch((e) => {
+                                                                        console.error('No se pudo actualizar el pase de Google Wallet del cliente', clienteId, ':', e.message);
+                                                                });
 
                                                                 const listoParaCanje = actualizado.puntos >= empresa.umbral;
       res.json({ cliente: actualizado, listoParaCanje });

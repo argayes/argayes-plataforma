@@ -561,7 +561,10 @@
     }
   }
 
+  var generandoCanje = false;
   async function generarCanje(clienteId){
+    if(generandoCanje) return;
+    generandoCanje = true;
     try {
       var canje = await api('/api/canje', {
         method: 'POST',
@@ -574,10 +577,20 @@
       document.getElementById('confirmarCanjeBtn').onclick = function(){ confirmarCanje(canje.codigo); };
     } catch(e){
       mostrarError('No se pudo generar el canje', e.message);
+    } finally {
+      generandoCanje = false;
     }
   }
 
+  // "confirmarCanjeBtn" se desactiva mientras se envía: sin esto, dos taps
+  // rápidos (o un dedo lento en una pantalla con mal internet) podían mandar
+  // dos confirmaciones del mismo código casi al mismo tiempo. El backend ya
+  // se protege de esto (ver confirmarCanje en lib/db.js), pero desactivar el
+  // botón también evita la petición de sobra y el parpadeo en pantalla.
   async function confirmarCanje(codigo){
+    var btnConfirmar = document.getElementById('confirmarCanjeBtn');
+    if(btnConfirmar.disabled) return;
+    btnConfirmar.disabled = true;
     try {
       var r = await api('/api/canje/confirmar', {
         method: 'POST',
@@ -606,6 +619,8 @@
       if(/codigo_no_existe/i.test(msg)) titulo = 'Código de canje no válido';
       if(/no_pertenece/i.test(msg)) titulo = 'Ese código es de otro negocio';
       mostrarError(titulo, msg);
+    } finally {
+      btnConfirmar.disabled = false;
     }
   }
 })();
