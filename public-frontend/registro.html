@@ -465,6 +465,10 @@
     }
     try {
       empresaActual = await api('/api/empresas/' + encodeURIComponent(empresaId));
+      // El link puede traer el id real (UUID) o el link con marca propia
+      // (slug) — de aquí en adelante se usa el id real, porque es lo que
+      // espera /api/clientes al dar de alta al cliente.
+      empresaId = empresaActual.id;
       bizNameDisplay.textContent = empresaActual.nombre;
       if(empresaActual.recompensa){
         bizRewardDisplay.textContent = empresaActual.recompensa;

@@ -568,6 +568,14 @@
       <div class="panel-section">
         <h2>Accesos rápidos</h2>
         <p class="hint" style="margin:0 0 12px">Pon este QR a la vista en tu negocio (en el mostrador, una mesa, una etiqueta) para que el cliente lo escanee con su cámara, se registre solo con su nombre y teléfono/correo, y descargue su tarjeta a Apple Wallet o Google Wallet.</p>
+        <div style="margin-bottom:16px">
+          <label for="slugInput" style="display:block;font-size:13px;color:var(--muted);margin-bottom:6px">Link con el nombre de tu negocio (en vez del código largo)</label>
+          <div class="links-row" style="align-items:center">
+            <input type="text" id="slugInput" placeholder="mi-negocio" maxlength="40" style="padding:9px 12px;min-width:160px">
+            <button type="button" class="ghost" id="slugGuardarBtn">Guardar link</button>
+            <span class="hint" id="slugHint" style="text-align:left;margin-top:0"></span>
+          </div>
+        </div>
         <div class="qr-share-row">
           <div id="regQrBox" class="qr-share-box"></div>
           <div class="qr-share-meta">
@@ -1059,18 +1067,15 @@
     b.addEventListener('click', function(){ mostrarVista(b.dataset.view); });
   });
 
-  function mostrarDash(empresa){
-    setEmpresaCache(empresa);
-    authView.hidden = true;
-    appShell.classList.add('show');
-    sessionName.textContent = empresa.nombre;
-    pintarAvatarSidebar(empresa);
-    mostrarVista('panel');
-    cargarTarjetaDesdeEmpresa(empresa);
+  // Arma el link/QR de autorregistro, usando el slug (link con marca
+  // propia) cuando el negocio ya lo configuró, o el id de siempre si no.
+  function actualizarLinkRegistro(empresa){
+    var slugInput = document.getElementById('slugInput');
+    if(slugInput) slugInput.value = empresa.slug || '';
     var regLink = document.getElementById('regLink');
     var backend = getBackendUrl();
     if(regLink){
-      var params = 'empresaId=' + encodeURIComponent(empresa.id);
+      var params = 'empresaId=' + encodeURIComponent(empresa.slug || empresa.id);
       if(backend) params += '&backend=' + encodeURIComponent(backend);
       var regUrl = 'https://argayes.netlify.app/registro.html?' + params;
       regLink.href = regUrl;
@@ -1087,7 +1092,18 @@
         });
       }
     }
-    backendInputAjustes.value = backend;
+  }
+
+  function mostrarDash(empresa){
+    setEmpresaCache(empresa);
+    authView.hidden = true;
+    appShell.classList.add('show');
+    sessionName.textContent = empresa.nombre;
+    pintarAvatarSidebar(empresa);
+    mostrarVista('panel');
+    cargarTarjetaDesdeEmpresa(empresa);
+    actualizarLinkRegistro(empresa);
+    backendInputAjustes.value = getBackendUrl();
     cargarClientes();
     cargarEstadisticas();
     cargarEstadisticasAvanzadas();
@@ -1952,6 +1968,36 @@
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  });
+
+  // ---- link con marca propia (slug) ----
+  document.getElementById('slugGuardarBtn').addEventListener('click', async function(){
+    var btn = this;
+    var hint = document.getElementById('slugHint');
+    var valor = document.getElementById('slugInput').value.trim().toLowerCase();
+    hint.classList.remove('error');
+    if(!valor){
+      hint.textContent = 'Escribe un link antes de guardar.';
+      hint.classList.add('error');
+      return;
+    }
+    btn.disabled = true;
+    hint.textContent = 'Guardando…';
+    try {
+      var empresa = await api('/api/mi-empresa', {
+        method: 'PATCH',
+        body: JSON.stringify({ slug: valor })
+      });
+      setEmpresaCache(empresa);
+      actualizarLinkRegistro(empresa);
+      hint.textContent = 'Guardado.';
+      setTimeout(function(){ hint.textContent = ''; }, 2000);
+    } catch(e){
+      hint.textContent = e.message;
+      hint.classList.add('error');
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   // ---- recordatorio manual a clientes inactivos ----

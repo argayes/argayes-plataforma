@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 const db = require('./lib/db');
 const googleWallet = require('./lib/google-wallet');
 const appleWallet = require('./lib/apple-wallet');
-const { enviarCodigoReset, enviarRecordatorioInactividad } = require('./lib/email');
+const { enviarCodigoReset, enviarRecordatorioInactividad, enviarAvisoNuevoNegocio } = require('./lib/email');
 
 // No hay valor "por default" para estas dos claves a propósito: si faltan,
 // el servidor se niega a arrancar en vez de arrancar inseguro sin avisar
@@ -164,6 +164,9 @@ app.post('/api/auth/registro', limitadorRegistro, ah(async (req, res) => {
               // de sesión — tiene que esperar a que ARGAYES la apruebe desde el
               // panel de super-admin antes de poder iniciar sesión.
               await db.crearEmpresa({ nombre, email, password, recompensa, umbral, color });
+              // Mejor esfuerzo: si el correo de aviso falla, la cuenta ya quedó
+              // registrada igual — no se bloquea la respuesta por esto.
+              enviarAvisoNuevoNegocio(nombre, email).catch((e) => console.error('No se pudo avisar la cuenta nueva:', e.message));
               res.status(201).json({
                       pendiente: true,
                       mensaje: 'Solicitud de suscripción enviada. Nuestro equipo la revisará y activaremos tu cuenta en breve.'
@@ -284,9 +287,9 @@ app.get('/api/mi-empresa', requireAuth, ah(async (req, res) => {
 }));
 
 app.patch('/api/mi-empresa', requireAuth, ah(async (req, res) => {
-      const { nombre, color, colorBoton, fuente, selloForma, selloTamano, recompensa, umbral, logoUrl } = req.body;
+      const { nombre, color, colorBoton, fuente, selloForma, selloTamano, recompensa, umbral, logoUrl, slug } = req.body;
       try {
-              const empresa = await db.actualizarEmpresa(req.empresaId, { nombre, color, colorBoton, fuente, selloForma, selloTamano, recompensa, umbral, logoUrl });
+              const empresa = await db.actualizarEmpresa(req.empresaId, { nombre, color, colorBoton, fuente, selloForma, selloTamano, recompensa, umbral, logoUrl, slug });
               // db.actualizarEmpresa ya marcó a todos los clientes de este
               // negocio como "cambiados" si lo que se editó se ve en la
               // tarjeta — aquí solo se les avisa a sus iPhones que la vuelvan
@@ -352,8 +355,10 @@ app.post('/api/mis-recordatorios', requireAuth, requireEmpresaActiva, ah(async (
 
 // Alta directa de empresa sin password (uso interno/pruebas con curl).
 app.get('/api/empresas/:id', ah(async (req, res) => {
-      if (!esUuidValido(req.params.id)) return res.status(400).json({ error: 'Id inválido' });
-      const empresa = await db.obtenerEmpresa(req.params.id);
+      // Acepta el id real (UUID, los links viejos) o el slug con marca
+      // propia (los links nuevos) — así los dos tipos de link siguen
+      // funcionando sin que el que llama tenga que saber cuál es.
+      const empresa = await db.obtenerEmpresaPorIdOSlug(req.params.id);
       if (!empresa) return res.status(404).json({ error: 'Empresa no encontrada' });
       res.json(sinDatosSensibles(empresa));
 }));
