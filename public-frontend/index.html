@@ -376,8 +376,8 @@
           <input id="regRecompensa" placeholder="Ej. servicio de publicidad gratis">
         </div>
         <div class="field" style="margin-top:12px">
-          <label for="regUmbral">Umbral de puntos</label>
-          <input id="regUmbral" type="number" min="1" value="10">
+          <label for="regUmbral">Umbral de puntos (máximo 20)</label>
+          <input id="regUmbral" type="number" min="1" max="20" value="10">
         </div>
         <p class="auth-error" id="registerError"></p>
         <button class="primary" type="submit" style="margin-top:14px;width:100%">Crear cuenta</button>
@@ -727,8 +727,8 @@
                 <input id="cfgRecompensa" placeholder="Ej. servicio de publicidad gratis">
               </div>
               <div class="field" style="margin-top:14px">
-                <label for="cfgUmbral">Umbral de puntos (cuántos sellos pide la tarjeta)</label>
-                <input id="cfgUmbral" type="number" min="1">
+                <label for="cfgUmbral">Umbral de puntos (cuántos sellos pide la tarjeta, máximo 20)</label>
+                <input id="cfgUmbral" type="number" min="1" max="20">
               </div>
               <div class="config-actions">
                 <button class="primary" id="saveRecompensaBtn">Guardar cambios</button>
@@ -743,6 +743,32 @@
     <!-- ---- Ajustes ---- -->
     <section class="view" id="view-ajustes" hidden>
       <h1 class="view-title">Ajustes</h1>
+
+      <div class="panel-section">
+        <h2>Foto de perfil de la cuenta</h2>
+        <div class="field">
+          <label>Logo del negocio</label>
+          <div class="dropzone" id="ajustesLogoDropzone">
+            <span class="avatar" id="ajustesAvatarWrap" style="width:48px;height:48px">
+              <img id="ajustesAvatarImg" alt="" hidden>
+              <svg id="ajustesAvatarPlaceholder" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 12.2c2.8 0 5-2.2 5-5s-2.2-5-5-5-5 2.2-5 5 2.2 5 5 5zm0 2.4c-3.3 0-10 1.7-10 5v1.2C2 21.9 2.6 22.5 3.4 22.5h17.2c.8 0 1.4-.6 1.4-1.4V19.6c0-3.3-6.7-5-10-5z"/></svg>
+            </span>
+            <div class="dz-text">
+              <b>Arrastra una imagen aquí</b>
+              o toca para elegir un archivo — PNG o JPG, máximo 8MB
+            </div>
+            <input type="file" id="ajustesLogoFileInput" accept="image/png,image/jpeg" hidden>
+          </div>
+          <p class="auth-error" id="ajustesLogoError" hidden>El archivo supera los 8MB.</p>
+          <p class="sub" style="font-size:12px;color:var(--ink-dim);margin:6px 0 0">
+            Es el mismo logo que se usa en la Tarjeta de fidelidad (pestaña "Marca").
+          </p>
+        </div>
+        <div class="config-actions">
+          <button class="primary" id="saveFotoBtn">Guardar cambios</button>
+          <span class="saved-hint" id="savedHintFoto">Guardado</span>
+        </div>
+      </div>
 
       <div class="panel-section">
         <h2>Apariencia</h2>
@@ -1113,7 +1139,7 @@
           email: emailRegistrado,
           password: document.getElementById('regPassword').value,
           recompensa: document.getElementById('regRecompensa').value.trim(),
-          umbral: Number(document.getElementById('regUmbral').value) || 10
+          umbral: Math.min(20, Math.max(1, Number(document.getElementById('regUmbral').value) || 10))
         })
       });
       registerForm.reset();
@@ -1149,7 +1175,10 @@
     tarjeta.selloForma = empresa.selloForma || 'circulo';
     tarjeta.selloTamano = empresa.selloTamano || 'mediano';
     tarjeta.recompensa = empresa.recompensa || '';
-    tarjeta.umbral = empresa.umbral || 10;
+    // Por si el negocio ya tenía guardado un umbral fuera de 1-20 de antes de
+    // que existiera este límite (como pasó aquí: se guardó un umbral de 765),
+    // se recorta al mostrarlo — así no se intenta dibujar cientos de sellos.
+    tarjeta.umbral = Math.min(20, Math.max(1, Number(empresa.umbral) || 10));
 
     document.getElementById('cfgNombre').value = tarjeta.nombre;
     document.getElementById('cfgFuente').value = tarjeta.fuente;
@@ -1236,14 +1265,20 @@
     // la vista previa y en el color del QR.
   }
 
+  // Actualiza las 3 vistas que muestran el logo a la vez (barra lateral,
+  // pestaña Marca y Ajustes) — es el mismo archivo en los 3 lados, así que
+  // cambiarlo en cualquiera de los 3 se ve reflejado de inmediato en todos.
   function pintarLogoDropzone(){
-    var img = document.getElementById('dzAvatarImg');
-    var placeholder = document.getElementById('dzAvatarPlaceholder');
-    if(tarjeta.logoUrl){
-      img.src = tarjeta.logoUrl; img.hidden = false; placeholder.hidden = true;
-    } else {
-      img.hidden = true; img.removeAttribute('src'); placeholder.hidden = false;
-    }
+    [['dzAvatarImg','dzAvatarPlaceholder'], ['ajustesAvatarImg','ajustesAvatarPlaceholder']].forEach(function(par){
+      var img = document.getElementById(par[0]);
+      var placeholder = document.getElementById(par[1]);
+      if(tarjeta.logoUrl){
+        img.src = tarjeta.logoUrl; img.hidden = false; placeholder.hidden = true;
+      } else {
+        img.hidden = true; img.removeAttribute('src'); placeholder.hidden = false;
+      }
+    });
+    pintarAvatarSidebar({ logoUrl: tarjeta.logoUrl });
   }
 
   // ---- pestañas de la tarjeta ----
@@ -1331,6 +1366,63 @@
   logoDropzone.addEventListener('drop', function(ev){
     var file = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0];
     if(file) procesarArchivoLogo(file);
+  });
+
+  // ---- el mismo dropzone, repetido en Ajustes ----
+  var ajustesLogoDropzone = document.getElementById('ajustesLogoDropzone');
+  var ajustesLogoFileInput = document.getElementById('ajustesLogoFileInput');
+  var ajustesLogoErrorEl = document.getElementById('ajustesLogoError');
+
+  function procesarArchivoLogoAjustes(file){
+    if(!file) return;
+    ajustesLogoErrorEl.hidden = true;
+    if(file.size > LOGO_MAX_BYTES){
+      ajustesLogoErrorEl.hidden = false;
+      return;
+    }
+    redimensionarImagen(file, 480, function(dataUrl){
+      if(!dataUrl){ ajustesLogoErrorEl.hidden = false; return; }
+      tarjeta.logoUrl = dataUrl;
+      pintarLogoDropzone();
+      pintarTarjetaPreview();
+    });
+  }
+
+  ajustesLogoDropzone.addEventListener('click', function(){ ajustesLogoFileInput.click(); });
+  ajustesLogoFileInput.addEventListener('change', function(){
+    procesarArchivoLogoAjustes(ajustesLogoFileInput.files[0]);
+    ajustesLogoFileInput.value = '';
+  });
+  ['dragenter','dragover'].forEach(function(evName){
+    ajustesLogoDropzone.addEventListener(evName, function(ev){
+      ev.preventDefault();
+      ajustesLogoDropzone.classList.add('drag');
+    });
+  });
+  ['dragleave','drop'].forEach(function(evName){
+    ajustesLogoDropzone.addEventListener(evName, function(ev){
+      ev.preventDefault();
+      ajustesLogoDropzone.classList.remove('drag');
+    });
+  });
+  ajustesLogoDropzone.addEventListener('drop', function(ev){
+    var file = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0];
+    if(file) procesarArchivoLogoAjustes(file);
+  });
+
+  document.getElementById('saveFotoBtn').addEventListener('click', async function(){
+    var hint = document.getElementById('savedHintFoto');
+    hint.classList.remove('show');
+    try {
+      var empresa = await api('/api/mi-empresa', {
+        method: 'PATCH',
+        body: JSON.stringify({ logoUrl: tarjeta.logoUrl })
+      });
+      setEmpresaCache(empresa);
+      cargarTarjetaDesdeEmpresa(empresa);
+      hint.classList.add('show');
+      setTimeout(function(){ hint.classList.remove('show'); }, 2000);
+    } catch(e){ alert(e.message); }
   });
 
   document.getElementById('saveMarcaBtn').addEventListener('click', async function(){
@@ -1424,7 +1516,12 @@
     pintarTarjetaPreview();
   });
   document.getElementById('cfgUmbral').addEventListener('input', function(){
-    tarjeta.umbral = Number(this.value) || 1;
+    // Tope de 20 también aquí: sin esto, mientras la persona todavía está
+    // escribiendo (ej. tecleó "7" de camino a "7" nada más, o se le fue la
+    // mano) la vista previa llegaba a dibujar cientos de sellos antes de que
+    // el backend pudiera avisar que el máximo es 20.
+    var n = Math.min(20, Math.max(1, Number(this.value) || 1));
+    tarjeta.umbral = n;
     pintarTarjetaPreview();
   });
 
@@ -1436,7 +1533,7 @@
         method: 'PATCH',
         body: JSON.stringify({
           recompensa: document.getElementById('cfgRecompensa').value.trim(),
-          umbral: Number(document.getElementById('cfgUmbral').value) || 10
+          umbral: Math.min(20, Math.max(1, Number(document.getElementById('cfgUmbral').value) || 10))
         })
       });
       setEmpresaCache(empresa);

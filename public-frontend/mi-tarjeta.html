@@ -186,7 +186,7 @@
       ? '<img src="' + empresa.logoUrl + '" alt="">'
       : '';
 
-    var umbral = Math.max(1, Number(empresa.umbral) || 10);
+    var umbral = Math.min(20, Math.max(1, Number(empresa.umbral) || 10));
     var puntos = Math.max(0, Number(cliente.puntos) || 0);
     var sellosLlenos = Math.min(puntos, umbral);
     document.getElementById('tcContador').textContent = sellosLlenos + '/' + umbral;
