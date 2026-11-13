@@ -297,6 +297,11 @@ app.patch('/api/mi-empresa', requireAuth, ah(async (req, res) => {
               db.pushTokensDeEmpresa(req.empresaId)
                       .then((tokens) => appleWallet.avisarActualizacion(tokens))
                       .catch((e) => console.error('No se pudo avisar la actualización de Apple Wallet del negocio', req.empresaId, ':', e.message));
+              // Lo mismo pero para Google Wallet: un solo PATCH a la clase
+              // (no por cliente) alcanza para que a TODOS los que ya tengan
+              // el pase guardado les llegue el color/logo/recompensa nuevos.
+              googleWallet.patchClase(empresa)
+                      .catch((e) => console.error('No se pudo avisar la actualización de Google Wallet del negocio', req.empresaId, ':', e.message));
               res.json(sinDatosSensibles(empresa));
       } catch (e) {
               if (e.datosInvalidos) return res.status(400).json({ error: e.message });
