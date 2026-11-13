@@ -224,6 +224,55 @@
     font-size:13px;font-weight:600;color:var(--accent-ink);background:var(--accent-soft);
     padding:9px 14px;border-radius:8px;text-decoration:none;
   }
+  .danger-link{
+    background:none;border:none;color:var(--danger);font-family:var(--font-body);
+    font-size:12px;font-weight:600;cursor:pointer;padding:0;
+  }
+  .danger-link:hover{text-decoration:underline}
+
+  /* ---- Tus números claros ---- */
+  .numeros-title{font-size:16px;font-weight:700;margin:34px 0 4px}
+  .numeros-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+  .periodo-pills{display:flex;gap:6px;background:var(--surface-2);border-radius:999px;padding:3px}
+  .periodo-pill{
+    font-family:var(--font-body);font-size:12px;font-weight:600;padding:7px 14px;border-radius:999px;
+    border:none;background:none;color:var(--ink-dim);cursor:pointer;
+  }
+  .periodo-pill.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+  .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+  @media (max-width:640px){ .kpi-grid{grid-template-columns:1fr} }
+  .kpi-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:16px;display:flex;flex-direction:column;gap:4px;
+  }
+  .kpi-icon{
+    width:30px;height:30px;border-radius:8px;background:var(--accent-soft);color:var(--accent-ink);
+    display:flex;align-items:center;justify-content:center;margin-bottom:6px;
+  }
+  .kpi-icon svg{width:16px;height:16px}
+  .kpi-number{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:26px;font-weight:700}
+  .kpi-caption{font-size:12px;color:var(--ink-dim)}
+  .kpi-delta{font-size:12px;font-weight:600;margin-top:2px}
+  .kpi-delta.up{color:var(--good)}
+  .kpi-delta.down{color:var(--danger)}
+  .kpi-delta.flat{color:var(--ink-dim)}
+
+  .chart-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+  .chart-title{font-size:13px;font-weight:700;margin:0}
+  .chart-sub{font-size:12px;color:var(--ink-dim);margin:2px 0 0}
+  .chart-legend{display:flex;gap:14px;font-size:12px;color:var(--ink-dim)}
+  .chart-legend span{display:inline-flex;align-items:center;gap:6px}
+  .chart-legend i{width:9px;height:9px;border-radius:2px;display:inline-block}
+  .chart-toggle{margin-top:12px;text-align:center}
+  .chart-wrap{position:relative;margin-top:18px}
+  .chart-tooltip{
+    position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);
+    font-size:11px;padding:6px 9px;border-radius:6px;white-space:nowrap;
+    transform:translate(-50%,-100%);opacity:0;transition:opacity .1s;z-index:5;
+  }
+  .chart-tooltip.show{opacity:1}
+  .chart-empty{font-size:13px;color:var(--ink-dim);text-align:center;padding:30px 0}
 
   /* ---- Tarjeta de fidelidad: pestañas + vista previa ---- */
   .tarjeta-layout{display:grid;grid-template-columns:260px 1fr;gap:24px;align-items:start}
@@ -501,6 +550,62 @@
           <a href="https://argayes.netlify.app/registro.html" target="_blank" rel="noopener" id="regLink">Página de registro de clientes</a>
         </div>
       </div>
+
+      <h2 class="numeros-title">Tus números claros</h2>
+      <div class="numeros-head">
+        <span></span>
+        <div class="periodo-pills" id="periodoPills">
+          <button type="button" class="periodo-pill active" data-dias="30">30 días</button>
+          <button type="button" class="periodo-pill" data-dias="120">120 días</button>
+          <button type="button" class="periodo-pill" data-dias="365">Un año</button>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17.5" cy="9" r="2.4"/><path d="M15.8 14.2c2.6.4 4.2 2.1 4.2 4.8"/></svg></span>
+          <span class="kpi-number" id="kpiVinieronNum">—</span>
+          <span class="kpi-caption" id="kpiVinieronCap">vinieron de — miembros</span>
+          <span class="kpi-delta flat" id="kpiVinieronDelta">—</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M21 6H8a5 5 0 0 0 0 10h1"/><path d="M7 22l-4-4 4-4"/><path d="M3 18h13a5 5 0 0 0 0-10h-1"/></svg></span>
+          <span class="kpi-number" id="kpiRetencionNum">—</span>
+          <span class="kpi-caption" id="kpiRetencionCap">regresan tras su primera visita</span>
+          <span class="kpi-delta flat" id="kpiRetencionDelta">—</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M17 8v6M20 11h-6"/></svg></span>
+          <span class="kpi-number" id="kpiNuevosNum">—</span>
+          <span class="kpi-caption" id="kpiNuevosCap">miembros nuevos</span>
+          <span class="kpi-delta flat" id="kpiNuevosDelta">—</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></span>
+          <span class="kpi-number" id="kpiFrecuenciaNum">—</span>
+          <span class="kpi-caption" id="kpiFrecuenciaCap">en promedio entre visitas</span>
+          <span class="kpi-delta flat" id="kpiFrecuenciaDelta">—</span>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="chart-head">
+          <div>
+            <p class="chart-title" id="chartTitle">Visitas por semana</p>
+            <p class="chart-sub" id="chartSub">Las últimas 12 semanas</p>
+          </div>
+          <div class="chart-legend">
+            <span><i style="background:#2a78d6" id="legendRegresanColor"></i>Regresan</span>
+            <span><i style="background:#eb6834" id="legendPrimeraColor"></i>Primera visita</span>
+          </div>
+        </div>
+        <div class="chart-wrap" id="chartWrap">
+          <div class="chart-tooltip" id="chartTooltip"></div>
+        </div>
+        <div class="chart-toggle">
+          <button type="button" class="ghost" id="toggleHistoricoBtn">Ver histórico</button>
+        </div>
+      </div>
     </section>
 
     <!-- ---- Clientes ---- -->
@@ -509,7 +614,7 @@
       <div class="panel-section">
         <div class="table-wrap">
           <table id="clientesTable" hidden>
-            <thead><tr><th>Nombre</th><th>Contacto</th><th>Puntos</th><th>Alta</th><th>Tarjeta</th></tr></thead>
+            <thead><tr><th>Nombre</th><th>Contacto</th><th>Puntos</th><th>Alta</th><th>Tarjeta</th><th></th></tr></thead>
             <tbody id="clientesBody"></tbody>
           </table>
         </div>
@@ -929,6 +1034,8 @@
     backendInputAjustes.value = backend;
     cargarClientes();
     cargarEstadisticas();
+    cargarEstadisticasAvanzadas();
+    cargarVisitasSemana();
   }
 
   function mostrarLogin(){
@@ -1565,7 +1672,8 @@
           '<td>' + escapeHtml(c.contacto || '—') + '</td>' +
           '<td class="pts">' + c.puntos + '</td>' +
           '<td>' + fecha + '</td>' +
-          '<td><a href="' + escapeHtml(tarjetaUrl) + '" target="_blank" rel="noopener">Ver</a></td>';
+          '<td><a href="' + escapeHtml(tarjetaUrl) + '" target="_blank" rel="noopener">Ver</a></td>' +
+          '<td><button type="button" class="danger-link" data-borrar-cliente="' + escapeHtml(c.id) + '" data-nombre-cliente="' + escapeHtml(c.nombre) + '">Borrar</button></td>';
         tbody.appendChild(tr);
       });
     } catch(e){
@@ -1584,6 +1692,186 @@
       document.getElementById('statPuntos').textContent = s.puntosRepartidos;
     } catch(e){ /* los tiles se quedan en "—" si falla */ }
   }
+
+  // ---- borrar cliente ----
+  var clientesBody = document.getElementById('clientesBody');
+  clientesBody.addEventListener('click', async function(ev){
+    var btn = ev.target.closest('[data-borrar-cliente]');
+    if(!btn) return;
+    var id = btn.dataset.borrarCliente;
+    var nombre = btn.dataset.nombreCliente;
+    if(!confirm('¿Borrar a "' + nombre + '"? Se pierden sus puntos, visitas y canjes — esto no se puede deshacer.')) return;
+    btn.disabled = true;
+    try {
+      await api('/api/mis-clientes/' + encodeURIComponent(id), { method: 'DELETE' });
+      cargarClientes();
+      cargarEstadisticas();
+      cargarEstadisticasAvanzadas();
+      cargarVisitasSemana();
+    } catch(e){
+      alert('No se pudo borrar: ' + e.message);
+      btn.disabled = false;
+    }
+  });
+
+  // ======================================================================
+  // "Tus números claros" — KPIs del periodo elegido + gráfica semanal
+  // ======================================================================
+  var periodoActual = 30;
+  var historicoActivo = false;
+
+  function pintarDelta(el, valor, unidad, invertirColor){
+    el.classList.remove('up','down','flat');
+    if(valor === null || valor === undefined){
+      el.textContent = 'Sin datos del periodo anterior';
+      el.classList.add('flat');
+      return;
+    }
+    var positivo = valor > 0;
+    var esBueno = invertirColor ? !positivo : positivo;
+    var signo = positivo ? '+' : '';
+    el.textContent = signo + valor + unidad + ' contra el periodo anterior';
+    if(valor === 0){ el.classList.add('flat'); }
+    else { el.classList.add(esBueno ? 'up' : 'down'); }
+  }
+
+  async function cargarEstadisticasAvanzadas(){
+    try {
+      var s = await api('/api/mis-estadisticas-avanzadas?dias=' + periodoActual);
+      document.getElementById('kpiVinieronNum').textContent = s.vinieron.actual;
+      document.getElementById('kpiVinieronCap').textContent = 'vinieron de ' + s.totalMiembros + ' miembros';
+      pintarDelta(document.getElementById('kpiVinieronDelta'), s.vinieron.deltaPct, '%', false);
+
+      document.getElementById('kpiRetencionNum').textContent = (s.retencion.pct === null ? '—' : s.retencion.pct + '%');
+      document.getElementById('kpiRetencionCap').textContent = 'regresan en ' + s.dias + ' días tras su primera visita';
+      pintarDelta(document.getElementById('kpiRetencionDelta'), s.retencion.deltaPuntos, ' pts', false);
+
+      document.getElementById('kpiNuevosNum').textContent = s.nuevosMiembros.actual;
+      document.getElementById('kpiNuevosCap').textContent = 'miembros nuevos en ' + s.dias + ' días';
+      pintarDelta(document.getElementById('kpiNuevosDelta'), s.nuevosMiembros.deltaPct, '%', false);
+
+      var frecuenciaVal = s.promedioDiasEntreVisitas.valor;
+      document.getElementById('kpiFrecuenciaNum').textContent = frecuenciaVal === null ? '—' : frecuenciaVal + ' días';
+      document.getElementById('kpiFrecuenciaCap').textContent = 'en promedio entre visitas';
+      // Menos días entre visitas = vienen más seguido = es una mejora, así
+      // que aquí el color se invierte: bajar el número es "verde".
+      pintarDelta(document.getElementById('kpiFrecuenciaDelta'), s.promedioDiasEntreVisitas.deltaDias, ' días', true);
+    } catch(e){ /* los KPIs se quedan en "—" si falla */ }
+  }
+
+  document.querySelectorAll('.periodo-pill').forEach(function(pill){
+    pill.addEventListener('click', function(){
+      document.querySelectorAll('.periodo-pill').forEach(function(p){ p.classList.remove('active'); });
+      pill.classList.add('active');
+      periodoActual = Number(pill.dataset.dias);
+      cargarEstadisticasAvanzadas();
+    });
+  });
+
+  // ---- gráfica: visitas por semana, apiladas (regresan abajo, primera visita arriba) ----
+  var COLOR_REGRESAN = { light: '#2a78d6', dark: '#3987e5' };
+  var COLOR_PRIMERA = { light: '#eb6834', dark: '#d95926' };
+  function colorActual(par){
+    var tema = root.getAttribute('data-theme');
+    var oscuro = tema === 'dark' || (tema !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    return oscuro ? par.dark : par.light;
+  }
+
+  var toggleHistoricoBtn = document.getElementById('toggleHistoricoBtn');
+  toggleHistoricoBtn.addEventListener('click', function(){
+    historicoActivo = !historicoActivo;
+    toggleHistoricoBtn.textContent = historicoActivo ? 'Ver últimas 12 semanas' : 'Ver histórico';
+    document.getElementById('chartSub').textContent = historicoActivo
+      ? 'Desde que te diste de alta'
+      : 'Las últimas 12 semanas';
+    cargarVisitasSemana();
+  });
+
+  function dibujarGraficaSemanas(semanas){
+    var wrap = document.getElementById('chartWrap');
+    var tooltip = document.getElementById('chartTooltip');
+    // El tooltip se vuelve a crear abajo (innerHTML lo borraría), así que se
+    // guarda aparte y se reinserta al final.
+    var colorRegresan = colorActual(COLOR_REGRESAN);
+    var colorPrimera = colorActual(COLOR_PRIMERA);
+    document.getElementById('legendRegresanColor').style.background = colorRegresan;
+    document.getElementById('legendPrimeraColor').style.background = colorPrimera;
+
+    if(!semanas.length){
+      wrap.innerHTML = '<p class="chart-empty">Todavía no hay visitas registradas.</p>';
+      return;
+    }
+
+    var maxTotal = Math.max(1, ...semanas.map(function(s){ return s.primeras + s.regresan; }));
+    var ancho = Math.max(560, semanas.length * 34);
+    var alto = 160;
+    var ejeAlto = 130;
+    var anchoBarra = Math.min(26, (ancho / semanas.length) * 0.55);
+
+    var svg = '<svg viewBox="0 0 ' + ancho + ' ' + (alto + 20) + '" style="width:100%;height:' + (alto + 20) + 'px;overflow:visible" preserveAspectRatio="none">';
+    semanas.forEach(function(s, i){
+      var total = s.primeras + s.regresan;
+      var x = (i + 0.5) * (ancho / semanas.length) - anchoBarra / 2;
+      var hRegresan = total > 0 ? (s.regresan / maxTotal) * ejeAlto : 0;
+      var hPrimera = total > 0 ? (s.primeras / maxTotal) * ejeAlto : 0;
+      var gap = (hRegresan > 0 && hPrimera > 0) ? 2 : 0;
+      var yBase = ejeAlto;
+      var yRegresanTop = yBase - hRegresan;
+      var yPrimeraTop = yRegresanTop - gap - hPrimera;
+
+      svg += '<g class="barra-semana" data-i="' + i + '" style="cursor:pointer">';
+      svg += '<rect x="' + x + '" y="' + (yBase - Math.max(hRegresan, total > 0 ? 2 : 0)) + '" width="' + anchoBarra + '" height="' + Math.max(hRegresan, total > 0 ? 2 : 0) + '" rx="3" fill="' + colorRegresan + '"/>';
+      if(hPrimera > 0){
+        svg += '<rect x="' + x + '" y="' + yPrimeraTop + '" width="' + anchoBarra + '" height="' + hPrimera + '" rx="3" fill="' + colorPrimera + '"/>';
+      }
+      // Barra invisible más ancha, de toda la altura del eje, para que el
+      // mouse no tenga que acertarle exacto a la barra angosta.
+      svg += '<rect x="' + (x - 4) + '" y="0" width="' + (anchoBarra + 8) + '" height="' + ejeAlto + '" fill="transparent"/>';
+      svg += '</g>';
+
+      // Etiqueta del eje: solo el mes, y solo cuando cambia respecto a la barra anterior.
+      var fecha = new Date(s.semana + 'T00:00:00');
+      var mesTxt = fecha.toLocaleDateString('es-MX', { month: 'short' }).replace('.', '');
+      var mesAnterior = i > 0 ? new Date(semanas[i-1].semana + 'T00:00:00').getMonth() : -1;
+      if(fecha.getMonth() !== mesAnterior){
+        svg += '<text x="' + (x + anchoBarra / 2) + '" y="' + (ejeAlto + 16) + '" font-size="10" fill="var(--ink-dim)" text-anchor="middle">' + mesTxt + '</text>';
+      }
+    });
+    svg += '</svg>';
+
+    wrap.innerHTML = svg;
+    wrap.appendChild(tooltip);
+
+    wrap.querySelectorAll('.barra-semana').forEach(function(g){
+      g.addEventListener('mouseenter', function(ev){ mostrarTooltip(ev, g); });
+      g.addEventListener('mousemove', function(ev){ mostrarTooltip(ev, g); });
+      g.addEventListener('mouseleave', function(){ tooltip.classList.remove('show'); });
+    });
+
+    function mostrarTooltip(ev, g){
+      var i = Number(g.dataset.i);
+      var s = semanas[i];
+      var rectWrap = wrap.getBoundingClientRect();
+      tooltip.style.left = (ev.clientX - rectWrap.left) + 'px';
+      tooltip.style.top = (ev.clientY - rectWrap.top - 10) + 'px';
+      var fecha = new Date(s.semana + 'T00:00:00');
+      tooltip.innerHTML = 'Semana del ' + fecha.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) +
+        '<br>Primera visita: ' + s.primeras + ' · Regresan: ' + s.regresan;
+      tooltip.classList.add('show');
+    }
+  }
+
+  async function cargarVisitasSemana(){
+    try {
+      var semanas = await api('/api/mis-visitas-semana?historico=' + historicoActivo);
+      dibujarGraficaSemanas(semanas);
+    } catch(e){
+      document.getElementById('chartWrap').innerHTML = '<p class="chart-empty">No se pudo cargar: ' + e.message + '</p>';
+    }
+  }
+  // Si cambia el tema (claro/oscuro) mientras la gráfica ya está dibujada,
+  // se vuelve a pintar para usar los colores correctos de ese tema.
+  themeSelect.addEventListener('change', function(){ cargarVisitasSemana(); });
 
   // ======================================================================
   // Escáner — misma lógica que escanear.html, pero como sección del panel

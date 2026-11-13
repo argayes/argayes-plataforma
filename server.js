@@ -302,6 +302,25 @@ app.get('/api/mis-estadisticas', requireAuth, ah(async (req, res) => {
       res.json(await db.estadisticasDeEmpresa(req.empresaId));
 }));
 
+app.get('/api/mis-estadisticas-avanzadas', requireAuth, ah(async (req, res) => {
+      res.json(await db.estadisticasAvanzadasDeEmpresa(req.empresaId, req.query.dias));
+}));
+
+app.get('/api/mis-visitas-semana', requireAuth, ah(async (req, res) => {
+      res.json(await db.visitasPorSemanaDeEmpresa(req.empresaId, req.query.historico === 'true'));
+}));
+
+// Borrar un cliente propio — "requireAuth" ya limita a la empresa que hizo
+// la petición, y "eliminarCliente" vuelve a filtrar por empresaId adentro
+// (defensa doble: ni confiando solo en el token se puede borrar el cliente
+// de otro negocio).
+app.delete('/api/mis-clientes/:id', requireAuth, ah(async (req, res) => {
+      if (!esUuidValido(req.params.id)) return res.status(400).json({ error: 'Id inválido' });
+      const borrado = await db.eliminarCliente(req.empresaId, req.params.id);
+      if (!borrado) return res.status(404).json({ error: 'Cliente no encontrado' });
+      res.json({ ok: true });
+}));
+
 // Alta directa de empresa sin password (uso interno/pruebas con curl).
 app.get('/api/empresas/:id', ah(async (req, res) => {
       if (!esUuidValido(req.params.id)) return res.status(400).json({ error: 'Id inválido' });
