@@ -206,6 +206,15 @@ app.patch('/api/admin/empresas/:id/activa', requireAdmin, ah(async (req, res) =>
       res.json(sinDatosSensibles(empresa));
 }));
 
+// Denegar una solicitud de suscripción (o dar de baja definitiva un
+// negocio): borra el registro por completo, junto con sus clientes.
+app.delete('/api/admin/empresas/:id', requireAdmin, ah(async (req, res) => {
+      if (!esUuidValido(req.params.id)) return res.status(400).json({ error: 'Id inválido' });
+      const borrado = await db.eliminarEmpresa(req.params.id);
+      if (!borrado) return res.status(404).json({ error: 'Empresa no encontrada' });
+      res.json({ ok: true });
+}));
+
 // Detalle de un negocio para el panel de super-admin: sus datos, sus
 // clientes registrados (con puntos) y sus estadísticas de movimiento —
 // todo junto, para verlo desde una sola pantalla sin tener que entrar
@@ -219,6 +228,22 @@ app.get('/api/admin/empresas/:id/detalle', requireAdmin, ah(async (req, res) => 
               db.estadisticasDeEmpresa(req.params.id)
             ]);
       res.json({ empresa: sinDatosSensibles(empresa), clientes, estadisticas });
+}));
+
+// Gráficas del panel de super-admin: series de tiempo (negocios nuevos,
+// clientes nuevos, visitas, canjes confirmados) por día/semana/mes/año, y
+// el ranking de negocios con más clientes registrados.
+const PERIODOS_VALIDOS = ['dia', 'semana', 'mes', 'anio'];
+app.get('/api/admin/estadisticas', requireAdmin, ah(async (req, res) => {
+      const periodo = PERIODOS_VALIDOS.includes(req.query.periodo) ? req.query.periodo : 'mes';
+      const datos = await db.estadisticasTemporales(periodo);
+      res.json(datos);
+}));
+
+app.get('/api/admin/top-negocios', requireAdmin, ah(async (req, res) => {
+      const limite = req.query.limite ? Number(req.query.limite) : 10;
+      const top = await db.topNegociosPorClientes(limite);
+      res.json(top);
 }));
 
 // ---------- Panel: solo ve y toca lo de SU PROPIA empresa ----------

@@ -148,9 +148,26 @@
   button.toggle.activar{border-color:var(--good);color:var(--good)}
   button.toggle.desactivar{border-color:var(--danger);color:var(--danger)}
   button.toggle.aprobar{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft);font-weight:700}
+  button.toggle.denegar{border-color:var(--danger);color:var(--danger)}
   button.toggle.ver{border-color:var(--ink-dim)}
   button.toggle:hover{filter:brightness(0.97)}
   .row-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+  .panel-section .section-head{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    flex-wrap:wrap;margin-bottom:14px;
+  }
+  .panel-section .section-head h2{margin:0}
+  .bulk-actions{display:flex;gap:8px;flex-wrap:wrap}
+  button.bulk{
+    font-family:var(--font-body);font-size:12px;font-weight:600;
+    padding:7px 14px;border-radius:8px;border:1px solid var(--border);
+    background:var(--surface);color:var(--ink);cursor:pointer;white-space:nowrap;
+  }
+  button.bulk.aprobar-todas{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft)}
+  button.bulk.denegar-todas{border-color:var(--danger);color:var(--danger)}
+  button.bulk:hover{filter:brightness(0.97)}
+  button.bulk:disabled{opacity:.6;cursor:default}
 
   /* ---- modal de detalle de negocio ---- */
   .modal-backdrop{
@@ -173,6 +190,43 @@
   .modal-stats .stat{padding:12px}
   .modal-stats .stat .n{font-size:19px}
 
+  /* ---- gráficas ---- */
+  .periodo-switch{display:flex;gap:6px;flex-wrap:wrap}
+  .periodo-opt{
+    font-family:var(--font-body);font-size:13px;font-weight:600;padding:8px 16px;
+    border-radius:8px;border:1px solid var(--border);background:var(--surface);
+    color:var(--ink-dim);cursor:pointer;
+  }
+  .periodo-opt.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
+  .periodo-opt:hover{filter:brightness(0.97)}
+
+  .chart-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    padding:18px;margin-bottom:16px;
+  }
+  .chart-card h3{
+    margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-dim);
+  }
+  .chart-scale{font-size:11px;color:var(--ink-dim);margin:2px 0 0}
+  .chart-bars{display:flex;align-items:flex-end;gap:6px;height:150px;margin-top:16px;padding:0 2px}
+  .chart-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+  .chart-bar{
+    width:100%;max-width:38px;min-height:3px;border-radius:4px 4px 0 0;cursor:default;
+    transition:filter .12s;
+  }
+  .chart-bar:hover, .chart-bar:focus-visible{filter:brightness(1.12)}
+  .chart-label{
+    font-size:10px;color:var(--ink-dim);margin-top:8px;white-space:nowrap;
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  }
+  .chart-empty{font-size:13px;color:var(--ink-dim);padding:10px 2px}
+  .chart-tooltip{
+    position:fixed;z-index:30;background:var(--ink);color:var(--bg);font-size:12px;
+    font-weight:600;padding:5px 9px;border-radius:7px;pointer-events:none;
+    transform:translate(-50%,-110%);white-space:nowrap;
+  }
+  [data-theme="dark"] .chart-tooltip, .chart-tooltip{box-shadow:0 2px 8px rgba(0,0,0,.25)}
+
   /* ---- solicitudes pendientes: se resalta en dorado/amarillo a propósito,
      para que salte a la vista frente al resto de negocios ya conocidos ---- */
   .panel-section.pendientes{
@@ -188,6 +242,7 @@
 <header>
   <div class="brand">ARGAYES<small>Super-admin · dueño de la plataforma</small></div>
   <div style="display:flex;gap:8px">
+    <button class="ghost" id="graficasBtn" hidden>📊 Gráficas</button>
     <button class="ghost" id="themeBtn" title="Cambiar tema">🌓 Tema</button>
     <button class="ghost" id="logoutBtn" hidden>Cerrar sesión</button>
   </div>
@@ -230,7 +285,13 @@
     </div>
 
     <div class="panel-section pendientes" id="pendientesSection" hidden>
-      <h2>Solicitudes de suscripción pendientes</h2>
+      <div class="section-head">
+        <h2>Solicitudes de suscripción pendientes</h2>
+        <div class="bulk-actions">
+          <button type="button" class="bulk aprobar-todas" id="aprobarTodasBtn">Aprobar todas</button>
+          <button type="button" class="bulk denegar-todas" id="denegarTodasBtn">Denegar todas</button>
+        </div>
+      </div>
       <div class="table-wrap">
         <table id="pendientesTable">
           <thead><tr><th>Negocio</th><th>Email</th><th>Solicitó</th><th></th></tr></thead>
@@ -250,6 +311,71 @@
       <p class="empty" id="empresasEmpty" hidden>Todavía no hay negocios aprobados en la plataforma.</p>
       <p class="auth-error" id="listError"></p>
     </div>
+  </section>
+
+  <!-- ---- Gráficas: movimiento de la plataforma a lo largo del tiempo ---- -->
+  <section id="graficasView" hidden>
+    <button class="ghost" id="volverDashBtn" style="margin-bottom:16px">← Volver al panel</button>
+
+    <div class="panel-section">
+      <h2>Periodo</h2>
+      <div class="periodo-switch" id="periodoSwitch">
+        <button type="button" class="periodo-opt" data-periodo="dia">Día</button>
+        <button type="button" class="periodo-opt" data-periodo="semana">Semana</button>
+        <button type="button" class="periodo-opt active" data-periodo="mes">Mes</button>
+        <button type="button" class="periodo-opt" data-periodo="anio">Año</button>
+      </div>
+    </div>
+
+    <div class="stat-grid" style="grid-template-columns:repeat(2,1fr)">
+      <div class="stat">
+        <span class="n" id="statTopNegocio">—</span>
+        <span class="l">Negocio con más clientes registrados</span>
+      </div>
+      <div class="stat">
+        <span class="n" id="statIngreso">—</span>
+        <span class="l">Ingreso mensual estimado</span>
+      </div>
+    </div>
+
+    <div class="panel-section" style="margin-bottom:20px">
+      <h2>Ingreso estimado por suscripciones</h2>
+      <p style="font-size:13px;color:var(--ink-dim);margin:0 0 10px">
+        ARGAYES todavía no cobra por una pasarela de pago conectada aquí, así que esto es un
+        estimado: precio mensual × negocios con suscripción activa ahora mismo. Ajusta el precio
+        a lo que realmente cobras.
+      </p>
+      <div class="field" style="max-width:220px">
+        <label for="precioSuscripcion">Precio mensual por negocio (MXN)</label>
+        <input id="precioSuscripcion" type="number" min="0" step="1">
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h3>Negocios nuevos registrados</h3>
+      <div id="chartNegocios"></div>
+    </div>
+    <div class="chart-card">
+      <h3>Clientes nuevos registrados</h3>
+      <div id="chartClientes"></div>
+    </div>
+    <div class="chart-card">
+      <h3>Visitas registradas (check-ins)</h3>
+      <div id="chartVisitas"></div>
+    </div>
+    <div class="chart-card">
+      <h3>Canjes confirmados</h3>
+      <div id="chartCanjes"></div>
+    </div>
+    <div class="chart-card">
+      <h3>Top 10 negocios por clientes registrados (histórico)</h3>
+      <div id="chartTopNegocios"></div>
+    </div>
+    <div class="chart-card">
+      <h3>Negocios por estado</h3>
+      <div id="chartEstados"></div>
+    </div>
+    <p class="auth-error" id="graficasError"></p>
   </section>
 
   <!-- ---- Detalle de un negocio: sus clientes y su movimiento ---- -->
@@ -344,21 +470,42 @@
 
   var authView = document.getElementById('authView');
   var dashView = document.getElementById('dashView');
+  var graficasView = document.getElementById('graficasView');
   var logoutBtn = document.getElementById('logoutBtn');
+  var graficasBtn = document.getElementById('graficasBtn');
 
   function mostrarLogin(){
     authView.hidden = false;
     dashView.hidden = true;
+    graficasView.hidden = true;
     logoutBtn.hidden = true;
+    graficasBtn.hidden = true;
   }
   function mostrarDash(){
     authView.hidden = true;
     dashView.hidden = false;
+    graficasView.hidden = true;
     logoutBtn.hidden = false;
+    graficasBtn.hidden = false;
+  }
+
+  // Se guarda la última lista de pendientes para que "Aprobar todas" y
+  // "Denegar todas" sepan sobre qué ids actuar sin tener que volver a pedirla.
+  var ultimasPendientes = [];
+
+  function aprobarUna(id){
+    return adminApi('/api/admin/empresas/' + id + '/activa', {
+      method: 'PATCH',
+      body: JSON.stringify({ activa: true })
+    });
+  }
+  function denegarUna(id){
+    return adminApi('/api/admin/empresas/' + id, { method: 'DELETE' });
   }
 
   function pintarPendientes(todas){
     var pendientes = todas.filter(function(e){ return e.aprobada === false; });
+    ultimasPendientes = pendientes;
     var seccion = document.getElementById('pendientesSection');
     var body = document.getElementById('pendientesBody');
     body.innerHTML = '';
@@ -387,28 +534,68 @@
       tr.appendChild(tdAlta);
 
       var tdBtn = document.createElement('td');
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'toggle aprobar';
-      btn.textContent = 'Aprobar';
-      btn.addEventListener('click', function(){
-        btn.disabled = true;
-        adminApi('/api/admin/empresas/' + emp.id + '/activa', {
-          method: 'PATCH',
-          body: JSON.stringify({ activa: true })
-        }).then(function(){
+      var acciones = document.createElement('div');
+      acciones.className = 'row-actions';
+
+      var btnAprobar = document.createElement('button');
+      btnAprobar.type = 'button';
+      btnAprobar.className = 'toggle aprobar';
+      btnAprobar.textContent = 'Aprobar';
+      btnAprobar.addEventListener('click', function(){
+        btnAprobar.disabled = true;
+        aprobarUna(emp.id).then(function(){
           cargarEmpresas();
         }).catch(function(err){
           alert(err.message);
-          btn.disabled = false;
+          btnAprobar.disabled = false;
         });
       });
-      tdBtn.appendChild(btn);
+      acciones.appendChild(btnAprobar);
+
+      var btnDenegar = document.createElement('button');
+      btnDenegar.type = 'button';
+      btnDenegar.className = 'toggle denegar';
+      btnDenegar.textContent = 'Denegar';
+      btnDenegar.addEventListener('click', function(){
+        if(!confirm('¿Denegar la solicitud de "' + (emp.nombre || 'este negocio') + '"? Esto borra la solicitud por completo.')) return;
+        btnDenegar.disabled = true;
+        denegarUna(emp.id).then(function(){
+          cargarEmpresas();
+        }).catch(function(err){
+          alert(err.message);
+          btnDenegar.disabled = false;
+        });
+      });
+      acciones.appendChild(btnDenegar);
+
+      tdBtn.appendChild(acciones);
       tr.appendChild(tdBtn);
 
       body.appendChild(tr);
     });
   }
+
+  document.getElementById('aprobarTodasBtn').addEventListener('click', function(){
+    if(!ultimasPendientes.length) return;
+    if(!confirm('¿Aprobar las ' + ultimasPendientes.length + ' solicitudes pendientes?')) return;
+    var btn = this;
+    btn.disabled = true;
+    Promise.all(ultimasPendientes.map(function(emp){ return aprobarUna(emp.id); }))
+      .then(function(){ cargarEmpresas(); })
+      .catch(function(err){ alert(err.message); })
+      .then(function(){ btn.disabled = false; });
+  });
+
+  document.getElementById('denegarTodasBtn').addEventListener('click', function(){
+    if(!ultimasPendientes.length) return;
+    if(!confirm('¿Denegar las ' + ultimasPendientes.length + ' solicitudes pendientes? Esto las borra por completo.')) return;
+    var btn = this;
+    btn.disabled = true;
+    Promise.all(ultimasPendientes.map(function(emp){ return denegarUna(emp.id); }))
+      .then(function(){ cargarEmpresas(); })
+      .catch(function(err){ alert(err.message); })
+      .then(function(){ btn.disabled = false; });
+  });
 
   function pintarEmpresas(todas){
     pintarPendientes(todas);
@@ -565,6 +752,172 @@
       errorEl.classList.add('show');
     });
   }
+
+  // ---- gráficas: tooltip compartido ----
+  var tooltipEl = null;
+  function mostrarTooltip(x, y, texto){
+    if(!tooltipEl){
+      tooltipEl = document.createElement('div');
+      tooltipEl.className = 'chart-tooltip';
+      document.body.appendChild(tooltipEl);
+    }
+    tooltipEl.textContent = texto;
+    tooltipEl.style.left = x + 'px';
+    tooltipEl.style.top = y + 'px';
+    tooltipEl.hidden = false;
+  }
+  function ocultarTooltip(){
+    if(tooltipEl) tooltipEl.hidden = true;
+  }
+
+  // Dibuja una gráfica de barras sencilla dentro del elemento con ese id.
+  // serie: [{ total: n, bucket?: 'YYYY-MM-DD', label?: 'texto', color?: 'var(--x)' }]
+  function renderBarChart(containerId, serie, opts){
+    opts = opts || {};
+    var container = document.getElementById(containerId);
+    container.innerHTML = '';
+    if(!serie || !serie.length){
+      var vacio = document.createElement('p');
+      vacio.className = 'chart-empty';
+      vacio.textContent = 'Todavía no hay datos suficientes para esta gráfica.';
+      container.appendChild(vacio);
+      return;
+    }
+    var max = serie.reduce(function(m, d){ return Math.max(m, d.total); }, 0);
+
+    var escala = document.createElement('p');
+    escala.className = 'chart-scale';
+    escala.textContent = 'Máximo en este periodo: ' + max;
+    container.appendChild(escala);
+
+    var wrap = document.createElement('div');
+    wrap.className = 'chart-bars';
+
+    serie.forEach(function(d){
+      var col = document.createElement('div');
+      col.className = 'chart-col';
+
+      var etiqueta = opts.formatLabel ? opts.formatLabel(d) : (d.label || d.bucket || '');
+
+      var bar = document.createElement('div');
+      bar.className = 'chart-bar';
+      bar.tabIndex = 0;
+      var pct = max > 0 ? Math.max(3, Math.round((d.total / max) * 100)) : 3;
+      bar.style.height = pct + '%';
+      bar.style.background = d.color || opts.color || 'var(--accent)';
+      var texto = etiqueta + ': ' + d.total;
+      bar.addEventListener('mouseenter', function(ev){ mostrarTooltip(ev.clientX, ev.clientY, texto); });
+      bar.addEventListener('mousemove', function(ev){ mostrarTooltip(ev.clientX, ev.clientY, texto); });
+      bar.addEventListener('mouseleave', ocultarTooltip);
+      bar.addEventListener('focus', function(){
+        var r = bar.getBoundingClientRect();
+        mostrarTooltip(r.left + r.width / 2, r.top, texto);
+      });
+      bar.addEventListener('blur', ocultarTooltip);
+      col.appendChild(bar);
+
+      var lab = document.createElement('span');
+      lab.className = 'chart-label';
+      lab.textContent = etiqueta;
+      col.appendChild(lab);
+
+      wrap.appendChild(col);
+    });
+    container.appendChild(wrap);
+  }
+
+  function formatBucket(bucket, periodo){
+    var d = new Date(bucket + 'T00:00:00');
+    if(periodo === 'anio') return String(d.getFullYear());
+    if(periodo === 'mes') return d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
+    return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+  }
+
+  // ---- ingreso estimado por suscripciones (no hay pasarela de pago conectada
+  // todavía, así que se calcula: precio que tú indiques × negocios activos) ----
+  function getPrecioSuscripcion(){
+    try {
+      var v = localStorage.getItem('argayes-precio-suscripcion');
+      return v ? Number(v) : 499;
+    } catch(e){ return 499; }
+  }
+  function setPrecioSuscripcion(v){
+    try { localStorage.setItem('argayes-precio-suscripcion', String(v)); } catch(e){}
+  }
+  var precioInput = document.getElementById('precioSuscripcion');
+  precioInput.value = getPrecioSuscripcion();
+  var ultimasActivas = 0;
+  function actualizarIngresoEstimado(activas){
+    ultimasActivas = activas;
+    var precio = Number(precioInput.value) || 0;
+    var total = precio * activas;
+    document.getElementById('statIngreso').textContent = '$' + total.toLocaleString('es-MX') + ' MXN';
+  }
+  precioInput.addEventListener('input', function(){
+    setPrecioSuscripcion(precioInput.value);
+    actualizarIngresoEstimado(ultimasActivas);
+  });
+
+  var periodoActual = 'mes';
+
+  function cargarGraficas(periodo){
+    var errorEl = document.getElementById('graficasError');
+    errorEl.textContent = '';
+    errorEl.classList.remove('show');
+
+    Promise.all([
+      adminApi('/api/admin/estadisticas?periodo=' + encodeURIComponent(periodo)),
+      adminApi('/api/admin/top-negocios?limite=10'),
+      adminApi('/api/admin/empresas')
+    ]).then(function(resultados){
+      var datos = resultados[0], top = resultados[1], todas = resultados[2];
+      var etiquetador = function(d){ return formatBucket(d.bucket, periodo); };
+
+      renderBarChart('chartNegocios', datos.negocios, { formatLabel: etiquetador });
+      renderBarChart('chartClientes', datos.clientes, { formatLabel: etiquetador });
+      renderBarChart('chartVisitas', datos.visitas, { formatLabel: etiquetador });
+      renderBarChart('chartCanjes', datos.canjes, { formatLabel: etiquetador });
+
+      var topSerie = top.map(function(t){ return { total: t.total, label: t.nombre }; });
+      renderBarChart('chartTopNegocios', topSerie, { formatLabel: function(d){ return d.label; } });
+      document.getElementById('statTopNegocio').textContent = top.length
+        ? (top[0].nombre + ' (' + top[0].total + ')')
+        : '—';
+
+      var activas = todas.filter(function(e){ return e.aprobada !== false && e.activa !== false; }).length;
+      var inactivas = todas.filter(function(e){ return e.aprobada !== false && e.activa === false; }).length;
+      var pendientes = todas.filter(function(e){ return e.aprobada === false; }).length;
+      renderBarChart('chartEstados', [
+        { total: activas, label: 'Activas', color: 'var(--good)' },
+        { total: inactivas, label: 'Inactivas', color: 'var(--danger)' },
+        { total: pendientes, label: 'Pendientes', color: 'var(--accent)' }
+      ], { formatLabel: function(d){ return d.label; } });
+
+      actualizarIngresoEstimado(activas);
+    }).catch(function(err){
+      errorEl.textContent = err.message;
+      errorEl.classList.add('show');
+    });
+  }
+
+  graficasBtn.addEventListener('click', function(){
+    dashView.hidden = true;
+    graficasView.hidden = false;
+    cargarGraficas(periodoActual);
+  });
+  document.getElementById('volverDashBtn').addEventListener('click', function(){
+    graficasView.hidden = true;
+    dashView.hidden = false;
+  });
+  document.getElementById('periodoSwitch').addEventListener('click', function(ev){
+    var btn = ev.target.closest('.periodo-opt');
+    if(!btn) return;
+    periodoActual = btn.getAttribute('data-periodo');
+    Array.prototype.forEach.call(document.querySelectorAll('.periodo-opt'), function(b){
+      b.classList.toggle('active', b === btn);
+    });
+    cargarGraficas(periodoActual);
+  });
 
   document.getElementById('adminLoginForm').addEventListener('submit', function(ev){
     ev.preventDefault();
