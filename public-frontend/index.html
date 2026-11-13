@@ -233,6 +233,13 @@
   }
   .danger-link:hover{text-decoration:underline}
 
+  .qr-share-row{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .qr-share-box{
+    background:#fff;padding:10px;border-radius:10px;flex:none;
+    width:108px;height:108px;display:flex;align-items:center;justify-content:center;
+  }
+  .qr-share-meta{display:flex;flex-direction:column;gap:8px;min-width:0}
+
   /* ---- Tus números claros ---- */
   .numeros-title{font-size:16px;font-weight:700;margin:34px 0 4px}
   .numeros-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}
@@ -549,8 +556,15 @@
       </div>
       <div class="panel-section">
         <h2>Accesos rápidos</h2>
-        <div class="links-row">
-          <a href="https://argayes.netlify.app/registro.html" target="_blank" rel="noopener" id="regLink">Página de registro de clientes</a>
+        <p class="hint" style="margin:0 0 12px">Pon este QR a la vista en tu negocio (en el mostrador, una mesa, una etiqueta) para que el cliente lo escanee con su cámara, se registre solo con su nombre y teléfono/correo, y descargue su tarjeta a Apple Wallet o Google Wallet.</p>
+        <div class="qr-share-row">
+          <div id="regQrBox" class="qr-share-box"></div>
+          <div class="qr-share-meta">
+            <div class="links-row">
+              <a href="https://argayes.netlify.app/registro.html" target="_blank" rel="noopener" id="regLink">Abrir página de registro</a>
+              <button type="button" class="ghost" id="regQrDownloadBtn">Descargar QR</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1032,7 +1046,20 @@
     if(regLink){
       var params = 'empresaId=' + encodeURIComponent(empresa.id);
       if(backend) params += '&backend=' + encodeURIComponent(backend);
-      regLink.href = 'https://argayes.netlify.app/registro.html?' + params;
+      var regUrl = 'https://argayes.netlify.app/registro.html?' + params;
+      regLink.href = regUrl;
+      var regQrBox = document.getElementById('regQrBox');
+      if(regQrBox){
+        regQrBox.innerHTML = '';
+        new QRCode(regQrBox, {
+          text: regUrl,
+          width: 88,
+          height: 88,
+          colorDark: '#1b1f23',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      }
     }
     backendInputAjustes.value = backend;
     cargarClientes();
@@ -1779,6 +1806,20 @@
     var oscuro = tema === 'dark' || (tema !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
     return oscuro ? par.dark : par.light;
   }
+
+  // ---- descargar el QR de autorregistro como PNG (para imprimirlo) ----
+  document.getElementById('regQrDownloadBtn').addEventListener('click', function(){
+    var box = document.getElementById('regQrBox');
+    var canvas = box.querySelector('canvas');
+    var dataUrl = canvas ? canvas.toDataURL('image/png') : (box.querySelector('img') || {}).src;
+    if(!dataUrl) return;
+    var a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = 'qr-registro-argayes.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
 
   var toggleHistoricoBtn = document.getElementById('toggleHistoricoBtn');
   toggleHistoricoBtn.addEventListener('click', function(){
