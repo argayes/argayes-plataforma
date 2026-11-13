@@ -573,6 +573,7 @@
           <div class="links-row" style="align-items:center">
             <input type="text" id="slugInput" placeholder="mi-negocio" maxlength="40" style="padding:9px 12px;min-width:160px">
             <button type="button" class="ghost" id="slugGuardarBtn">Guardar link</button>
+            <span class="saved-hint" id="slugGuardadoHint">Guardado</span>
             <span class="hint" id="slugHint" style="text-align:left;margin-top:0"></span>
           </div>
         </div>
@@ -1982,15 +1983,17 @@
   document.getElementById('slugGuardarBtn').addEventListener('click', async function(){
     var btn = this;
     var hint = document.getElementById('slugHint');
+    var guardadoHint = document.getElementById('slugGuardadoHint');
     var valor = document.getElementById('slugInput').value.trim().toLowerCase();
+    hint.textContent = '';
     hint.classList.remove('error');
+    guardadoHint.classList.remove('show');
     if(!valor){
       hint.textContent = 'Escribe un link antes de guardar.';
       hint.classList.add('error');
       return;
     }
     btn.disabled = true;
-    hint.textContent = 'Guardando…';
     try {
       var empresa = await api('/api/mi-empresa', {
         method: 'PATCH',
@@ -1998,8 +2001,8 @@
       });
       setEmpresaCache(empresa);
       actualizarLinkRegistro(empresa);
-      hint.textContent = 'Guardado.';
-      setTimeout(function(){ hint.textContent = ''; }, 2000);
+      guardadoHint.classList.add('show');
+      setTimeout(function(){ guardadoHint.classList.remove('show'); }, 2000);
     } catch(e){
       hint.textContent = e.message;
       hint.classList.add('error');
