@@ -419,6 +419,26 @@ app.get('/api/wallet/apple/:clienteId.pkpass', ah(async (req, res) => {
       }
 }));
 
+// ---------- DIAGNÓSTICO TEMPORAL: por qué el pase de Apple Wallet trae el
+// "rombo feo" en vez del logo de ARGAYES. Compara los archivos en disco
+// (/pass-model) contra lo que passkit-generator realmente mete dentro del
+// .pkpass ya firmado. Quitar esta ruta en cuanto se resuelva el bug.
+app.get('/api/debug/pass-model/:clave', ah(async (req, res) => {
+      if (req.params.clave !== 'argayes-diag-2026') return res.status(404).end();
+      const clienteId = req.query.clienteId;
+      let cliente, empresa;
+      if (clienteId && esUuidValido(clienteId)) {
+              cliente = await db.obtenerCliente(clienteId);
+              empresa = cliente ? await db.obtenerEmpresa(cliente.empresaId) : null;
+      }
+      if (!cliente) {
+              cliente = { id: 'diagnostico-0000', nombre: 'Diagnóstico', puntos: 0 };
+              empresa = { nombre: 'ARGAYES', color: '#b8872b' };
+      }
+      const resultado = await appleWallet.diagnosticoModelo(empresa, cliente);
+      res.json(resultado);
+}));
+
 // ---------- Servicio web de Apple Wallet (actualizaciones automáticas) ----------
 // Estas 5 rutas las llama directo el iPhone del cliente (no el panel, no
 // nuestro frontend) — su forma exacta (nombres, verbos, status codes) la
