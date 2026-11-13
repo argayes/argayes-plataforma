@@ -141,3 +141,26 @@ localmente, hay que:
 3. Meter esa URL real (`saveUrl` o la del `.pkpass`) en el QR, en vez del JSON
 
 Dime cuando tengas el backend desplegado y te ayudo a hacer ese cambio en la página.
+
+## 8. La página (panel, registro, etc.) se publica sola en GitHub Pages
+
+`public-frontend/` (el panel, la página de registro, el escáner, etc.)
+ya NO se sube a mano arrastrando un zip a Netlify Drop — eso se dejó de
+usar porque el plan gratis de Netlify tiene un límite de "créditos" al
+mes (300) y cada subida gasta 15, así que con varias pruebas se acaba
+rápido y bloquea subir nada nuevo hasta que se resetea el mes siguiente.
+
+Ahora, cada vez que se hace push a `main` con cambios en
+`public-frontend/`, el workflow `.github/workflows/pages.yml` publica
+esos archivos solo en **GitHub Pages** (gratis, sin ese límite):
+
+```
+https://argayes.github.io/argayes-plataforma/
+```
+
+Si alguna vez se quiere usar un dominio propio (ej. `app.argayes.com`)
+en vez de ese, se configura en GitHub → Settings → Pages → Custom domain.
+
+La URL del backend (`https://argayes-backend.onrender.com`) ya viene
+puesta por default en el código — no hace falta configurarla a mano la
+primera vez que se abre la página en un dominio nuevo.
