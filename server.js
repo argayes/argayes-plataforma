@@ -8,6 +8,7 @@ const db = require('./lib/db');
 const googleWallet = require('./lib/google-wallet');
 const appleWallet = require('./lib/apple-wallet');
 const { enviarCodigoReset, enviarRecordatorioInactividad, enviarAvisoNuevoNegocio } = require('./lib/email');
+const stripePagos = require('./lib/stripe-pagos');
 
 // No hay valor "por default" para estas dos claves a propósito: si faltan,
 // el servidor se niega a arrancar en vez de arrancar inseguro sin avisar
@@ -26,6 +27,42 @@ if (!JWT_SECRET || !ADMIN_SECRET) {
 
 const app = express();
 app.use(cors());
+
+// IMPORTANTE: con Postgres, cada ruta ahora es "async" y puede rechazar su
+// promesa (por ejemplo si alguien manda un id que no es un UUID válido, o si
+// la base de datos tiene un hipo momentáneo). Express 4 NO atrapa esos
+// errores solo: si una ruta async truena sin este envoltorio, Node.js la
+// trata como un error no manejado y TUMBA TODO EL SERVIDOR para TODOS los
+// negocios, no solo para quien hizo la petición mala. "ah" envuelve cada
+// ruta para que cualquier error termine como una respuesta 500 normal
+// (ver el manejador de errores hasta abajo del archivo) en vez de tirar
+// el proceso completo. Va hasta arriba (antes incluso de express.json())
+// porque la ruta del webhook de Stripe, justo abajo, ya la necesita.
+const ah = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+
+// A dónde regresa el negocio después de pagar (o de abrir el portal de
+// facturación) en Stripe. Es el panel, no el backend — por eso es una
+// variable separada de PUBLIC_URL (que es la URL del backend).
+const PANEL_URL = process.env.PANEL_URL || 'https://argayes.netlify.app';
+
+// El webhook de Stripe necesita el cuerpo CRUDO (sin parsear) para poder
+// verificar la firma — por eso esta ruta va ANTES de express.json(), con
+// su propio parser "raw". Cualquier otra ruta nueva que se agregue abajo
+// de esto sí recibe el body ya parseado como de costumbre.
+app.post('/api/pagos/webhook', express.raw({ type: 'application/json' }), ah(async (req, res) => {
+      const firma = req.headers['stripe-signature'];
+      try {
+              await stripePagos.manejarWebhook(db, req.body, firma);
+              res.json({ recibido: true });
+      } catch (e) {
+              // Si la firma no cuadra o algo más falla, respondemos 400 — así
+              // Stripe lo marca como fallido y lo reintenta solo, en vez de
+              // darlo por bueno y perder el evento.
+              console.error('Error procesando webhook de Stripe:', e.message);
+              res.status(400).json({ error: e.message });
+      }
+}));
+
 // Límite más alto que el default (100kb) porque el logo del negocio llega
 // como imagen codificada en base64 dentro del JSON (puede pesar varios MB).
 app.use(express.json({ limit: '8mb' }));
@@ -81,17 +118,6 @@ const limitadorClientes = rateLimit({
       legacyHeaders: false,
       message: { error: 'Demasiadas solicitudes. Espera unos minutos e intenta de nuevo.' }
 });
-
-// IMPORTANTE: con Postgres, cada ruta ahora es "async" y puede rechazar su
-// promesa (por ejemplo si alguien manda un id que no es un UUID válido, o si
-// la base de datos tiene un hipo momentáneo). Express 4 NO atrapa esos
-// errores solo: si una ruta async truena sin este envoltorio, Node.js la
-// trata como un error no manejado y TUMBA TODO EL SERVIDOR para TODOS los
-// negocios, no solo para quien hizo la petición mala. "ah" envuelve cada
-// ruta para que cualquier error termine como una respuesta 500 normal
-// (ver el manejador de errores hasta abajo del archivo) en vez de tirar
-// el proceso completo.
-const ah = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
 function sinDatosSensibles(empresa) {
       const { passwordHash, ...resto } = empresa;
@@ -284,6 +310,34 @@ app.get('/api/admin/top-negocios', requireAdmin, ah(async (req, res) => {
 app.get('/api/mi-empresa', requireAuth, ah(async (req, res) => {
       const empresa = await db.obtenerEmpresa(req.empresaId);
       res.json(sinDatosSensibles(empresa));
+}));
+
+// ---------- Suscripción: cobro automático con Stripe ----------
+// Manda al negocio a pagar (primera vez) o a reactivar su suscripción
+// (si Stripe la había desactivado por falta de pago).
+app.post('/api/pagos/checkout', requireAuth, ah(async (req, res) => {
+      if (!stripePagos.listo()) {
+              return res.status(500).json({ error: 'Los pagos con tarjeta todavía no están configurados. Contacta a ARGAYES.' });
+      }
+      const empresa = await db.obtenerEmpresa(req.empresaId);
+      try {
+              const url = await stripePagos.crearSesionCheckout(empresa, PANEL_URL);
+              res.json({ url });
+      } catch (e) {
+              res.status(500).json({ error: e.message });
+      }
+}));
+
+// Portal de Stripe: cambiar tarjeta, ver recibos o cancelar — solo si ya
+// tiene una suscripción (si nunca ha pagado, no hay nada que mostrar ahí).
+app.post('/api/pagos/portal', requireAuth, ah(async (req, res) => {
+      const empresa = await db.obtenerEmpresa(req.empresaId);
+      try {
+              const url = await stripePagos.crearSesionPortal(empresa, PANEL_URL);
+              res.json({ url });
+      } catch (e) {
+              res.status(400).json({ error: e.message });
+      }
 }));
 
 app.patch('/api/mi-empresa', requireAuth, ah(async (req, res) => {

@@ -940,6 +940,19 @@
       </div>
 
       <div class="panel-section">
+        <h2>Suscripción</h2>
+        <div class="field">
+          <label>Estado</label>
+          <p id="suscripcionEstadoTexto" class="sub">Cargando…</p>
+        </div>
+        <div class="config-actions">
+          <button class="primary" type="button" id="pagarSuscripcionBtn" hidden>Pagar con tarjeta</button>
+          <button class="ghost" type="button" id="administrarSuscripcionBtn" hidden>Administrar mi suscripción</button>
+        </div>
+        <p class="auth-error" id="suscripcionError" hidden></p>
+      </div>
+
+      <div class="panel-section">
         <h2>Cuenta</h2>
         <div class="field">
           <label>Contraseña</label>
@@ -1118,7 +1131,53 @@
     cargarEstadisticas();
     cargarEstadisticasAvanzadas();
     cargarVisitasSemana();
+    pintarSuscripcion(empresa);
   }
+
+  // Muestra en Ajustes si la suscripción está pagando bien, atrasada o
+  // nunca se ha activado, y qué botón corresponde en cada caso.
+  function pintarSuscripcion(empresa){
+    var texto = document.getElementById('suscripcionEstadoTexto');
+    var btnPagar = document.getElementById('pagarSuscripcionBtn');
+    var btnAdmin = document.getElementById('administrarSuscripcionBtn');
+    if(!texto || !btnPagar || !btnAdmin) return;
+    var estado = empresa.suscripcionEstado;
+    if(estado === 'active' || estado === 'trialing'){
+      texto.textContent = 'Tu suscripción está al corriente ($800 MXN/mes).';
+      btnPagar.hidden = true;
+      btnAdmin.hidden = false;
+    } else if(empresa.stripeCustomerId){
+      texto.textContent = 'Hay un problema con tu pago (estado: ' + (estado || 'desconocido') + '). Actualiza tu tarjeta para no perder el acceso.';
+      btnPagar.hidden = true;
+      btnAdmin.hidden = false;
+    } else {
+      texto.textContent = 'Todavía no activas el cobro automático. Suscríbete por $800 MXN/mes para que tu panel no dependa de una aprobación manual.';
+      btnPagar.hidden = false;
+      btnAdmin.hidden = true;
+    }
+  }
+
+  function manejarErrorSuscripcion(e){
+    var err = document.getElementById('suscripcionError');
+    err.textContent = e.message;
+    err.hidden = false;
+  }
+
+  document.getElementById('pagarSuscripcionBtn').addEventListener('click', async function(){
+    document.getElementById('suscripcionError').hidden = true;
+    try {
+      var r = await api('/api/pagos/checkout', { method: 'POST' });
+      location.href = r.url;
+    } catch(e){ manejarErrorSuscripcion(e); }
+  });
+
+  document.getElementById('administrarSuscripcionBtn').addEventListener('click', async function(){
+    document.getElementById('suscripcionError').hidden = true;
+    try {
+      var r = await api('/api/pagos/portal', { method: 'POST' });
+      location.href = r.url;
+    } catch(e){ manejarErrorSuscripcion(e); }
+  });
 
   function mostrarLogin(){
     setToken('');
