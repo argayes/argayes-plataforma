@@ -368,6 +368,7 @@
       <div class="result-row">Cliente: <b id="resClient"></b></div>
       <div class="result-row">ID: <span class="code" id="resId"></span></div>
       <p class="preview-note" id="resNote"></p>
+      <a href="#" class="copy-btn" id="addWalletLink" hidden style="text-decoration:none;display:inline-block;background:var(--accent);color:var(--accent-ink);border-color:var(--accent)">Agregar a Wallet</a>
       <a href="#" target="_blank" rel="noopener" class="copy-btn" id="verTarjetaLink" style="text-decoration:none;display:inline-block">Ver su tarjeta personalizada</a>
       <button type="button" class="copy-btn" id="copyBtn">Copiar datos del QR</button>
       <span class="hint" id="copyHint" hidden>Copiado</span>
@@ -567,7 +568,8 @@
     // (sobre todo iPhone) la bloquea como si fuera un pop-up no deseado y
     // el cliente solo ve el link, nunca la pantalla de "agregar a Wallet".
     // Se le asigna la URL real más abajo, una vez que ya se sabe cuál es.
-    var walletTab = window.open('', '_blank');
+    // (Para Apple no hace falta: ese pase usa la misma pestaña, ver abajo.)
+    var walletTab = (wallet === 'google') ? window.open('', '_blank') : null;
 
     try {
       // 1) Da de alta al cliente de verdad en el backend — a partir de
@@ -608,26 +610,34 @@
       document.getElementById('verTarjetaLink').href =
         'mi-tarjeta.html?id=' + encodeURIComponent(cliente.id) + '&backend=' + encodeURIComponent(backendUrl);
 
-      // 3) Pase real: Apple se descarga directo, Google abre el link de guardado.
-      //    Se usa la pestaña ya abierta (walletTab) en vez de abrir una nueva
-      //    aquí, para que el celular no la bloquee.
+      // 3) Pase real.
       var walletUrl;
       if(wallet === 'apple'){
         resNote.textContent = WALLET_NOTES.apple;
         walletUrl = backendUrl.replace(/\/$/, '') + '/api/wallet/apple/' + cliente.id + '.pkpass';
+        // El .pkpass NO se abre en una pestaña nueva: el iPhone solo muestra
+        // la pantalla nativa de "Agregar a Apple Wallet" (encima de esta
+        // misma página) cuando la descarga pasa por la pestaña principal.
+        // En una pestaña nueva, Safari a veces no la reconoce y no pasa nada.
+        window.location.href = walletUrl;
       } else {
         var w = await api('/api/wallet/google/' + cliente.id);
         resNote.textContent = WALLET_NOTES.google;
         walletUrl = w.saveUrl;
+        if(walletTab){
+          try { walletTab.location = walletUrl; } catch(e){ walletTab = null; }
+        }
+        if(!walletTab){
+          window.open(walletUrl, '_blank');
+        }
       }
-      if(walletTab){
-        try { walletTab.location = walletUrl; } catch(e){ walletTab = null; }
-      }
-      if(!walletTab){
-        // El celular bloqueó la pestaña (o algo falló) — se deja el link
-        // de "Ver su tarjeta" y además se intenta una vez más, directo.
-        window.open(walletUrl, '_blank');
-      }
+      // Por si el celular bloqueó lo anterior (o el usuario cerró la
+      // pantalla sin terminar), siempre queda un botón real y visible
+      // para agregarla a mano.
+      var addWalletLink = document.getElementById('addWalletLink');
+      addWalletLink.href = walletUrl;
+      addWalletLink.textContent = wallet === 'apple' ? 'Agregar a Apple Wallet' : 'Agregar a Google Wallet';
+      addWalletLink.hidden = false;
 
       entries.push({ id: cliente.id, cliente: cliente.nombre, empresa: empresaActual.nombre });
       try { localStorage.setItem('argayes-entries', JSON.stringify(entries)); } catch(e){}
