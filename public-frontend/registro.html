@@ -358,6 +358,7 @@
       <div class="result-row">Cliente: <b id="resClient"></b></div>
       <div class="result-row">ID: <span class="code" id="resId"></span></div>
       <p class="preview-note" id="resNote"></p>
+      <a href="#" target="_blank" rel="noopener" class="copy-btn" id="verTarjetaLink" style="text-decoration:none;display:inline-block">Ver su tarjeta personalizada</a>
       <button type="button" class="copy-btn" id="copyBtn">Copiar datos del QR</button>
       <span class="hint" id="copyHint" hidden>Copiado</span>
     </div>
@@ -573,6 +574,11 @@
       resId.textContent = cliente.id;
       result.hidden = false;
       copyHint.hidden = true;
+      // Link a la tarjeta personalizada (mi-tarjeta.html): es la que de verdad
+      // refleja el diseño que el negocio armó en su panel (tipografía, forma y
+      // tamaño de sellos) — el pase de Apple/Google Wallet no soporta eso.
+      document.getElementById('verTarjetaLink').href =
+        'mi-tarjeta.html?id=' + encodeURIComponent(cliente.id) + '&backend=' + encodeURIComponent(backendUrl);
 
       // 3) Pase real: Apple se descarga directo, Google abre el link de guardado.
       if(wallet === 'apple'){

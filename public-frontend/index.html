@@ -509,7 +509,7 @@
       <div class="panel-section">
         <div class="table-wrap">
           <table id="clientesTable" hidden>
-            <thead><tr><th>Nombre</th><th>Contacto</th><th>Puntos</th><th>Alta</th></tr></thead>
+            <thead><tr><th>Nombre</th><th>Contacto</th><th>Puntos</th><th>Alta</th><th>Tarjeta</th></tr></thead>
             <tbody id="clientesBody"></tbody>
           </table>
         </div>
@@ -1458,14 +1458,17 @@
       if(!clientes.length){ table.hidden = true; empty.hidden = false; return; }
       table.hidden = false; empty.hidden = true;
       tbody.innerHTML = '';
+      var backend = getBackendUrl();
       clientes.forEach(function(c){
         var tr = document.createElement('tr');
         var fecha = (c.creado || '').slice(0,10);
+        var tarjetaUrl = 'mi-tarjeta.html?id=' + encodeURIComponent(c.id) + '&backend=' + encodeURIComponent(backend);
         tr.innerHTML =
           '<td>' + escapeHtml(c.nombre) + '</td>' +
           '<td>' + escapeHtml(c.contacto || '—') + '</td>' +
           '<td class="pts">' + c.puntos + '</td>' +
-          '<td>' + fecha + '</td>';
+          '<td>' + fecha + '</td>' +
+          '<td><a href="' + escapeHtml(tarjetaUrl) + '" target="_blank" rel="noopener">Ver</a></td>';
         tbody.appendChild(tr);
       });
     } catch(e){
