@@ -1,0 +1,37 @@
+name: Publicar la página (GitHub Pages)
+
+# Sube automáticamente lo que hay en public-frontend/ cada vez que se hace
+# push a main — reemplaza el arrastrar el zip a Netlify Drop a mano, y no
+# tiene el límite de "créditos" mensuales que sí tiene el plan gratis de
+# Netlify (ver README.md). GitHub Pages es gratis sin ese límite.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public-frontend/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public-frontend
+      - id: deployment
+        uses: actions/deploy-pages@v4

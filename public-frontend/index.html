@@ -580,7 +580,7 @@
           <div id="regQrBox" class="qr-share-box"></div>
           <div class="qr-share-meta">
             <div class="links-row">
-              <a href="https://argayes.netlify.app/registro.html" target="_blank" rel="noopener" id="regLink">Abrir página de registro</a>
+              <a href="registro.html" target="_blank" rel="noopener" id="regLink">Abrir página de registro</a>
               <button type="button" class="ghost" id="regQrDownloadBtn">Descargar QR</button>
             </div>
           </div>
@@ -1077,7 +1077,12 @@
     if(regLink){
       var params = 'empresaId=' + encodeURIComponent(empresa.slug || empresa.id);
       if(backend) params += '&backend=' + encodeURIComponent(backend);
-      var regUrl = 'https://argayes.netlify.app/registro.html?' + params;
+      // Usa la misma carpeta donde está corriendo este panel (sea Netlify,
+      // GitHub Pages o donde sea) en vez de un dominio fijo — así el link
+      // de registro sigue funcionando aunque cambie dónde está alojada la
+      // página.
+      var carpetaActual = location.origin + location.pathname.replace(/[^/]*$/, '');
+      var regUrl = carpetaActual + 'registro.html?' + params;
       regLink.href = regUrl;
       var regQrBox = document.getElementById('regQrBox');
       if(regQrBox){
