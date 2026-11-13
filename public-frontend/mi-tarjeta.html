@@ -162,7 +162,18 @@
 
   var TAMANOS_PX = { pequeno: 24, mediano: 32, grande: 42 };
 
-  function svgSello(forma, relleno){
+  // Mismo catálogo que public-frontend/index.html (CATALOGO_SELLOS_EXTRA) y
+  // lib/db.js (SELLO_FORMAS_VALIDAS) — si se agrega un sello nuevo allá,
+  // hay que agregarlo aquí también para que esta tarjeta (la que de verdad
+  // ve el cliente) lo pinte bien en vez de caer al círculo por defecto.
+  var EMOJI_SELLOS = {"pizza":"🍕","hamburguesa":"🍔","hotdog":"🌭","taco":"🌮","burrito":"🌯","sushi":"🍣","bento":"🍱","ramen":"🍜","ensalada":"🥗","papas":"🍟","pollo":"🍗","carne":"🥩","sandwich":"🥪","cuernito":"🥐","bagel":"🥯","pan":"🍞","queso":"🧀","hotcakes":"🥞","waffle":"🧇","huevo":"🍳","dona":"🍩","galleta":"🍪","pastel":"🎂","cupcake":"🧁","rebanada":"🍰","chocolate":"🍫","dulce":"🍬","paleta":"🍭","helado":"🍦","copahelado":"🍨","raspado":"🍧","sandia":"🍉","fresa":"🍓","uvas":"🍇","limon":"🍋","aguacate":"🥑","cafe":"☕","te":"🍵","bubbletea":"🧋","refresco":"🥤","cerveza":"🍺","vino":"🍷","coctel":"🍸","brindis":"🥂","champan":"🍾","tijeras":"✂️","barberia":"💈","corte":"💇","unas":"💅","labial":"💄","locion":"🧴","jabon":"🧼","lavanderia":"🧺","camisa":"👕","vestido":"👗","tenis":"👟","bolsa":"👜","anillo":"💍","lentes":"🕶️","reloj":"⌚","celular":"📱","laptop":"💻","impresion":"🖨️","camara":"📷","videojuego":"🎮","libros":"📚","pluma":"🖊️","arte":"🎨","musica":"🎵","cine":"🎬","gym":"🏋️","futbol":"⚽","basquet":"🏀","yoga":"🧘","auto":"🚗","bici":"🚲","gasolina":"⛽","mascota":"🐾","perro":"🐶","gato":"🐱","planta":"🌿","flor":"🌸","ramo":"💐","regalo":"🎁","globo":"🎈","fiesta":"🎉","casa":"🏠","llave":"🔑","herramientas":"🛠️","tuercas":"🔧","foco":"💡","salud":"🏥","medicina":"💊","dental":"🦷","spa":"💆","bano":"🛀"};
+
+  function svgSello(forma, relleno, px){
+    if(EMOJI_SELLOS[forma]){
+      var atenuado = relleno ? '' : 'opacity:.35;filter:grayscale(60%);';
+      return '<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;' +
+        'font-size:' + Math.round((px || 32) * 0.82) + 'px;line-height:1;' + atenuado + '">' + EMOJI_SELLOS[forma] + '</span>';
+    }
     var v = 'viewBox="0 0 24 24"';
     if(!relleno){
       if(forma === 'estrella') return '<svg ' + v + ' fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.9 6.3 6.9.9-5 4.8 1.3 6.8L12 17.6 5.9 20.8l1.3-6.8-5-4.8 6.9-.9z"/></svg>';
@@ -196,7 +207,7 @@
     var html = '';
     for(var i = 0; i < umbral; i++){
       var lleno = i < sellosLlenos;
-      html += '<span style="width:' + px + 'px;height:' + px + 'px;display:flex;color:' + (lleno ? '#fff' : 'rgba(255,255,255,.4)') + '">' + svgSello(empresa.selloForma || 'circulo', lleno) + '</span>';
+      html += '<span style="width:' + px + 'px;height:' + px + 'px;display:flex;color:' + (lleno ? '#fff' : 'rgba(255,255,255,.4)') + '">' + svgSello(empresa.selloForma || 'circulo', lleno, px) + '</span>';
     }
     grid.innerHTML = html;
 

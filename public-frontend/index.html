@@ -315,6 +315,16 @@
   .color-row input[type=text]{width:110px;font-family:var(--font-mono)}
 
   .shape-grid, .size-grid{display:flex;gap:10px;flex-wrap:wrap}
+  #selloFormaGridExtra{
+    margin-top:10px;max-height:280px;overflow-y:auto;border:1px solid var(--border);
+    border-radius:10px;padding:12px;background:var(--bg);
+  }
+  #selloFormaGridExtra .shape-group-title{
+    font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--ink-dim);margin:12px 0 8px;
+  }
+  #selloFormaGridExtra .shape-group-title:first-child{margin-top:0}
+  #selloFormaGridExtra .shape-opt{min-width:62px;padding:8px 10px;font-size:11px}
   .shape-opt, .size-opt{
     display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 14px;
     border:1px solid var(--border);border-radius:10px;background:var(--surface);
@@ -838,6 +848,8 @@
                   <div class="shape-opt" data-valor="corazon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20.3s-7.8-4.7-9.8-9.3C.9 7.6 2.6 4 6.2 4c2 0 3.5 1.1 4.3 2.6.3.5.5 1 .5 1 0 0 .2-.5.5-1C12.3 5.1 13.8 4 15.8 4c3.6 0 5.3 3.6 4 7-2 4.6-9.8 9.3-9.8 9.3z"/></svg>Corazón</div>
                   <div class="shape-opt" data-valor="cuadrado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="4"/></svg>Cuadrado</div>
                 </div>
+                <button type="button" class="link" id="masFormasBtn" style="margin-top:8px">Más +</button>
+                <div class="shape-grid" id="selloFormaGridExtra" hidden></div>
               </div>
               <div class="field" style="margin-top:14px">
                 <label>Tamaño</label>
@@ -1339,7 +1351,7 @@
     document.getElementById('cfgColorBotonTxt').value = tarjeta.colorBoton;
     document.getElementById('cfgRecompensa').value = tarjeta.recompensa;
     document.getElementById('cfgUmbral').value = tarjeta.umbral;
-    marcarSeleccionado('selloFormaGrid', tarjeta.selloForma);
+    marcarFormaSeleccionada(tarjeta.selloForma);
     marcarSeleccionado('selloTamanoGrid', tarjeta.selloTamano);
     pintarLogoDropzone();
     pintarTarjetaPreview();
@@ -1353,7 +1365,52 @@
 
   var TAMANOS_PX = { pequeno: 22, mediano: 30, grande: 40 };
 
-  function svgSello(forma, relleno){
+  // Catálogo de sellos extra, agrupado para el panel "Más +" — comida y
+  // bebida, y negocios/servicios comunes. Debe tener EXACTAMENTE los
+  // mismos slugs que SELLO_FORMAS_VALIDAS en lib/db.js — si un slug no
+  // está también allá, el backend lo rechaza silenciosamente al guardar
+  // (vuelve al valor por defecto).
+  var CATALOGO_SELLOS_EXTRA = [
+    { grupo: 'Comida y bebida', items: [
+      ['pizza','🍕','Pizza'], ['hamburguesa','🍔','Hamburguesa'], ['hotdog','🌭','Hot dog'],
+      ['taco','🌮','Taco'], ['burrito','🌯','Burrito'], ['sushi','🍣','Sushi'], ['bento','🍱','Bento'],
+      ['ramen','🍜','Ramen'], ['ensalada','🥗','Ensalada'], ['papas','🍟','Papas'], ['pollo','🍗','Pollo'],
+      ['carne','🥩','Carne'], ['sandwich','🥪','Sándwich'], ['cuernito','🥐','Cuernito'], ['bagel','🥯','Bagel'],
+      ['pan','🍞','Pan'], ['queso','🧀','Queso'], ['hotcakes','🥞','Hotcakes'], ['waffle','🧇','Waffle'],
+      ['huevo','🍳','Huevo'], ['dona','🍩','Dona'], ['galleta','🍪','Galleta'], ['pastel','🎂','Pastel'],
+      ['cupcake','🧁','Cupcake'], ['rebanada','🍰','Rebanada'], ['chocolate','🍫','Chocolate'],
+      ['dulce','🍬','Dulce'], ['paleta','🍭','Paleta'], ['helado','🍦','Helado'], ['copahelado','🍨','Copa helado'],
+      ['raspado','🍧','Raspado'], ['sandia','🍉','Sandía'], ['fresa','🍓','Fresa'], ['uvas','🍇','Uvas'],
+      ['limon','🍋','Limón'], ['aguacate','🥑','Aguacate'], ['cafe','☕','Café'], ['te','🍵','Té'],
+      ['bubbletea','🧋','Bubble tea'], ['refresco','🥤','Refresco'], ['cerveza','🍺','Cerveza'],
+      ['vino','🍷','Vino'], ['coctel','🍸','Coctel'], ['brindis','🥂','Brindis'], ['champan','🍾','Champán']
+    ]},
+    { grupo: 'Negocios y servicios', items: [
+      ['tijeras','✂️','Tijeras'], ['barberia','💈','Barbería'], ['corte','💇','Corte'], ['unas','💅','Uñas'],
+      ['labial','💄','Labial'], ['locion','🧴','Loción'], ['jabon','🧼','Jabón'], ['lavanderia','🧺','Lavandería'],
+      ['camisa','👕','Camisa'], ['vestido','👗','Vestido'], ['tenis','👟','Tenis'], ['bolsa','👜','Bolsa'],
+      ['anillo','💍','Anillo'], ['lentes','🕶️','Lentes'], ['reloj','⌚','Reloj'], ['celular','📱','Celular'],
+      ['laptop','💻','Laptop'], ['impresion','🖨️','Impresión'], ['camara','📷','Cámara'],
+      ['videojuego','🎮','Videojuego'], ['libros','📚','Libros'], ['pluma','🖊️','Pluma'], ['arte','🎨','Arte'],
+      ['musica','🎵','Música'], ['cine','🎬','Cine'], ['gym','🏋️','Gym'], ['futbol','⚽','Fútbol'],
+      ['basquet','🏀','Básquet'], ['yoga','🧘','Yoga'], ['auto','🚗','Auto'], ['bici','🚲','Bici'],
+      ['gasolina','⛽','Gasolina'], ['mascota','🐾','Mascota'], ['perro','🐶','Perro'], ['gato','🐱','Gato'],
+      ['planta','🌿','Planta'], ['flor','🌸','Flor'], ['ramo','💐','Ramo'], ['regalo','🎁','Regalo'],
+      ['globo','🎈','Globo'], ['fiesta','🎉','Fiesta'], ['casa','🏠','Casa'], ['llave','🔑','Llave'],
+      ['herramientas','🛠️','Herramientas'], ['tuercas','🔧','Tuercas'], ['foco','💡','Foco'],
+      ['salud','🏥','Salud'], ['medicina','💊','Medicina'], ['dental','🦷','Dental'], ['spa','💆','Spa'],
+      ['bano','🛀','Baño']
+    ]}
+  ];
+  var EMOJI_SELLOS = {};
+  CATALOGO_SELLOS_EXTRA.forEach(function(g){ g.items.forEach(function(it){ EMOJI_SELLOS[it[0]] = it[1]; }); });
+
+  function svgSello(forma, relleno, px){
+    if(EMOJI_SELLOS[forma]){
+      var atenuado = relleno ? '' : 'opacity:.35;filter:grayscale(60%);';
+      return '<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;' +
+        'font-size:' + Math.round((px || 30) * 0.82) + 'px;line-height:1;' + atenuado + '">' + EMOJI_SELLOS[forma] + '</span>';
+    }
     var comun = 'viewBox="0 0 24 24"';
     if(!relleno){
       if(forma === 'estrella') return '<svg ' + comun + ' fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.9 6.3 6.9.9-5 4.8 1.3 6.8L12 17.6 5.9 20.8l1.3-6.8-5-4.8 6.9-.9z"/></svg>';
@@ -1393,7 +1450,7 @@
     var html = '';
     for(var i = 0; i < umbral; i++){
       var lleno = i < ejemploSellos;
-      html += '<span style="width:' + px + 'px;height:' + px + 'px;display:flex;color:' + (lleno ? '#fff' : 'rgba(255,255,255,.45)') + '">' + svgSello(tarjeta.selloForma, lleno) + '</span>';
+      html += '<span style="width:' + px + 'px;height:' + px + 'px;display:flex;color:' + (lleno ? '#fff' : 'rgba(255,255,255,.45)') + '">' + svgSello(tarjeta.selloForma, lleno, px) + '</span>';
     }
     grid.innerHTML = html;
 
@@ -1634,16 +1691,62 @@
   });
 
   // ---- Sellos ----
+  // El catálogo extra ("Más +") vive en un contenedor aparte del de las 4
+  // formas de siempre, pero las dos son el MISMO campo (selloForma) — por
+  // eso marcarFormaSeleccionada actualiza ambos a la vez, en vez de usar
+  // el marcarSeleccionado genérico que solo conoce un contenedor.
+  var formaExtraGrid = document.getElementById('selloFormaGridExtra');
+  var masFormasBtn = document.getElementById('masFormasBtn');
+  CATALOGO_SELLOS_EXTRA.forEach(function(g){
+    var titulo = document.createElement('div');
+    titulo.className = 'shape-group-title';
+    titulo.textContent = g.grupo;
+    formaExtraGrid.appendChild(titulo);
+    var fila = document.createElement('div');
+    fila.className = 'shape-grid';
+    g.items.forEach(function(it){
+      var opt = document.createElement('div');
+      opt.className = 'shape-opt';
+      opt.dataset.valor = it[0];
+      opt.innerHTML = '<span style="font-size:22px;line-height:1">' + it[1] + '</span>' + it[2];
+      fila.appendChild(opt);
+    });
+    formaExtraGrid.appendChild(fila);
+  });
+  function marcarFormaSeleccionada(valor){
+    marcarSeleccionado('selloFormaGrid', valor);
+    document.querySelectorAll('#selloFormaGridExtra .shape-opt').forEach(function(el){
+      el.classList.toggle('active', el.dataset.valor === valor);
+    });
+    // Si lo que ya tenía guardado el negocio es uno de los de "Más +", se
+    // abre solo para que se vea marcado en vez de parecer que no hay nada
+    // elegido.
+    if(EMOJI_SELLOS[valor] && formaExtraGrid.hidden){
+      formaExtraGrid.hidden = false;
+      masFormasBtn.textContent = 'Menos –';
+    }
+  }
+  masFormasBtn.addEventListener('click', function(){
+    var abierto = !formaExtraGrid.hidden;
+    formaExtraGrid.hidden = abierto;
+    masFormasBtn.textContent = abierto ? 'Más +' : 'Menos –';
+  });
+
   function cablearGrupoOpciones(contenedorId, campo){
-    document.querySelectorAll('#' + contenedorId + ' > *').forEach(function(el){
+    // Usa "[data-valor]" (no "> *") para que también funcione con el
+    // catálogo extra de sellos, donde las opciones quedan anidadas dentro
+    // de un sub-grid por categoría y no como hijos directos del contenedor.
+    document.querySelectorAll('#' + contenedorId + ' [data-valor]').forEach(function(el){
       el.addEventListener('click', function(){
         tarjeta[campo] = el.dataset.valor;
-        marcarSeleccionado(contenedorId, el.dataset.valor);
+        if(campo === 'selloForma') marcarFormaSeleccionada(el.dataset.valor);
+        else marcarSeleccionado(contenedorId, el.dataset.valor);
         pintarTarjetaPreview();
       });
     });
   }
   cablearGrupoOpciones('selloFormaGrid', 'selloForma');
+  cablearGrupoOpciones('selloFormaGridExtra', 'selloForma');
   cablearGrupoOpciones('selloTamanoGrid', 'selloTamano');
 
   document.getElementById('saveSellosBtn').addEventListener('click', async function(){
