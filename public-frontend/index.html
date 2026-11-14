@@ -8,6 +8,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+  // Aplica el tema guardado ANTES de pintar la página, para que no se vea
+  // un parpadeo (cargar en claro y luego cambiar a oscuro de golpe).
+  (function(){
+    try{
+      var t = localStorage.getItem('argayes-theme');
+      if(t === 'light' || t === 'dark'){
+        document.documentElement.setAttribute('data-theme', t);
+      }
+    }catch(e){}
+  })();
+</script>
 <style>
   :root{
     --bg:#f3f1ec;
@@ -35,6 +47,14 @@
       color-scheme: dark;
     }
   }
+  :root[data-theme="dark"]{
+    --bg:#15181b; --surface:#1e2226; --surface-2:#262b30;
+    --ink:#eceae4; --ink-dim:#9ba1a6; --border:#343a3f;
+    --accent:#d9a84a; --accent-ink:#1b1206; --accent-soft:#423c1d;
+    --good:#5fbf86; --good-soft:#1c2e22;
+    color-scheme: dark;
+  }
+  :root[data-theme="light"]{ color-scheme: light; }
   *{box-sizing:border-box}
   html,body{margin:0}
   body{background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:1.5}
@@ -124,6 +144,40 @@
     width:58px;height:58px;display:flex;align-items:center;justify-content:center;
     box-shadow:0 8px 20px rgba(0,0,0,.25);text-decoration:none;font-size:28px;
   }
+
+  /* ---- menú de 3 rayas (navegación en móvil + tema claro/oscuro) ---- */
+  .menu-wrap{position:relative}
+  .menu-btn{
+    display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;
+    width:40px;height:40px;border-radius:8px;border:1.5px solid var(--border);
+    background:var(--surface);cursor:pointer;padding:0;
+  }
+  .menu-btn span{display:block;width:18px;height:2px;background:var(--ink);border-radius:2px}
+  .menu-panel{
+    position:absolute;top:calc(100% + 10px);right:0;min-width:220px;
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    box-shadow:0 16px 40px -16px rgba(0,0,0,.35);padding:10px;z-index:25;
+  }
+  .menu-panel a.navlink{
+    display:block;padding:10px 12px;border-radius:8px;font-size:14px;
+    color:var(--ink);text-decoration:none;
+  }
+  .menu-panel a.navlink:hover{background:var(--surface-2)}
+  .menu-divider{height:1px;background:var(--border);margin:8px 4px}
+  .theme-switch{padding:6px 12px 2px}
+  .theme-switch > span{display:block;font-size:12px;color:var(--ink-dim);margin-bottom:8px}
+  .theme-options{display:flex;gap:8px}
+  .theme-opt{
+    flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+    border:1.5px solid var(--border);border-radius:8px;background:transparent;
+    color:var(--ink);font-family:var(--font-body);font-size:13px;font-weight:600;
+    padding:8px 6px;cursor:pointer;
+  }
+  .theme-opt.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
+  @media (min-width:761px){
+    .menu-panel a.navlink.mobile-only,
+    .menu-panel div.mobile-only{display:none}
+  }
 </style>
 </head>
 <body>
@@ -140,6 +194,25 @@
     <div class="nav-actions">
       <a class="btn ghost" href="panel.html">Iniciar sesión</a>
       <a class="btn primary" href="panel.html#crear-cuenta">Crear cuenta</a>
+      <div class="menu-wrap">
+        <button type="button" class="menu-btn" id="menuBtn" aria-label="Abrir menú" aria-expanded="false" aria-controls="menuPanel">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="menu-panel" id="menuPanel" hidden>
+          <a class="navlink mobile-only" href="#caracteristicas">Características</a>
+          <a class="navlink mobile-only" href="#precio">Precio</a>
+          <a class="navlink mobile-only" href="#preguntas">Preguntas</a>
+          <a class="navlink mobile-only" href="#contacto">Contacto</a>
+          <div class="menu-divider mobile-only"></div>
+          <div class="theme-switch">
+            <span>Tema</span>
+            <div class="theme-options">
+              <button type="button" class="theme-opt" data-theme-choice="light">☀️ Claro</button>
+              <button type="button" class="theme-opt" data-theme-choice="dark">🌙 Oscuro</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </header>
@@ -298,6 +371,50 @@
 </footer>
 
 <a class="wa-float" href="https://wa.me/5219984839441" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp">💬</a>
+
+<script>
+  (function(){
+    var btn = document.getElementById('menuBtn');
+    var panel = document.getElementById('menuPanel');
+
+    function openMenu(){ panel.hidden = false; btn.setAttribute('aria-expanded', 'true'); }
+    function closeMenu(){ panel.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
+
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      if (panel.hidden) openMenu(); else closeMenu();
+    });
+    document.addEventListener('click', function(e){
+      if (!panel.hidden && !panel.contains(e.target) && e.target !== btn) closeMenu();
+    });
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape') closeMenu();
+    });
+    panel.querySelectorAll('a.navlink').forEach(function(a){
+      a.addEventListener('click', closeMenu);
+    });
+
+    function currentTheme(){
+      return document.documentElement.getAttribute('data-theme') ||
+        (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    }
+    function markActive(){
+      var t = currentTheme();
+      panel.querySelectorAll('.theme-opt').forEach(function(b){
+        b.classList.toggle('active', b.dataset.themeChoice === t);
+      });
+    }
+    panel.querySelectorAll('.theme-opt').forEach(function(b){
+      b.addEventListener('click', function(){
+        var t = b.dataset.themeChoice;
+        document.documentElement.setAttribute('data-theme', t);
+        try{ localStorage.setItem('argayes-theme', t); }catch(e){}
+        markActive();
+      });
+    });
+    markActive();
+  })();
+</script>
 
 </body>
 </html>
