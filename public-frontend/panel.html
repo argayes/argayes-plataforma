@@ -454,6 +454,10 @@
           <label for="regUmbral">Umbral de puntos (máximo 20)</label>
           <input id="regUmbral" type="number" min="1" max="20" value="10">
         </div>
+        <label style="display:flex;gap:10px;align-items:flex-start;margin-top:16px;font-size:13px;line-height:1.45;color:var(--muted);cursor:pointer">
+          <input id="regTerminos" type="checkbox" required style="width:auto;padding:0;margin:3px 0 0;flex:none">
+          <span>Leí y acepto los <a href="index.html#terminos" target="_blank" rel="noopener">Términos y condiciones</a> y el <a href="index.html#privacidad" target="_blank" rel="noopener">Aviso de privacidad</a>.</span>
+        </label>
         <p class="auth-error" id="registerError"></p>
         <button class="primary" type="submit" style="margin-top:14px;width:100%">Crear cuenta</button>
       </form>
@@ -1391,7 +1395,8 @@
           email: emailRegistrado,
           password: document.getElementById('regPassword').value,
           recompensa: document.getElementById('regRecompensa').value.trim(),
-          umbral: Math.min(20, Math.max(1, Number(document.getElementById('regUmbral').value) || 10))
+          umbral: Math.min(20, Math.max(1, Number(document.getElementById('regUmbral').value) || 10)),
+          aceptaTerminos: document.getElementById('regTerminos').checked
         })
       });
       registerForm.reset();

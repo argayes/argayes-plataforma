@@ -188,11 +188,21 @@ app.get('/', (req, res) => {
       res.json({ ok: true, servicio: 'ARGAYES backend' });
 });
 
+// Versión de los Términos y el Aviso de Privacidad publicados en index.html
+// (sección "Información legal"). Se guarda junto con la fecha de aceptación;
+// súbela cuando cambies esos textos de forma importante.
+const TERMINOS_VERSION = '2026-11';
+
 // ---------- Cuenta del negocio: alta y login (Paso 6-A) ----------
 app.post('/api/auth/registro', limitadorRegistro, ah(async (req, res) => {
-      const { nombre, email, password, recompensa, umbral, color } = req.body;
+      const { nombre, email, password, recompensa, umbral, color, aceptaTerminos } = req.body;
       if (!nombre || !email || !password) {
               return res.status(400).json({ error: 'Falta nombre, email o password' });
+      }
+      // Sin aceptar los Términos y el Aviso de Privacidad no se crea la cuenta
+      // (se guarda la fecha y la versión de lo que aceptó — ver db.crearEmpresa).
+      if (aceptaTerminos !== true) {
+              return res.status(400).json({ error: 'Para crear tu cuenta debes aceptar los Términos y condiciones y el Aviso de privacidad' });
       }
       try {
               // La cuenta se crea SIN aprobar y SIN activar (ver db.crearEmpresa):
@@ -200,7 +210,7 @@ app.post('/api/auth/registro', limitadorRegistro, ah(async (req, res) => {
               // no se le da acceso automático. Por eso ya no se regresa un token
               // de sesión — tiene que esperar a que ARGAYES la apruebe desde el
               // panel de super-admin antes de poder iniciar sesión.
-              await db.crearEmpresa({ nombre, email, password, recompensa, umbral, color });
+              await db.crearEmpresa({ nombre, email, password, recompensa, umbral, color, terminosAceptados: true, terminosVersion: TERMINOS_VERSION });
               // Mejor esfuerzo: si el correo de aviso falla, la cuenta ya quedó
               // registrada igual — no se bloquea la respuesta por esto.
               enviarAvisoNuevoNegocio(nombre, email).catch((e) => console.error('No se pudo avisar la cuenta nueva:', e.message));

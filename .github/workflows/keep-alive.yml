@@ -1,0 +1,23 @@
+name: Mantener despierto el backend (Render)
+
+# En el plan gratis de Render el servidor se apaga tras ~15 min sin visitas, y
+# el primer cliente que escanea después de eso espera 30-50 segundos. Este
+# ping cada 10 minutos lo mantiene despierto. Se puede borrar este archivo
+# cuando el backend pase a un plan de pago (que no se duerme).
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping al backend
+        run: |
+          # --retry por si el servidor justo está arrancando de un sueño previo.
+          curl -fsS --max-time 60 --retry 3 --retry-delay 10 https://argayes-backend.onrender.com/ \
+            && echo "Backend despierto"
