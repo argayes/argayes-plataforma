@@ -49,6 +49,20 @@ const PANEL_URL = process.env.PANEL_URL || 'https://argayes.netlify.app';
 // verificar la firma — por eso esta ruta va ANTES de express.json(), con
 // su propio parser "raw". Cualquier otra ruta nueva que se agregue abajo
 // de esto sí recibe el body ya parseado como de costumbre.
+// DIAGNÓSTICO TEMPORAL — confirma qué ve Node.js realmente en
+// STRIPE_WEBHOOK_SECRET, sin exponer el secreto completo. Se borra en
+// cuanto terminemos de diagnosticar el error de firma del webhook.
+app.get('/api/debug-webhook-secret', (req, res) => {
+      const v = process.env.STRIPE_WEBHOOK_SECRET || '';
+      res.json({
+              length: v.length,
+              prefix: v.slice(0, 10),
+              suffix: v.slice(-6),
+              hasNewline: /[\r\n]/.test(v),
+              hasLeadingTrailingSpace: v !== v.trim()
+      });
+});
+
 app.post('/api/pagos/webhook', express.raw({ type: 'application/json' }), ah(async (req, res) => {
       const firma = req.headers['stripe-signature'];
       try {
