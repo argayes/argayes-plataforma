@@ -49,20 +49,6 @@ const PANEL_URL = process.env.PANEL_URL || 'https://argayes.netlify.app';
 // verificar la firma — por eso esta ruta va ANTES de express.json(), con
 // su propio parser "raw". Cualquier otra ruta nueva que se agregue abajo
 // de esto sí recibe el body ya parseado como de costumbre.
-// DIAGNÓSTICO TEMPORAL — confirma qué ve Node.js realmente en
-// STRIPE_WEBHOOK_SECRET, sin exponer el secreto completo. Se borra en
-// cuanto terminemos de diagnosticar el error de firma del webhook.
-app.get('/api/debug-webhook-secret', (req, res) => {
-      const v = process.env.STRIPE_WEBHOOK_SECRET || '';
-      res.json({
-              length: v.length,
-              prefix: v.slice(0, 10),
-              suffix: v.slice(-6),
-              hasNewline: /[\r\n]/.test(v),
-              hasLeadingTrailingSpace: v !== v.trim()
-      });
-});
-
 app.post('/api/pagos/webhook', express.raw({ type: 'application/json' }), ah(async (req, res) => {
       const firma = req.headers['stripe-signature'];
       try {
@@ -73,18 +59,6 @@ app.post('/api/pagos/webhook', express.raw({ type: 'application/json' }), ah(asy
               // Stripe lo marca como fallido y lo reintenta solo, en vez de
               // darlo por bueno y perder el evento.
               console.error('Error procesando webhook de Stripe:', e.message);
-              // DIAGNÓSTICO TEMPORAL — nada de esto expone el secreto; solo
-              // confirma qué tipo de dato llegó realmente como cuerpo y cómo
-              // es la cabecera de firma, para descartar que algo (Render,
-              // cors(), etc.) esté tocando el body antes de llegar aquí.
-              console.error('DEBUG webhook -> esBuffer:', Buffer.isBuffer(req.body),
-                      'tipoBody:', typeof req.body,
-                      'largoBody:', req.body ? req.body.length : null,
-                      'contentType:', req.headers['content-type'],
-                      'contentEncoding:', req.headers['content-encoding'],
-                      'firmaHeaderTipo:', typeof firma,
-                      'firmaLargo:', firma ? firma.length : null,
-                      'firmaValor:', firma);
               res.status(400).json({ error: e.message });
       }
 }));
