@@ -403,7 +403,7 @@
   </section>
 </main>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="vendor/qrcode.min.js"></script>
 <script>
 (function(){
   "use strict";
@@ -449,11 +449,33 @@
   // generó el panel (?empresaId=...&backend=...), y si faltan, de lo que
   // ya se guardó antes en este dispositivo ----
   var qs = new URLSearchParams(location.search);
+  // Estas páginas SOLO hablan con el servidor oficial de ARGAYES (o con uno
+  // local cuando se está desarrollando en la propia computadora). Antes,
+  // cualquier link con "?backend=..." cambiaba el servidor y lo dejaba
+  // guardado: un link tramposo podía hacer que alguien escribiera su
+  // contraseña en un servidor ajeno creyendo que era ARGAYES.
+  var BACKEND_OFICIAL = 'https://argayes-backend.onrender.com';
+  var ES_DESARROLLO = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  function backendPermitido(u){
+    try {
+      var x = new URL(u);
+      if(x.origin === BACKEND_OFICIAL) return true;
+      return ES_DESARROLLO && (x.hostname === 'localhost' || x.hostname === '127.0.0.1');
+    } catch(e){ return false; }
+  }
   function getBackendUrl(){
-    try { return localStorage.getItem('argayes-backend-url') || 'https://argayes-backend.onrender.com'; } catch(e){ return 'https://argayes-backend.onrender.com'; }
+    var v = null;
+    try { v = localStorage.getItem('argayes-backend-url'); } catch(e){}
+    return (v && backendPermitido(v)) ? v.replace(/\/$/, '') : BACKEND_OFICIAL;
   }
   function setBackendUrl(v){
-    try { localStorage.setItem('argayes-backend-url', v); } catch(e){}
+    if(!backendPermitido(v)) return;
+    try { localStorage.setItem('argayes-backend-url', v.replace(/\/$/, '')); } catch(e){}
+  }
+  // Los campos de "Conexión al backend" son una herramienta de desarrollo:
+  // un negocio o un cliente no tiene por qué verlos.
+  if(!ES_DESARROLLO){
+    document.querySelectorAll('.backend-settings, [data-solo-desarrollo]').forEach(function(el){ el.hidden = true; el.style.display = 'none'; });
   }
   function getEmpresaId(){
     try { return localStorage.getItem('argayes-registro-empresaId') || ''; } catch(e){ return ''; }
@@ -462,7 +484,8 @@
     try { localStorage.setItem('argayes-registro-empresaId', v); } catch(e){}
   }
 
-  var backendUrl = qs.get('backend') || getBackendUrl();
+  var backendParam = (qs.get('backend') || '').trim();
+  var backendUrl = (backendParam && backendPermitido(backendParam)) ? backendParam.replace(/\/$/, '') : getBackendUrl();
   var empresaId = qs.get('empresaId') || getEmpresaId();
   if(qs.get('backend')) setBackendUrl(backendUrl);
   if(qs.get('empresaId')) setEmpresaId(empresaId);

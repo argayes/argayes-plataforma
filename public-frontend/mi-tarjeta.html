@@ -124,6 +124,15 @@
     background:var(--surface);border:1px solid var(--border);border-radius:12px;
     padding:14px 16px;font-size:13px;color:var(--ink-dim);text-align:center;
   }
+  .progreso-txt{text-align:center;font-size:15px;font-weight:600;margin:16px 0 0;color:var(--ink)}
+  .wallet-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+  .wallet-btn{
+    display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;
+    border-radius:10px;border:0;background:#111;color:#fff;font:600 14px/1 var(--font-body);
+    text-decoration:none;cursor:pointer;flex:1 1 180px;max-width:260px;
+  }
+  .wallet-btn[disabled]{opacity:.6;cursor:default}
+  .wallet-msg{text-align:center;font-size:13px;color:var(--ink-dim);margin:10px 0 0}
   .estado{text-align:center;padding:60px 16px;color:var(--ink-dim);font-size:14px}
   .estado.error{
     color:var(--ink);background:var(--accent-soft);border:1px solid var(--accent);
@@ -180,11 +189,17 @@
     </div>
 
     <div class="listo-banner" id="listoBanner" hidden style="margin-top:14px">¡Ya puedes canjear tu recompensa! Muéstrale esta pantalla o tu QR al negocio.</div>
-    <p class="hint-card" style="margin-top:14px">Guarda este link — es tu tarjeta. Muestra el código QR en el negocio para sumar puntos.</p>
+    <p class="progreso-txt" id="progresoTxt"></p>
+    <div class="wallet-row" id="walletRow">
+      <a class="wallet-btn" id="appleBtn" href="#" hidden>Agregar a Apple Wallet</a>
+      <button class="wallet-btn" id="googleBtn" type="button" hidden>Agregar a Google Wallet</button>
+    </div>
+    <p class="wallet-msg" id="walletMsg" hidden></p>
+    <p class="hint-card" style="margin-top:14px">Guarda este link — es tu tarjeta. Muestra el código QR en el negocio para sumar tus sellos; se actualiza sola.</p>
   </div>
 </main>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="vendor/qrcode.min.js"></script>
 <script>
 (function(){
   "use strict";
@@ -229,13 +244,36 @@
   })();
 
   var qs = new URLSearchParams(location.search);
+  // Estas páginas SOLO hablan con el servidor oficial de ARGAYES (o con uno
+  // local cuando se está desarrollando en la propia computadora). Antes,
+  // cualquier link con "?backend=..." cambiaba el servidor y lo dejaba
+  // guardado: un link tramposo podía hacer que alguien escribiera su
+  // contraseña en un servidor ajeno creyendo que era ARGAYES.
+  var BACKEND_OFICIAL = 'https://argayes-backend.onrender.com';
+  var ES_DESARROLLO = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  function backendPermitido(u){
+    try {
+      var x = new URL(u);
+      if(x.origin === BACKEND_OFICIAL) return true;
+      return ES_DESARROLLO && (x.hostname === 'localhost' || x.hostname === '127.0.0.1');
+    } catch(e){ return false; }
+  }
   function getBackendUrl(){
-    try { return localStorage.getItem('argayes-backend-url') || 'https://argayes-backend.onrender.com'; } catch(e){ return 'https://argayes-backend.onrender.com'; }
+    var v = null;
+    try { v = localStorage.getItem('argayes-backend-url'); } catch(e){}
+    return (v && backendPermitido(v)) ? v.replace(/\/$/, '') : BACKEND_OFICIAL;
   }
   function setBackendUrl(v){
-    try { localStorage.setItem('argayes-backend-url', v); } catch(e){}
+    if(!backendPermitido(v)) return;
+    try { localStorage.setItem('argayes-backend-url', v.replace(/\/$/, '')); } catch(e){}
   }
-  var backendUrl = (qs.get('backend') || getBackendUrl() || '').trim().replace(/\/$/, '');
+  // Los campos de "Conexión al backend" son una herramienta de desarrollo:
+  // un negocio o un cliente no tiene por qué verlos.
+  if(!ES_DESARROLLO){
+    document.querySelectorAll('.backend-settings, [data-solo-desarrollo]').forEach(function(el){ el.hidden = true; el.style.display = 'none'; });
+  }
+  var backendParam = (qs.get('backend') || '').trim();
+  var backendUrl = (backendParam && backendPermitido(backendParam)) ? backendParam.replace(/\/$/, '') : getBackendUrl();
   if(qs.get('backend')) setBackendUrl(backendUrl);
   var clienteId = (qs.get('id') || qs.get('clienteId') || '').trim();
 
@@ -284,15 +322,38 @@
     return '<svg ' + v + ' fill="currentColor"><circle cx="12" cy="12" r="9"/></svg>';
   }
 
+  // ¿El color es claro? (para decidir si el texto encima va oscuro o blanco)
+  function esClaro(hex){
+    var h = String(hex || '').replace('#', '');
+    if(h.length !== 6) return false;
+    var r = parseInt(h.substr(0,2),16), g = parseInt(h.substr(2,2),16), b = parseInt(h.substr(4,2),16);
+    return (0.299*r + 0.587*g + 0.114*b) / 255 > 0.62;
+  }
+
   function pintarTarjeta(empresa, cliente){
     var card = document.getElementById('tcCard');
-    card.style.background = empresa.color || '#b8872b';
+    var fondo = /^#[0-9a-fA-F]{6}$/.test(empresa.color || '') ? empresa.color : '#b8872b';
+    // Sobre un color de marca claro (amarillo, rosa pastel...) el texto
+    // blanco no se leía: la tinta se elige según el fondo.
+    var claro = esClaro(fondo);
+    var tinta = claro ? '#1b1f23' : '#ffffff';
+    var tintaTenue = claro ? 'rgba(27,31,35,.32)' : 'rgba(255,255,255,.4)';
+    card.style.background = fondo;
+    card.style.color = tinta;
     card.style.fontFamily = "'" + (empresa.fuente || 'IBM Plex Sans') + "', " + 'var(--font-body)';
 
     document.getElementById('tcNombre').textContent = empresa.nombre || 'ARGAYES';
-    document.getElementById('tcLogoWrap').innerHTML = empresa.logoUrl
-      ? '<img src="' + empresa.logoUrl + '" alt="">'
-      : '';
+    // El logo se arma como elemento (no pegando texto dentro de HTML) y solo
+    // si es una imagen de verdad: ese valor lo escribe el negocio.
+    var logoWrap = document.getElementById('tcLogoWrap');
+    logoWrap.textContent = '';
+    if(typeof empresa.logoUrl === 'string' && /^(data:image\/(png|jpeg|webp);base64,|https:\/\/)/.test(empresa.logoUrl)){
+      var img = document.createElement('img');
+      img.alt = '';
+      img.src = empresa.logoUrl;
+      logoWrap.appendChild(img);
+    }
+    logoWrap.style.display = logoWrap.firstChild ? '' : 'none';
 
     var umbral = Math.min(20, Math.max(1, Number(empresa.umbral) || 10));
     var puntos = Math.max(0, Number(cliente.puntos) || 0);
@@ -304,7 +365,7 @@
     var html = '';
     for(var i = 0; i < umbral; i++){
       var lleno = i < sellosLlenos;
-      html += '<span style="width:' + px + 'px;height:' + px + 'px;display:flex;color:' + (lleno ? '#fff' : 'rgba(255,255,255,.4)') + '">' + svgSello(empresa.selloForma || 'circulo', lleno, px) + '</span>';
+      html += '<span style="width:' + px + 'px;height:' + px + 'px;display:flex;color:' + (lleno ? tinta : tintaTenue) + '">' + svgSello(empresa.selloForma || 'circulo', lleno, px) + '</span>';
     }
     grid.innerHTML = html;
 
@@ -316,12 +377,19 @@
     new QRCode(qrWrap, {
       text: cliente.id,
       width: 84, height: 84,
-      colorDark: empresa.colorBoton || '#1b1f23',
+      // Un QR claro sobre blanco no lo lee ninguna cámara: si el color que
+      // eligió el negocio es claro, el QR se pinta oscuro.
+      colorDark: (/^#[0-9a-fA-F]{6}$/.test(empresa.colorBoton || '') && !esClaro(empresa.colorBoton)) ? empresa.colorBoton : '#1b1f23',
       colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M
     });
 
     document.getElementById('listoBanner').hidden = puntos < umbral;
+    var faltan = umbral - sellosLlenos;
+    var recompensaTxt = empresa.recompensa ? (': ' + empresa.recompensa) : '';
+    document.getElementById('progresoTxt').textContent = faltan <= 0
+      ? '¡Juntaste todos tus sellos!'
+      : (faltan === 1 ? 'Te falta 1 sello para tu recompensa' : 'Te faltan ' + faltan + ' sellos para tu recompensa') + recompensaTxt;
 
     estadoCarga.hidden = true;
     tarjetaWrap.hidden = false;
@@ -340,9 +408,57 @@
       var cliente = await api('/api/clientes/' + encodeURIComponent(clienteId));
       var empresa = await api('/api/empresas/' + encodeURIComponent(cliente.empresaId));
       pintarTarjeta(empresa, cliente);
+      prepararWallet();
+      mantenerAlDia(empresa, cliente.puntos);
     } catch(e){
       mostrarError('No pudimos cargar tu tarjeta todavía. Intenta de nuevo en un momento o pide que te compartan el link una vez más.');
     }
+  }
+
+  // La tarjeta se actualiza sola: cuando el negocio escanea el QR, el sello
+  // nuevo aparece sin que el cliente tenga que recargar la página. Solo
+  // consulta mientras la pestaña está a la vista.
+  function mantenerAlDia(empresa, puntosIniciales){
+    var puntos = puntosIniciales;
+    var ocupado = false;
+    async function revisar(){
+      if(ocupado || document.hidden) return;
+      ocupado = true;
+      try {
+        var c = await api('/api/clientes/' + encodeURIComponent(clienteId));
+        if(c.puntos !== puntos){ puntos = c.puntos; pintarTarjeta(empresa, c); }
+      } catch(e){ /* sin conexión un momento: se reintenta en la siguiente vuelta */ }
+      ocupado = false;
+    }
+    setInterval(revisar, 15000);
+    document.addEventListener('visibilitychange', revisar);
+  }
+
+  // Botones para guardar la tarjeta en la wallet del teléfono: en iPhone se
+  // ofrece Apple Wallet, en Android Google Wallet, y en computadora ambos.
+  function prepararWallet(){
+    var ua = navigator.userAgent || '';
+    var esIOS = /iPhone|iPad|iPod/.test(ua);
+    var esAndroid = /Android/.test(ua);
+    var appleBtn = document.getElementById('appleBtn');
+    var googleBtn = document.getElementById('googleBtn');
+    var msg = document.getElementById('walletMsg');
+    appleBtn.href = backendUrl + '/api/wallet/apple/' + encodeURIComponent(clienteId) + '.pkpass';
+    appleBtn.hidden = esAndroid;
+    googleBtn.hidden = esIOS;
+    googleBtn.addEventListener('click', async function(){
+      googleBtn.disabled = true;
+      msg.hidden = true;
+      try {
+        var r = await api('/api/wallet/google/' + encodeURIComponent(clienteId));
+        window.location.href = r.saveUrl;
+      } catch(e){
+        msg.textContent = e.message || 'Google Wallet no está disponible en este momento.';
+        msg.hidden = false;
+      } finally {
+        googleBtn.disabled = false;
+      }
+    });
   }
   init();
 })();

@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Super-admin ARGAYES</title>
@@ -417,11 +418,33 @@
 (function(){
   "use strict";
 
+  // Estas páginas SOLO hablan con el servidor oficial de ARGAYES (o con uno
+  // local cuando se está desarrollando en la propia computadora). Antes,
+  // cualquier link con "?backend=..." cambiaba el servidor y lo dejaba
+  // guardado: un link tramposo podía hacer que alguien escribiera su
+  // contraseña en un servidor ajeno creyendo que era ARGAYES.
+  var BACKEND_OFICIAL = 'https://argayes-backend.onrender.com';
+  var ES_DESARROLLO = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  function backendPermitido(u){
+    try {
+      var x = new URL(u);
+      if(x.origin === BACKEND_OFICIAL) return true;
+      return ES_DESARROLLO && (x.hostname === 'localhost' || x.hostname === '127.0.0.1');
+    } catch(e){ return false; }
+  }
   function getBackendUrl(){
-    try { return localStorage.getItem('argayes-backend-url') || 'https://argayes-backend.onrender.com'; } catch(e){ return 'https://argayes-backend.onrender.com'; }
+    var v = null;
+    try { v = localStorage.getItem('argayes-backend-url'); } catch(e){}
+    return (v && backendPermitido(v)) ? v.replace(/\/$/, '') : BACKEND_OFICIAL;
   }
   function setBackendUrl(v){
-    try { localStorage.setItem('argayes-backend-url', v); } catch(e){}
+    if(!backendPermitido(v)) return;
+    try { localStorage.setItem('argayes-backend-url', v.replace(/\/$/, '')); } catch(e){}
+  }
+  // Los campos de "Conexión al backend" son una herramienta de desarrollo:
+  // un negocio o un cliente no tiene por qué verlos.
+  if(!ES_DESARROLLO){
+    document.querySelectorAll('.backend-settings, [data-solo-desarrollo]').forEach(function(el){ el.hidden = true; el.style.display = 'none'; });
   }
   function getAdminSecret(){
     try { return sessionStorage.getItem('argayes-admin-secret') || ''; } catch(e){ return ''; }

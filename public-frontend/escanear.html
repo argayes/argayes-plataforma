@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Escanear clientes · ARGAYES</title>
@@ -330,11 +331,33 @@
 
   // ---- backend / sesión (misma cuenta que usa el panel principal) ----
   var qs = new URLSearchParams(location.search);
+  // Estas páginas SOLO hablan con el servidor oficial de ARGAYES (o con uno
+  // local cuando se está desarrollando en la propia computadora). Antes,
+  // cualquier link con "?backend=..." cambiaba el servidor y lo dejaba
+  // guardado: un link tramposo podía hacer que alguien escribiera su
+  // contraseña en un servidor ajeno creyendo que era ARGAYES.
+  var BACKEND_OFICIAL = 'https://argayes-backend.onrender.com';
+  var ES_DESARROLLO = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  function backendPermitido(u){
+    try {
+      var x = new URL(u);
+      if(x.origin === BACKEND_OFICIAL) return true;
+      return ES_DESARROLLO && (x.hostname === 'localhost' || x.hostname === '127.0.0.1');
+    } catch(e){ return false; }
+  }
   function getBackendUrl(){
-    try { return localStorage.getItem('argayes-backend-url') || 'https://argayes-backend.onrender.com'; } catch(e){ return 'https://argayes-backend.onrender.com'; }
+    var v = null;
+    try { v = localStorage.getItem('argayes-backend-url'); } catch(e){}
+    return (v && backendPermitido(v)) ? v.replace(/\/$/, '') : BACKEND_OFICIAL;
   }
   function setBackendUrl(v){
-    try { localStorage.setItem('argayes-backend-url', v); } catch(e){}
+    if(!backendPermitido(v)) return;
+    try { localStorage.setItem('argayes-backend-url', v.replace(/\/$/, '')); } catch(e){}
+  }
+  // Los campos de "Conexión al backend" son una herramienta de desarrollo:
+  // un negocio o un cliente no tiene por qué verlos.
+  if(!ES_DESARROLLO){
+    document.querySelectorAll('.backend-settings, [data-solo-desarrollo]').forEach(function(el){ el.hidden = true; el.style.display = 'none'; });
   }
   function getToken(){
     try { return sessionStorage.getItem('argayes-token') || ''; } catch(e){ return ''; }
@@ -364,9 +387,21 @@
     opts.headers = Object.assign({'Content-Type':'application/json'}, opts.headers || {});
     var token = getToken();
     if(token) opts.headers.Authorization = 'Bearer ' + token;
-    var res = await fetch(base + path, opts);
+    var res;
+    try {
+      res = await fetch(base + path, opts);
+    } catch(e){
+      throw new Error('No hay conexión con el servidor. Revisa tu internet e intenta de nuevo.');
+    }
     var data = null;
     try { data = await res.json(); } catch(e){}
+    // Sesión vencida: de vuelta al inicio de sesión, con explicación.
+    if(res.status === 401 && token && !/\/api\/auth\//.test(path)){
+      mostrarLogin();
+      var le = document.getElementById('loginError');
+      if(le) le.textContent = 'Tu sesión venció. Entra de nuevo.';
+      throw new Error('Tu sesión venció. Entra de nuevo.');
+    }
     if(!res.ok){
       throw new Error((data && data.error) || ('Error ' + res.status));
     }
@@ -623,6 +658,10 @@
       if(/ya_usado/i.test(msg)) titulo = 'Ese código ya se usó';
       if(/codigo_no_existe/i.test(msg)) titulo = 'Código de canje no válido';
       if(/no_pertenece/i.test(msg)) titulo = 'Ese código es de otro negocio';
+      if(/puntos_insuficientes/i.test(msg)){
+        titulo = 'A este cliente ya no le alcanzan los sellos';
+        msg = 'Ese código se generó antes: la recompensa ya se entregó o todavía le faltan sellos. Escanea su tarjeta para ver cuántos lleva.';
+      }
       mostrarError(titulo, msg);
     } finally {
       btnConfirmar.disabled = false;

@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Panel ARGAYES</title>
@@ -395,6 +396,80 @@
   .result-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px}
 
   [hidden]{display:none!important}
+
+  /* ---- color de las gráficas de una sola serie ---- */
+  :root{--serie:#2a78d6}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--serie:#3987e5} }
+  :root[data-theme="dark"]{--serie:#3987e5}
+
+  /* ---- aviso de suscripción inactiva ---- */
+  .aviso-suscripcion{
+    display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+    background:var(--accent-soft);border:1px solid var(--accent);border-radius:12px;
+    padding:14px 16px;margin-bottom:20px;font-size:14px;line-height:1.45;color:var(--accent-ink-soft);
+  }
+  .aviso-suscripcion[hidden]{display:none}
+  .aviso-suscripcion > div{flex:1 1 260px}
+
+  /* ---- avisos breves (reemplazan a las ventanas de alerta del navegador) ---- */
+  .toast{
+    position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));
+    transform:translate(-50%,20px);background:var(--ink);color:var(--bg);
+    padding:12px 18px;border-radius:10px;font-size:14px;line-height:1.4;max-width:min(92vw,460px);
+    box-shadow:0 10px 30px rgba(0,0,0,.25);opacity:0;pointer-events:none;
+    transition:opacity .2s, transform .2s;z-index:100;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  .toast.error{background:var(--danger);color:#fff}
+
+  /* ---- "Para hoy": listas accionables ---- */
+  .numeros-sub{font-size:13px;color:var(--ink-dim);margin:0 0 14px}
+  .insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  @media (max-width:760px){ .insight-grid{grid-template-columns:1fr} }
+  .insight-grid .panel-section{margin-bottom:0;min-width:0}
+  .insight-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 4px}
+  .insight-head h3{font-size:14px;font-weight:700;margin:0}
+  .insight-count{font-family:var(--font-mono);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+  .insight-desc{font-size:12px;color:var(--ink-dim);margin:0 0 10px;line-height:1.45}
+  .insight-list{list-style:none;margin:0;padding:0}
+  .insight-list li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--border);font-size:13px}
+  .insight-list li span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+  .insight-list li span:last-child{flex:none;color:var(--ink-dim);font-variant-numeric:tabular-nums}
+  .insight-vacio{font-size:13px;color:var(--ink-dim);margin:0;padding:10px 0 2px;border-top:1px solid var(--border);line-height:1.45}
+  .insight-mas{font-size:12px;color:var(--ink-dim);margin:8px 0 0}
+
+  /* ---- gráficas de barras (días fuertes / horas pico) ---- */
+  .barras{display:flex;align-items:flex-end;gap:6px;height:150px}
+  .barras .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+  .barras .bar{width:100%;max-width:36px;border-radius:4px 4px 0 0;background:var(--serie);min-height:2px}
+  .barras .col:hover .bar{filter:brightness(1.15)}
+  .barras .val{font-size:11px;font-variant-numeric:tabular-nums;margin-bottom:4px;visibility:hidden;color:var(--ink);font-weight:600}
+  .barras .col.max .val, .barras .col:hover .val{visibility:visible}
+  .barras-eje{display:flex;gap:6px;margin-top:6px;border-top:1px solid var(--border);padding-top:6px}
+  .barras-eje span{flex:1;text-align:center;font-size:11px;color:var(--ink-dim);min-width:0;white-space:nowrap;overflow:visible}
+  .barras.horas, .barras-eje.horas{gap:3px}
+  .chart-nota{font-size:13px;margin:12px 0 0;line-height:1.45}
+
+  .segmentos{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+  .seg-row{display:grid;grid-template-columns:150px 1fr 84px;gap:10px;align-items:center;font-size:13px}
+  .seg-track{height:10px;background:var(--surface-2);border-radius:5px;overflow:hidden}
+  .seg-fill{height:100%;background:var(--serie);border-radius:5px}
+  .seg-num{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink-dim)}
+  @media (max-width:520px){ .seg-row{grid-template-columns:104px 1fr 70px;font-size:12px} }
+
+  /* ---- lista de clientes: buscador, orden y acciones ---- */
+  .clientes-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .clientes-toolbar input{flex:1 1 200px;padding:9px 12px;width:auto}
+  .clientes-toolbar select{padding:9px 12px;width:auto}
+  .clientes-count{font-size:12px;color:var(--ink-dim);margin:0 0 10px}
+  .mini-btn{
+    font-family:var(--font-body);font-size:12px;font-weight:600;padding:5px 10px;border-radius:7px;
+    border:1px solid var(--border);background:var(--surface);color:var(--ink);cursor:pointer;white-space:nowrap;
+  }
+  .mini-btn:hover{border-color:var(--accent)}
+  .mini-btn:disabled{opacity:.5;cursor:default}
+  td.acciones{white-space:nowrap;text-align:right}
+  td.acciones .danger-link{margin-left:10px}
 </style>
 
 <!-- ======================================================================
@@ -565,14 +640,18 @@
   </nav>
 
   <main class="main">
+    <div class="aviso-suscripcion" id="avisoSuscripcion" hidden>
+      <div><strong>Tu suscripción no está activa.</strong> Puedes ver tu información, pero el escáner y los recordatorios están en pausa hasta que la reactives.</div>
+      <button type="button" class="primary" id="avisoSuscripcionBtn">Reactivar suscripción</button>
+    </div>
     <!-- ---- Panel ---- -->
     <section class="view" id="view-panel">
       <h1 class="view-title">Panel</h1>
       <div class="stat-grid">
         <div class="stat"><span class="n" id="statClientes">—</span><span class="l">Clientes</span></div>
         <div class="stat"><span class="n" id="statVisitas">—</span><span class="l">Visitas hoy</span></div>
-        <div class="stat"><span class="n" id="statCanjes">—</span><span class="l">Canjes pendientes</span></div>
-        <div class="stat"><span class="n" id="statPuntos">—</span><span class="l">Puntos repartidos</span></div>
+        <div class="stat"><span class="n" id="statCanjes">—</span><span class="l">Recompensas por entregar</span></div>
+        <div class="stat"><span class="n" id="statPuntos">—</span><span class="l">Recompensas entregadas</span></div>
       </div>
       <div class="panel-section">
         <h2>Accesos rápidos</h2>
@@ -591,8 +670,10 @@
           <div class="qr-share-meta">
             <div class="links-row">
               <a href="registro.html" target="_blank" rel="noopener" id="regLink">Abrir página de registro</a>
-              <button type="button" class="ghost" id="regQrDownloadBtn">Descargar QR</button>
+              <button type="button" class="ghost" id="regCartelBtn">Descargar cartel para imprimir</button>
+              <button type="button" class="ghost" id="regQrDownloadBtn">Descargar solo el QR</button>
             </div>
+            <p class="hint" style="text-align:left;margin:10px 0 0">El cartel ya trae tu nombre, tu recompensa y el QR en tamaño carta: imprímelo y ponlo en el mostrador.</p>
           </div>
         </div>
         <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
@@ -607,6 +688,31 @@
             <button type="button" class="ghost" id="recordatorioBtn">Enviar recordatorio</button>
             <span class="hint" id="recordatorioHint" style="text-align:left;margin-top:0"></span>
           </div>
+        </div>
+      </div>
+
+      <h2 class="numeros-title" style="margin-top:8px">Para hoy</h2>
+      <p class="numeros-sub">A quién atender primero y a quién conviene invitar a volver.</p>
+      <div class="insight-grid">
+        <div class="panel-section">
+          <div class="insight-head"><h3>Ya pueden cobrar su recompensa</h3><span class="insight-count" id="insListosN">—</span></div>
+          <p class="insight-desc">Juntaron todos sus sellos y todavía no la reclaman.</p>
+          <ul class="insight-list" id="insListos"></ul>
+        </div>
+        <div class="panel-section">
+          <div class="insight-head"><h3>A punto de lograrlo</h3><span class="insight-count" id="insCercaN">—</span></div>
+          <p class="insight-desc">Les falta 1 o 2 sellos: un recordatorio los trae de vuelta.</p>
+          <ul class="insight-list" id="insCerca"></ul>
+        </div>
+        <div class="panel-section">
+          <div class="insight-head"><h3>Tus mejores clientes</h3></div>
+          <p class="insight-desc">Los que más veces han venido desde que tienen tu tarjeta.</p>
+          <ul class="insight-list" id="insTop"></ul>
+        </div>
+        <div class="panel-section">
+          <div class="insight-head"><h3>Dejaron de venir</h3><span class="insight-count" id="insRiesgoN">—</span></div>
+          <p class="insight-desc">Venían seguido y llevan más de 30 días sin volver.</p>
+          <ul class="insight-list" id="insRiesgo"></ul>
         </div>
       </div>
 
@@ -665,15 +771,51 @@
           <button type="button" class="ghost" id="toggleHistoricoBtn">Ver histórico</button>
         </div>
       </div>
+
+      <div class="insight-grid">
+        <div class="panel-section">
+          <p class="chart-title">Tus días más fuertes</p>
+          <p class="chart-sub">Visitas por día de la semana · últimos 90 días</p>
+          <div class="barras" id="insDias" style="margin-top:14px"></div>
+          <div class="barras-eje" id="insDiasEje"></div>
+          <p class="chart-nota" id="insDiasNota"></p>
+        </div>
+        <div class="panel-section">
+          <p class="chart-title">Tus horas pico</p>
+          <p class="chart-sub">Visitas por hora del día · últimos 90 días</p>
+          <div class="barras horas" id="insHoras" style="margin-top:14px"></div>
+          <div class="barras-eje horas" id="insHorasEje"></div>
+          <p class="chart-nota" id="insHorasNota"></p>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <p class="chart-title">Qué tan fieles son tus clientes</p>
+        <p class="chart-sub">Cuántas veces ha venido cada uno desde que se registró</p>
+        <div class="segmentos" id="insSegmentos"></div>
+        <p class="chart-nota" id="insWalletNota" style="color:var(--ink-dim)"></p>
+      </div>
     </section>
 
     <!-- ---- Clientes ---- -->
     <section class="view" id="view-clientes" hidden>
       <h1 class="view-title">Clientes</h1>
       <div class="panel-section">
+        <div class="clientes-toolbar">
+          <input type="search" id="clientesBuscar" placeholder="Buscar por nombre, teléfono o correo" aria-label="Buscar cliente">
+          <select id="clientesOrden" aria-label="Ordenar clientes">
+            <option value="recientes">Más recientes primero</option>
+            <option value="visitas">Más visitas primero</option>
+            <option value="sellos">Más sellos primero</option>
+            <option value="ausentes">Más tiempo sin venir</option>
+            <option value="nombre">Por nombre (A–Z)</option>
+          </select>
+          <button type="button" class="ghost" id="clientesCsvBtn">Descargar lista</button>
+        </div>
+        <p class="clientes-count" id="clientesCount"></p>
         <div class="table-wrap">
           <table id="clientesTable" hidden>
-            <thead><tr><th>Nombre</th><th>Contacto</th><th>Puntos</th><th>Alta</th><th>Tarjeta</th><th></th></tr></thead>
+            <thead><tr><th>Nombre</th><th>Contacto</th><th>Sellos</th><th>Visitas</th><th>Última visita</th><th>Alta</th><th>Tarjeta</th><th></th></tr></thead>
             <tbody id="clientesBody"></tbody>
           </table>
         </div>
@@ -972,7 +1114,7 @@
         </div>
       </div>
 
-      <div class="panel-section">
+      <div class="panel-section" data-solo-desarrollo>
         <h2>Conexión al backend</h2>
         <div class="field">
           <label for="backendUrlAjustes">URL del backend</label>
@@ -985,9 +1127,10 @@
       </div>
     </section>
   </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="vendor/qrcode.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 (function(){
@@ -1012,11 +1155,33 @@
   // Si nunca se configuró a mano (por ejemplo, la primera vez que se abre
   // la página en un dominio nuevo), usa el backend real de ARGAYES en vez
   // de dejar el panel sin poder conectar.
+  // Estas páginas SOLO hablan con el servidor oficial de ARGAYES (o con uno
+  // local cuando se está desarrollando en la propia computadora). Antes,
+  // cualquier link con "?backend=..." cambiaba el servidor y lo dejaba
+  // guardado: un link tramposo podía hacer que alguien escribiera su
+  // contraseña en un servidor ajeno creyendo que era ARGAYES.
+  var BACKEND_OFICIAL = 'https://argayes-backend.onrender.com';
+  var ES_DESARROLLO = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  function backendPermitido(u){
+    try {
+      var x = new URL(u);
+      if(x.origin === BACKEND_OFICIAL) return true;
+      return ES_DESARROLLO && (x.hostname === 'localhost' || x.hostname === '127.0.0.1');
+    } catch(e){ return false; }
+  }
   function getBackendUrl(){
-    try { return localStorage.getItem('argayes-backend-url') || 'https://argayes-backend.onrender.com'; } catch(e){ return 'https://argayes-backend.onrender.com'; }
+    var v = null;
+    try { v = localStorage.getItem('argayes-backend-url'); } catch(e){}
+    return (v && backendPermitido(v)) ? v.replace(/\/$/, '') : BACKEND_OFICIAL;
   }
   function setBackendUrl(v){
-    try { localStorage.setItem('argayes-backend-url', v); } catch(e){}
+    if(!backendPermitido(v)) return;
+    try { localStorage.setItem('argayes-backend-url', v.replace(/\/$/, '')); } catch(e){}
+  }
+  // Los campos de "Conexión al backend" son una herramienta de desarrollo:
+  // un negocio o un cliente no tiene por qué verlos.
+  if(!ES_DESARROLLO){
+    document.querySelectorAll('.backend-settings, [data-solo-desarrollo]').forEach(function(el){ el.hidden = true; el.style.display = 'none'; });
   }
   function getToken(){
     try { return sessionStorage.getItem('argayes-token') || ''; } catch(e){ return ''; }
@@ -1058,13 +1223,55 @@
     opts.headers = Object.assign({'Content-Type':'application/json'}, opts.headers || {});
     var token = getToken();
     if(token) opts.headers.Authorization = 'Bearer ' + token;
-    var res = await fetch(base + path, opts);
+    var res;
+    try {
+      res = await fetch(base + path, opts);
+    } catch(e){
+      // Sin internet o servidor arrancando: un mensaje que se entienda en
+      // vez del "Failed to fetch" del navegador.
+      throw new Error('No hay conexión con el servidor. Revisa tu internet e intenta de nuevo.');
+    }
     var data = null;
     try { data = await res.json(); } catch(e){}
+    // La sesión dura 30 días. Cuando vence (o la cuenta ya no existe), el
+    // servidor contesta 401 a todo: antes el panel se quedaba abierto con
+    // todos los números en "—" y sin explicar nada. Ahora regresa al inicio
+    // de sesión y lo dice.
+    if(res.status === 401 && token && !/\/api\/auth\//.test(path)){
+      mostrarLogin();
+      var le = document.getElementById('loginError');
+      if(le) le.textContent = 'Tu sesión venció. Entra de nuevo.';
+      throw new Error('Tu sesión venció. Entra de nuevo.');
+    }
     if(!res.ok){
       throw new Error((data && data.error) || ('Error ' + res.status));
     }
     return data;
+  }
+
+  // Aviso breve abajo de la pantalla (en vez de las ventanas "alert" del
+  // navegador, que se ven como error del sistema).
+  var toastTimer = null;
+  function toast(mensaje, tipo){
+    var el = document.getElementById('toast');
+    if(!el) return;
+    el.textContent = mensaje;
+    el.classList.toggle('error', tipo === 'error');
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.remove('show'); }, tipo === 'error' ? 6000 : 3500);
+  }
+
+  // ¿El color es claro? (para decidir si lo que va encima se pinta oscuro)
+  function esClaro(hex){
+    var h = String(hex || '').replace('#', '');
+    if(h.length !== 6) return false;
+    var r = parseInt(h.substr(0,2),16), g = parseInt(h.substr(2,2),16), b = parseInt(h.substr(4,2),16);
+    return (0.299*r + 0.587*g + 0.114*b) / 255 > 0.62;
+  }
+  // Color seguro para un QR: uno claro sobre fondo blanco no lo lee ninguna cámara.
+  function colorQrSeguro(hex){
+    return (/^#[0-9a-fA-F]{6}$/.test(hex || '') && !esClaro(hex)) ? hex : '#1b1f23';
   }
 
   // ---- vistas raíz: auth vs app ----
@@ -1095,6 +1302,7 @@
 
   // Arma el link/QR de autorregistro, usando el slug (link con marca
   // propia) cuando el negocio ya lo configuró, o el id de siempre si no.
+  var regUrlActual = '';
   function actualizarLinkRegistro(empresa){
     var slugInput = document.getElementById('slugInput');
     if(slugInput) slugInput.value = empresa.slug || '';
@@ -1102,16 +1310,22 @@
     var backend = getBackendUrl();
     if(regLink){
       var params = 'empresaId=' + encodeURIComponent(empresa.slug || empresa.id);
-      if(backend) params += '&backend=' + encodeURIComponent(backend);
+      // El link ya no arrastra "&backend=...": el registro siempre habla con
+      // el servidor oficial, así que el link (y el QR) quedan más cortos.
+      if(backend && backend !== BACKEND_OFICIAL) params += '&backend=' + encodeURIComponent(backend);
       // Usa la misma carpeta donde está corriendo este panel (sea Netlify,
       // GitHub Pages o donde sea) en vez de un dominio fijo — así el link
       // de registro sigue funcionando aunque cambie dónde está alojada la
       // página.
       var carpetaActual = location.origin + location.pathname.replace(/[^/]*$/, '');
       var regUrl = carpetaActual + 'registro.html?' + params;
+      regUrlActual = regUrl;
       regLink.href = regUrl;
       var regQrBox = document.getElementById('regQrBox');
-      if(regQrBox){
+      // Si la librería del QR no alcanzó a cargar (red lenta o bloqueada)
+      // el panel abre igual, solo sin la miniatura: antes ese fallo
+      // dejaba la pantalla en blanco justo después de iniciar sesión.
+      if(regQrBox && typeof QRCode !== 'undefined'){
         regQrBox.innerHTML = '';
         new QRCode(regQrBox, {
           text: regUrl,
@@ -1139,7 +1353,18 @@
     cargarEstadisticas();
     cargarEstadisticasAvanzadas();
     cargarVisitasSemana();
+    cargarInsights();
     pintarSuscripcion(empresa);
+  }
+
+  // Vuelve a pedir al servidor todo lo que cambia cuando se suma una visita,
+  // se entrega una recompensa o se borra un cliente.
+  function refrescarDatos(){
+    cargarClientes();
+    cargarEstadisticas();
+    cargarEstadisticasAvanzadas();
+    cargarVisitasSemana();
+    cargarInsights();
   }
 
   // Muestra en Ajustes si la suscripción está pagando bien, atrasada o
@@ -1150,12 +1375,28 @@
     var btnAdmin = document.getElementById('administrarSuscripcionBtn');
     if(!texto || !btnPagar || !btnAdmin) return;
     var estado = empresa.suscripcionEstado;
+    var aviso = document.getElementById('avisoSuscripcion');
+    if(aviso) aviso.hidden = empresa.activa !== false;
+    var NOMBRE_ESTADO = { past_due: 'pago atrasado', unpaid: 'pago pendiente', incomplete: 'pago sin completar', paused: 'en pausa' };
+    btnPagar.textContent = 'Pagar con tarjeta';
     if(estado === 'active' || estado === 'trialing'){
       texto.textContent = 'Tu suscripción está al corriente ($800 MXN/mes).';
       btnPagar.hidden = true;
       btnAdmin.hidden = false;
+    } else if(empresa.stripeCustomerId && (estado === 'canceled' || estado === 'incomplete_expired')){
+      // Una suscripción cancelada no se arregla cambiando la tarjeta: hay
+      // que volver a suscribirse (antes aquí solo salía "actualiza tu
+      // tarjeta" y no había botón para volver a pagar).
+      texto.textContent = 'Tu suscripción está cancelada. Vuelve a suscribirte ($800 MXN/mes) para seguir sumando visitas.';
+      btnPagar.textContent = 'Volver a suscribirme';
+      btnPagar.hidden = false;
+      btnAdmin.hidden = false;
+    } else if(empresa.stripeCustomerId && estado){
+      texto.textContent = 'Hay un problema con tu pago (' + (NOMBRE_ESTADO[estado] || 'sin confirmar') + '). Actualiza tu tarjeta para no perder el acceso.';
+      btnPagar.hidden = true;
+      btnAdmin.hidden = false;
     } else if(empresa.stripeCustomerId){
-      texto.textContent = 'Hay un problema con tu pago (estado: ' + (estado || 'desconocido') + '). Actualiza tu tarjeta para no perder el acceso.';
+      texto.textContent = 'Estamos confirmando tu pago. Esto tarda unos segundos; si no cambia, recarga la página.';
       btnPagar.hidden = true;
       btnAdmin.hidden = false;
     } else {
@@ -1193,6 +1434,25 @@
     authView.hidden = false;
     appShell.classList.remove('show');
     detenerCamara();
+  }
+
+  document.getElementById('avisoSuscripcionBtn').addEventListener('click', function(){
+    mostrarVista('ajustes');
+    var t = document.getElementById('suscripcionEstadoTexto');
+    if(t && t.scrollIntoView) t.scrollIntoView({ block: 'center' });
+  });
+
+  // Trae del servidor el estado ACTUAL del negocio. El panel guarda una
+  // copia para abrir rápido, pero esa copia puede estar vieja: por ejemplo,
+  // al volver de pagar en Stripe seguía diciendo "todavía no activas el
+  // cobro" hasta cerrar sesión y volver a entrar.
+  async function refrescarEmpresa(){
+    var empresa = await api('/api/mi-empresa');
+    setEmpresaCache(empresa);
+    sessionName.textContent = empresa.nombre;
+    pintarAvatarSidebar(empresa);
+    pintarSuscripcion(empresa);
+    return empresa;
   }
 
   document.getElementById('logoutBtn').addEventListener('click', mostrarLogin);
@@ -1549,14 +1809,24 @@
 
   function pintarTarjetaPreview(){
     var card = document.getElementById('tcCard');
+    // Igual que en la tarjeta real del cliente: sobre un color claro el
+    // texto y los sellos van oscuros para que se puedan leer.
+    var fondoClaro = esClaro(tarjeta.color);
+    var tinta = fondoClaro ? '#1b1f23' : '#ffffff';
+    var tintaTenue = fondoClaro ? 'rgba(27,31,35,.32)' : 'rgba(255,255,255,.45)';
     card.style.background = tarjeta.color;
+    card.style.color = tinta;
     card.style.fontFamily = "'" + tarjeta.fuente + "', " + 'var(--font-body)';
 
     document.getElementById('tcNombre').textContent = tarjeta.nombre || 'Nombre de tu negocio';
     var logoWrap = document.getElementById('tcLogoWrap');
-    logoWrap.innerHTML = tarjeta.logoUrl
-      ? '<img src="' + tarjeta.logoUrl + '" alt="">'
-      : '';
+    logoWrap.textContent = '';
+    if(tarjeta.logoUrl){
+      var logoImg = document.createElement('img');
+      logoImg.alt = '';
+      logoImg.src = tarjeta.logoUrl;
+      logoWrap.appendChild(logoImg);
+    }
 
     var umbral = Math.min(20, Math.max(1, Number(tarjeta.umbral) || 10));
     var ejemploSellos = Math.min(3, umbral); // ejemplo de un cliente a medio camino
@@ -1567,7 +1837,7 @@
     var html = '';
     for(var i = 0; i < umbral; i++){
       var lleno = i < ejemploSellos;
-      html += '<span style="width:' + px + 'px;height:' + px + 'px;display:flex;color:' + (lleno ? '#fff' : 'rgba(255,255,255,.45)') + '">' + svgSello(tarjeta.selloForma, lleno, px) + '</span>';
+      html += '<span style="width:' + px + 'px;height:' + px + 'px;display:flex;color:' + (lleno ? tinta : tintaTenue) + '">' + svgSello(tarjeta.selloForma, lleno, px) + '</span>';
     }
     grid.innerHTML = html;
 
@@ -1579,7 +1849,7 @@
       new QRCode(qrWrap, {
         text: 'EJEMPLO-' + (getEmpresaCache() ? getEmpresaCache().id : 'demo'),
         width: 72, height: 72,
-        colorDark: tarjeta.colorBoton || '#1b1f23',
+        colorDark: colorQrSeguro(tarjeta.colorBoton),
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M
       });
@@ -1747,7 +2017,7 @@
       cargarTarjetaDesdeEmpresa(empresa);
       hint.classList.add('show');
       setTimeout(function(){ hint.classList.remove('show'); }, 2000);
-    } catch(e){ alert(e.message); }
+    } catch(e){ toast(e.message, 'error'); }
   });
 
   document.getElementById('saveMarcaBtn').addEventListener('click', async function(){
@@ -1764,7 +2034,7 @@
       cargarTarjetaDesdeEmpresa(empresa);
       hint.classList.add('show');
       setTimeout(function(){ hint.classList.remove('show'); }, 2000);
-    } catch(e){ alert(e.message); }
+    } catch(e){ toast(e.message, 'error'); }
   });
 
   // ---- Colores ----
@@ -1800,7 +2070,7 @@
       cargarTarjetaDesdeEmpresa(empresa);
       hint.classList.add('show');
       setTimeout(function(){ hint.classList.remove('show'); }, 2000);
-    } catch(e){ alert(e.message); }
+    } catch(e){ toast(e.message, 'error'); }
   });
 
   // ---- Sellos ----
@@ -1874,7 +2144,7 @@
       cargarTarjetaDesdeEmpresa(empresa);
       hint.classList.add('show');
       setTimeout(function(){ hint.classList.remove('show'); }, 2000);
-    } catch(e){ alert(e.message); }
+    } catch(e){ toast(e.message, 'error'); }
   });
 
   // ---- Recompensa ----
@@ -1904,55 +2174,321 @@
       cargarTarjetaDesdeEmpresa(empresa);
       hint.classList.add('show');
       setTimeout(function(){ hint.classList.remove('show'); }, 2000);
-    } catch(e){ alert(e.message); }
+    } catch(e){ toast(e.message, 'error'); }
   });
 
   // ======================================================================
   // Clientes y estadísticas (Panel / Clientes)
   // ======================================================================
-  async function cargarClientes(){
+  var clientesCache = [];
+  var clientesCargados = false;
+
+  function sinAcentos(t){
+    return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+  function fechaCorta(iso){
+    if(!iso) return '—';
+    var d = new Date(String(iso).slice(0,10) + 'T00:00:00');
+    if(isNaN(d)) return '—';
+    return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\./g, '');
+  }
+  function haceCuanto(iso){
+    if(!iso) return 'sin visitas';
+    var d = new Date(String(iso).slice(0,10) + 'T00:00:00');
+    var hoy = new Date(); hoy.setHours(0,0,0,0);
+    var dias = Math.round((hoy - d) / 86400000);
+    if(dias <= 0) return 'hoy';
+    if(dias === 1) return 'ayer';
+    if(dias < 60) return 'hace ' + dias + ' días';
+    return 'hace ' + Math.round(dias / 30) + ' meses';
+  }
+
+  function clientesFiltrados(){
+    var q = sinAcentos(document.getElementById('clientesBuscar').value.trim());
+    var orden = document.getElementById('clientesOrden').value;
+    var lista = clientesCache.filter(function(c){
+      return !q || sinAcentos(c.nombre + ' ' + (c.contacto || '')).indexOf(q) !== -1;
+    });
+    var cmp = {
+      recientes: function(a, b){ return (b.creado || '').localeCompare(a.creado || ''); },
+      visitas: function(a, b){ return (b.visitas || 0) - (a.visitas || 0); },
+      sellos: function(a, b){ return (b.puntos || 0) - (a.puntos || 0); },
+      // Quien nunca ha venido va al final: no es alguien que "dejó de venir".
+      ausentes: function(a, b){ return (a.ultimaVisita || '9999').localeCompare(b.ultimaVisita || '9999'); },
+      nombre: function(a, b){ return sinAcentos(a.nombre).localeCompare(sinAcentos(b.nombre)); }
+    }[orden];
+    return cmp ? lista.slice().sort(cmp) : lista;
+  }
+
+  function pintarClientes(){
     var tbody = document.getElementById('clientesBody');
     var table = document.getElementById('clientesTable');
     var empty = document.getElementById('clientesEmpty');
+    var count = document.getElementById('clientesCount');
+    if(!clientesCache.length){
+      table.hidden = true; empty.hidden = false; count.textContent = '';
+      empty.textContent = 'Todavía no hay clientes registrados. Comparte tu QR de registro (en la sección Panel) para que lleguen los primeros.';
+      return;
+    }
+    var lista = clientesFiltrados();
+    count.textContent = lista.length === clientesCache.length
+      ? clientesCache.length + (clientesCache.length === 1 ? ' cliente' : ' clientes')
+      : lista.length + ' de ' + clientesCache.length + ' clientes';
+    if(!lista.length){
+      table.hidden = true; empty.hidden = false;
+      empty.textContent = 'Ningún cliente coincide con esa búsqueda.';
+      return;
+    }
+    table.hidden = false; empty.hidden = true;
+    tbody.innerHTML = '';
+    var umbral = (getEmpresaCache() || {}).umbral || 10;
+    lista.forEach(function(c){
+      var tr = document.createElement('tr');
+      var tarjetaUrl = 'mi-tarjeta.html?id=' + encodeURIComponent(c.id);
+      tr.innerHTML =
+        '<td>' + escapeHtml(c.nombre) + '</td>' +
+        '<td>' + escapeHtml(c.contacto || '—') + '</td>' +
+        '<td class="pts">' + (Number(c.puntos) || 0) + '/' + umbral + '</td>' +
+        '<td class="pts">' + (Number(c.visitas) || 0) + '</td>' +
+        '<td title="' + escapeHtml(fechaCorta(c.ultimaVisita)) + '">' + escapeHtml(haceCuanto(c.ultimaVisita)) + '</td>' +
+        '<td>' + escapeHtml(fechaCorta(c.creado)) + '</td>' +
+        '<td><a href="' + escapeHtml(tarjetaUrl) + '" target="_blank" rel="noopener">Ver</a></td>' +
+        '<td class="acciones">' +
+          '<button type="button" class="mini-btn" data-sumar-visita="' + escapeHtml(c.id) + '" data-nombre-cliente="' + escapeHtml(c.nombre) + '">+ Visita</button>' +
+          '<button type="button" class="danger-link" data-borrar-cliente="' + escapeHtml(c.id) + '" data-nombre-cliente="' + escapeHtml(c.nombre) + '">Borrar</button>' +
+        '</td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function cargarClientes(){
+    var table = document.getElementById('clientesTable');
+    var empty = document.getElementById('clientesEmpty');
     try {
-      var clientes = await api('/api/mis-clientes');
-      if(!clientes.length){ table.hidden = true; empty.hidden = false; return; }
-      table.hidden = false; empty.hidden = true;
-      tbody.innerHTML = '';
-      var backend = getBackendUrl();
-      clientes.forEach(function(c){
-        var tr = document.createElement('tr');
-        var fecha = (c.creado || '').slice(0,10);
-        var tarjetaUrl = 'mi-tarjeta.html?id=' + encodeURIComponent(c.id) + '&backend=' + encodeURIComponent(backend);
-        tr.innerHTML =
-          '<td>' + escapeHtml(c.nombre) + '</td>' +
-          '<td>' + escapeHtml(c.contacto || '—') + '</td>' +
-          '<td class="pts">' + c.puntos + '</td>' +
-          '<td>' + fecha + '</td>' +
-          '<td><a href="' + escapeHtml(tarjetaUrl) + '" target="_blank" rel="noopener">Ver</a></td>' +
-          '<td><button type="button" class="danger-link" data-borrar-cliente="' + escapeHtml(c.id) + '" data-nombre-cliente="' + escapeHtml(c.nombre) + '">Borrar</button></td>';
-        tbody.appendChild(tr);
-      });
+      clientesCache = await api('/api/mis-clientes');
+      clientesCargados = true;
+      pintarClientes();
     } catch(e){
       empty.textContent = 'No se pudo cargar: ' + e.message;
       empty.hidden = false;
       table.hidden = true;
     }
   }
+  document.getElementById('clientesBuscar').addEventListener('input', pintarClientes);
+  document.getElementById('clientesOrden').addEventListener('change', pintarClientes);
+
+  // Descarga la lista de clientes como archivo que abre Excel / Google Sheets.
+  document.getElementById('clientesCsvBtn').addEventListener('click', function(){
+    if(!clientesCache.length){ toast('Todavía no hay clientes que descargar.'); return; }
+    function celda(v){
+      var t = String(v == null ? '' : v);
+      // Un texto que empieza con = + - @ lo ejecutaría Excel como fórmula:
+      // se le antepone un apóstrofo para que se quede como texto.
+      if(/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+      return '"' + t.replace(/"/g, '""') + '"';
+    }
+    var filas = [['Nombre', 'Contacto', 'Sellos', 'Visitas', 'Última visita', 'Fecha de alta']];
+    clientesFiltrados().forEach(function(c){
+      filas.push([c.nombre, c.contacto || '', c.puntos, c.visitas || 0, c.ultimaVisita || '', (c.creado || '').slice(0, 10)]);
+    });
+    var csv = '\ufeff' + filas.map(function(f){ return f.map(celda).join(','); }).join('\r\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'clientes-argayes.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  });
 
   async function cargarEstadisticas(){
     try {
       var s = await api('/api/mis-estadisticas');
       document.getElementById('statClientes').textContent = s.totalClientes;
       document.getElementById('statVisitas').textContent = s.visitasHoy;
-      document.getElementById('statCanjes').textContent = s.canjesPendientes;
-      document.getElementById('statPuntos').textContent = s.puntosRepartidos;
+      document.getElementById('statCanjes').textContent = s.recompensasListas != null ? s.recompensasListas : s.canjesPendientes;
+      document.getElementById('statPuntos').textContent = s.recompensasEntregadas != null ? s.recompensasEntregadas : '—';
     } catch(e){ /* los tiles se quedan en "—" si falla */ }
+  }
+
+  // ======================================================================
+  // "Para hoy" + días fuertes, horas pico y fidelidad (/api/mis-insights)
+  // ======================================================================
+  function pintarListaInsight(idLista, items, textoVacio, derecha, total){
+    var ul = document.getElementById(idLista);
+    ul.innerHTML = '';
+    var previo = ul.parentNode.querySelectorAll('.insight-vacio, .insight-mas');
+    previo.forEach(function(n){ n.remove(); });
+    if(!items.length){
+      var p = document.createElement('p');
+      p.className = 'insight-vacio';
+      p.textContent = textoVacio;
+      ul.parentNode.appendChild(p);
+      return;
+    }
+    items.forEach(function(it){
+      var li = document.createElement('li');
+      var a = document.createElement('span'); a.textContent = it.nombre;
+      var b = document.createElement('span'); b.textContent = derecha(it);
+      li.appendChild(a); li.appendChild(b);
+      ul.appendChild(li);
+    });
+    if(total && total > items.length){
+      var mas = document.createElement('p');
+      mas.className = 'insight-mas';
+      mas.textContent = 'y ' + (total - items.length) + ' más — velos todos en Clientes.';
+      ul.parentNode.appendChild(mas);
+    }
+  }
+
+  function pintarBarras(idBarras, idEje, valores, etiquetas, nombres){
+    var cont = document.getElementById(idBarras);
+    var eje = document.getElementById(idEje);
+    cont.innerHTML = ''; eje.innerHTML = '';
+    var max = Math.max.apply(null, valores.concat([0]));
+    var marcado = false;
+    valores.forEach(function(v, i){
+      var col = document.createElement('div');
+      col.className = 'col';
+      // Solo la barra más alta lleva su número a la vista; las demás lo
+      // muestran al pasar el cursor (o tocarlas).
+      if(max > 0 && v === max && !marcado){ col.classList.add('max'); marcado = true; }
+      col.title = nombres[i] + ': ' + v + (v === 1 ? ' visita' : ' visitas');
+      var val = document.createElement('span'); val.className = 'val'; val.textContent = v;
+      var bar = document.createElement('div'); bar.className = 'bar';
+      bar.style.height = (max > 0 ? Math.round((v / max) * 112) : 0) + 'px';
+      col.appendChild(val); col.appendChild(bar);
+      cont.appendChild(col);
+      var et = document.createElement('span'); et.textContent = etiquetas[i];
+      eje.appendChild(et);
+    });
+  }
+
+  function horaLegible(h){
+    if(h === 0) return '12 am';
+    if(h === 12) return '12 pm';
+    return h < 12 ? h + ' am' : (h - 12) + ' pm';
+  }
+
+  async function cargarInsights(){
+    var s;
+    try { s = await api('/api/mis-insights'); } catch(e){ return; }
+    var umbral = (getEmpresaCache() || {}).umbral || 10;
+
+    document.getElementById('insListosN').textContent = s.listosParaCanje.total;
+    pintarListaInsight('insListos', s.listosParaCanje.lista,
+      'Nadie por ahora. Aquí aparecerán en cuanto alguien complete su tarjeta.',
+      function(c){ return c.puntos + '/' + umbral + ' sellos'; }, s.listosParaCanje.total);
+
+    document.getElementById('insCercaN').textContent = s.cercaDeRecompensa.total;
+    pintarListaInsight('insCerca', s.cercaDeRecompensa.lista,
+      'Todavía nadie está a 1 o 2 sellos de su recompensa.',
+      function(c){ return c.faltan === 1 ? 'le falta 1' : 'le faltan ' + c.faltan; }, s.cercaDeRecompensa.total);
+
+    pintarListaInsight('insTop', s.topClientes,
+      'Cuando registres visitas, aquí verás a tus clientes más fieles.',
+      function(c){ return c.visitas + (c.visitas === 1 ? ' visita' : ' visitas'); });
+
+    document.getElementById('insRiesgoN').textContent = s.enRiesgo.total;
+    pintarListaInsight('insRiesgo', s.enRiesgo.lista,
+      'Buenas noticias: ninguno de tus clientes frecuentes ha dejado de venir.',
+      function(c){ return haceCuanto(c.ultimaVisita); }, s.enRiesgo.total);
+
+    // ---- días de la semana ----
+    var DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    var DIAS_LARGOS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+    pintarBarras('insDias', 'insDiasEje', s.porDiaSemana, DIAS, DIAS_LARGOS.map(function(d){ return d.charAt(0).toUpperCase() + d.slice(1); }));
+    var totalDias = s.porDiaSemana.reduce(function(a, b){ return a + b; }, 0);
+    var notaDias = document.getElementById('insDiasNota');
+    if(totalDias < 5){
+      notaDias.textContent = 'Con unas cuantas visitas más aquí verás qué días te conviene reforzar.';
+      notaDias.style.color = 'var(--ink-dim)';
+    } else {
+      var iMax = s.porDiaSemana.indexOf(Math.max.apply(null, s.porDiaSemana));
+      var iMin = s.porDiaSemana.indexOf(Math.min.apply(null, s.porDiaSemana));
+      notaDias.style.color = '';
+      notaDias.textContent = 'Tu día más fuerte es el ' + DIAS_LARGOS[iMax] + ' (' + Math.round(s.porDiaSemana[iMax] / totalDias * 100) + '% de tus visitas)' +
+        (iMin !== iMax ? '; el más flojo, el ' + DIAS_LARGOS[iMin] + ' — buen día para una promoción.' : '.');
+    }
+
+    // ---- horas: solo el tramo en que sí hay movimiento ----
+    var totalHoras = s.porHora.reduce(function(a, b){ return a + b; }, 0);
+    var desde = 8, hasta = 21;
+    if(totalHoras > 0){
+      var primera = s.porHora.findIndex(function(v){ return v > 0; });
+      var ultima = 23 - s.porHora.slice().reverse().findIndex(function(v){ return v > 0; });
+      desde = Math.max(0, Math.min(primera - 1, 8));
+      hasta = Math.min(23, Math.max(ultima + 1, 20));
+    }
+    var horasVals = [], horasEt = [], horasNom = [];
+    for(var h = desde; h <= hasta; h++){
+      horasVals.push(s.porHora[h]);
+      // Etiqueta cada 3 horas para que el eje no se amontone.
+      horasEt.push((h - desde) % 3 === 0 ? horaLegible(h) : '');
+      horasNom.push(horaLegible(h) + ' – ' + horaLegible((h + 1) % 24));
+    }
+    pintarBarras('insHoras', 'insHorasEje', horasVals, horasEt, horasNom);
+    var notaHoras = document.getElementById('insHorasNota');
+    if(totalHoras < 5){
+      notaHoras.textContent = 'Aquí verás a qué hora llega más gente en cuanto haya más visitas registradas.';
+      notaHoras.style.color = 'var(--ink-dim)';
+    } else {
+      var hMax = s.porHora.indexOf(Math.max.apply(null, s.porHora));
+      notaHoras.style.color = '';
+      notaHoras.textContent = 'Tu hora pico es de ' + horaLegible(hMax) + ' a ' + horaLegible((hMax + 1) % 24) + '.';
+    }
+
+    // ---- fidelidad ----
+    var seg = s.segmentos;
+    var filasSeg = [
+      ['Aún sin visitas', seg.sinVisitas],
+      ['Vinieron 1 vez', seg.nuevos],
+      ['De 2 a 4 visitas', seg.recurrentes],
+      ['5 visitas o más', seg.leales]
+    ];
+    var totalSeg = filasSeg.reduce(function(a, f){ return a + f[1]; }, 0);
+    var contSeg = document.getElementById('insSegmentos');
+    contSeg.innerHTML = '';
+    filasSeg.forEach(function(f){
+      var pct = totalSeg > 0 ? Math.round(f[1] / totalSeg * 100) : 0;
+      var row = document.createElement('div'); row.className = 'seg-row';
+      var nom = document.createElement('span'); nom.textContent = f[0];
+      var track = document.createElement('div'); track.className = 'seg-track';
+      var fill = document.createElement('div'); fill.className = 'seg-fill'; fill.style.width = pct + '%';
+      track.appendChild(fill);
+      var num = document.createElement('span'); num.className = 'seg-num'; num.textContent = f[1] + ' · ' + pct + '%';
+      row.appendChild(nom); row.appendChild(track); row.appendChild(num);
+      contSeg.appendChild(row);
+    });
+    var notaWallet = document.getElementById('insWalletNota');
+    notaWallet.textContent = s.walletApple > 0
+      ? s.walletApple + (s.walletApple === 1 ? ' cliente tiene' : ' clientes tienen') + ' tu tarjeta guardada en Apple Wallet.'
+      : '';
   }
 
   // ---- borrar cliente ----
   var clientesBody = document.getElementById('clientesBody');
   clientesBody.addEventListener('click', async function(ev){
+    // "+ Visita": suma el sello a mano desde la lista, para cuando el
+    // cliente no trae su QR o la cámara no coopera. Respeta la misma regla
+    // de un sello por día que el escáner.
+    var btnVisita = ev.target.closest('[data-sumar-visita]');
+    if(btnVisita){
+      var nombreV = btnVisita.dataset.nombreCliente;
+      if(!confirm('¿Sumar una visita a "' + nombreV + '"?')) return;
+      btnVisita.disabled = true;
+      try {
+        var rv = await api('/api/visita', { method: 'POST', body: JSON.stringify({ clienteId: btnVisita.dataset.sumarVisita }) });
+        toast(rv.listoParaCanje
+          ? nombreV + ' completó su tarjeta: ya puede cobrar su recompensa.'
+          : 'Visita registrada. ' + nombreV + ' lleva ' + rv.cliente.puntos + ' de ' + ((getEmpresaCache() || {}).umbral || 10) + ' sellos.');
+        refrescarDatos();
+      } catch(e){
+        toast(e.message, 'error');
+        btnVisita.disabled = false;
+      }
+      return;
+    }
     var btn = ev.target.closest('[data-borrar-cliente]');
     if(!btn) return;
     var id = btn.dataset.borrarCliente;
@@ -1961,12 +2497,10 @@
     btn.disabled = true;
     try {
       await api('/api/mis-clientes/' + encodeURIComponent(id), { method: 'DELETE' });
-      cargarClientes();
-      cargarEstadisticas();
-      cargarEstadisticasAvanzadas();
-      cargarVisitasSemana();
+      toast('Cliente borrado.');
+      refrescarDatos();
     } catch(e){
-      alert('No se pudo borrar: ' + e.message);
+      toast('No se pudo borrar: ' + e.message, 'error');
       btn.disabled = false;
     }
   });
@@ -2034,18 +2568,123 @@
     return oscuro ? par.dark : par.light;
   }
 
-  // ---- descargar el QR de autorregistro como PNG (para imprimirlo) ----
-  document.getElementById('regQrDownloadBtn').addEventListener('click', function(){
-    var box = document.getElementById('regQrBox');
-    var canvas = box.querySelector('canvas');
-    var dataUrl = canvas ? canvas.toDataURL('image/png') : (box.querySelector('img') || {}).src;
-    if(!dataUrl) return;
+  // ---- QR de registro en alta calidad y cartel listo para imprimir ----
+  // (Antes "Descargar QR" bajaba la miniatura de 88 pixeles que se ve en
+  // pantalla: impresa salía borrosa y muchas cámaras no la leían.)
+  function descargarCanvas(canvas, nombre){
     var a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = 'qr-registro-argayes.png';
+    a.href = canvas.toDataURL('image/png');
+    a.download = nombre;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  }
+  // Dibuja el QR de registro en un lienzo cuadrado de "lado" pixeles, con
+  // su margen blanco alrededor (sin ese margen los lectores fallan).
+  function qrDeRegistro(lado){
+    if(!regUrlActual || typeof QRCode === 'undefined') return null;
+    var tmp = document.createElement('div');
+    var interior = Math.round(lado * 0.86);
+    new QRCode(tmp, { text: regUrlActual, width: interior, height: interior, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    var qr = tmp.querySelector('canvas');
+    if(!qr) return null;
+    var out = document.createElement('canvas');
+    out.width = lado; out.height = lado;
+    var ctx = out.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, lado, lado);
+    var m = Math.round((lado - interior) / 2);
+    ctx.drawImage(qr, m, m, interior, interior);
+    return out;
+  }
+  function nombreArchivo(base){
+    var e = getEmpresaCache() || {};
+    return base + '-' + (e.slug || 'mi-negocio') + '.png';
+  }
+
+  document.getElementById('regQrDownloadBtn').addEventListener('click', function(){
+    var qr = qrDeRegistro(1200);
+    if(!qr){ toast('No se pudo generar el QR. Recarga la página e intenta de nuevo.', 'error'); return; }
+    descargarCanvas(qr, nombreArchivo('qr-registro'));
+  });
+
+  // Parte un texto en renglones que quepan en "anchoMax" (el lienzo no lo
+  // hace solo) y los dibuja centrados; regresa la "y" donde terminó.
+  function textoCentrado(ctx, texto, x, y, anchoMax, alto, maxRenglones){
+    var palabras = String(texto).split(/\s+/), renglones = [], actual = '';
+    palabras.forEach(function(p){
+      var prueba = actual ? actual + ' ' + p : p;
+      if(ctx.measureText(prueba).width > anchoMax && actual){ renglones.push(actual); actual = p; }
+      else { actual = prueba; }
+    });
+    if(actual) renglones.push(actual);
+    if(maxRenglones && renglones.length > maxRenglones){
+      renglones = renglones.slice(0, maxRenglones);
+      renglones[maxRenglones - 1] = renglones[maxRenglones - 1].replace(/.{0,3}$/, '…');
+    }
+    renglones.forEach(function(r, i){ ctx.fillText(r, x, y + i * alto); });
+    return y + renglones.length * alto;
+  }
+
+  document.getElementById('regCartelBtn').addEventListener('click', async function(){
+    var e = getEmpresaCache();
+    var qr = qrDeRegistro(1000);
+    if(!e || !qr){ toast('No se pudo generar el cartel. Recarga la página e intenta de nuevo.', 'error'); return; }
+    // Tamaño carta a 200 puntos por pulgada.
+    var W = 1700, H = 2200;
+    var c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    var ctx = c.getContext('2d');
+    var marca = /^#[0-9a-fA-F]{6}$/.test(e.color || '') ? e.color : '#b8872b';
+    var sobreMarca = esClaro(marca) ? '#1b1f23' : '#ffffff';
+    var sans = '"IBM Plex Sans", -apple-system, "Segoe UI", Arial, sans-serif';
+    try { if(document.fonts && document.fonts.load){ await Promise.all([document.fonts.load('700 80px "IBM Plex Sans"'), document.fonts.load('400 40px "IBM Plex Sans"')]); } } catch(err){}
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
+    // Franja superior con el color de la marca y el nombre del negocio.
+    ctx.fillStyle = marca;
+    ctx.fillRect(0, 0, W, 520);
+    ctx.fillStyle = sobreMarca;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = '600 44px ' + sans;
+    ctx.fillText('PROGRAMA DE LEALTAD', W / 2, 190);
+    ctx.font = '700 118px ' + sans;
+    if(ctx.measureText(e.nombre || '').width > W - 240) ctx.font = '700 88px ' + sans;
+    textoCentrado(ctx, e.nombre || 'Mi negocio', W / 2, 345, W - 240, 118, 2);
+
+    // Titular y recompensa.
+    ctx.fillStyle = '#1b1f23';
+    ctx.font = '700 96px ' + sans;
+    ctx.fillText('Escanea y junta tus sellos', W / 2, 690);
+    ctx.font = '400 56px ' + sans;
+    ctx.fillStyle = '#3c4146';
+    var promo = e.recompensa
+      ? 'Junta ' + e.umbral + (e.umbral === 1 ? ' sello' : ' sellos') + ' y llévate: ' + e.recompensa
+      : 'Junta ' + e.umbral + (e.umbral === 1 ? ' sello' : ' sellos') + ' y gana tu recompensa';
+    var yFin = textoCentrado(ctx, promo, W / 2, 790, W - 280, 72, 2);
+
+    // QR con un marco del color de la marca.
+    var ladoQr = 900, xQr = (W - ladoQr) / 2, yQr = Math.max(yFin + 30, 900);
+    ctx.fillStyle = marca;
+    ctx.fillRect(xQr - 18, yQr - 18, ladoQr + 36, ladoQr + 36);
+    ctx.drawImage(qr, xQr, yQr, ladoQr, ladoQr);
+
+    // Los tres pasos.
+    var yPasos = yQr + ladoQr + 110;
+    ctx.fillStyle = '#1b1f23';
+    ctx.font = '600 46px ' + sans;
+    ctx.fillText('1. Abre la cámara de tu celular y apunta al código', W / 2, yPasos);
+    ctx.fillText('2. Guarda tu tarjeta — sin descargar ninguna app', W / 2, yPasos + 72);
+    ctx.fillText('3. Muéstrala en cada visita para sumar tu sello', W / 2, yPasos + 144);
+
+    ctx.fillStyle = '#8a8f94';
+    ctx.font = '400 34px ' + sans;
+    ctx.fillText('Tarjeta de lealtad digital por ARGAYES · argayes.com', W / 2, H - 70);
+
+    descargarCanvas(c, nombreArchivo('cartel'));
+    toast('Cartel descargado. Imprímelo en tamaño carta.');
   });
 
   // ---- link con marca propia (slug) ----
@@ -2091,9 +2730,10 @@
     try {
       var r = await api('/api/mis-recordatorios', { method: 'POST', body: JSON.stringify({ dias: Number(dias) }) });
       if (r.totalInactivos === 0) {
-        hint.textContent = 'No hay clientes inactivos con correo registrado en ese periodo.';
+        hint.textContent = 'No hay a quién escribirle: nadie con correo registrado lleva ese tiempo sin venir (o ya recibió un recordatorio esta semana).';
       } else {
-        hint.textContent = 'Enviado a ' + r.enviados + ' de ' + r.totalInactivos + ' clientes inactivos' + (r.fallidos.length ? ' (' + r.fallidos.length + ' fallaron)' : '') + '.';
+        hint.textContent = 'Enviado a ' + r.enviados + ' de ' + r.totalInactivos + ' clientes inactivos' + (r.fallidos.length ? ' (' + r.fallidos.length + ' fallaron)' : '') + '.' +
+          (r.pendientes ? ' Quedan ' + r.pendientes + ' por enviar: vuelve a tocar el botón en unos minutos.' : '');
       }
     } catch(e) {
       hint.textContent = 'No se pudo enviar: ' + e.message;
@@ -2192,7 +2832,7 @@
       var semanas = await api('/api/mis-visitas-semana?historico=' + historicoActivo);
       dibujarGraficaSemanas(semanas);
     } catch(e){
-      document.getElementById('chartWrap').innerHTML = '<p class="chart-empty">No se pudo cargar: ' + e.message + '</p>';
+      document.getElementById('chartWrap').innerHTML = '<p class="chart-empty">No se pudo cargar: ' + escapeHtml(e.message) + '</p>';
     }
   }
   // Si cambia el tema (claro/oscuro) mientras la gráfica ya está dibujada,
@@ -2336,8 +2976,7 @@
         btnOtro2.addEventListener('click', function(){ escanerOcultarResultados(); iniciarCamara(); });
         actions.appendChild(btnOtro2);
       }
-      cargarEstadisticas();
-      cargarClientes();
+      refrescarDatos();
     } catch(e){
       var msg = e.message || 'Error desconocido';
       var titulo = 'No se pudo registrar la visita';
@@ -2394,14 +3033,17 @@
       btnOtro.addEventListener('click', function(){ escanerOcultarResultados(); iniciarCamara(); });
       actions.appendChild(btnOtro);
       box.hidden = false;
-      cargarEstadisticas();
-      cargarClientes();
+      refrescarDatos();
     } catch(e){
       var msg = e.message || 'Error desconocido';
       var titulo = 'No se pudo confirmar el canje';
       if(/ya_usado/i.test(msg)) titulo = 'Ese código ya se usó';
       if(/codigo_no_existe/i.test(msg)) titulo = 'Código de canje no válido';
       if(/no_pertenece/i.test(msg)) titulo = 'Ese código es de otro negocio';
+      if(/puntos_insuficientes/i.test(msg)){
+        titulo = 'A este cliente ya no le alcanzan los sellos';
+        msg = 'Ese código se generó antes: la recompensa ya se entregó o todavía le faltan sellos. Escanea su tarjeta para ver cuántos lleva.';
+      }
       escanerMostrarError(titulo, msg);
     } finally {
       btnConfirmar.disabled = false;
@@ -2413,6 +3055,32 @@
   var empresaGuardada = getEmpresaCache();
   if(tokenGuardado && empresaGuardada){
     mostrarDash(empresaGuardada);
+    // Stripe regresa aquí con "?pago=exito" o "?pago=cancelado".
+    var pago = new URLSearchParams(location.search).get('pago');
+    if(pago){
+      try { history.replaceState(null, '', location.pathname); } catch(e){}
+    }
+    if(pago === 'exito'){
+      toast('¡Pago recibido! Estamos activando tu suscripción…');
+      mostrarVista('ajustes');
+      // Stripe avisa al servidor unos segundos después del pago: se
+      // pregunta varias veces hasta ver la suscripción activa.
+      (async function(){
+        for(var intento = 0; intento < 8; intento++){
+          try {
+            var em = await refrescarEmpresa();
+            if(em.suscripcionEstado === 'active' || em.suscripcionEstado === 'trialing'){
+              toast('Tu suscripción quedó activa. ¡Gracias!');
+              return;
+            }
+          } catch(e){ return; }
+          await new Promise(function(r){ setTimeout(r, 2500); });
+        }
+      })();
+    } else {
+      if(pago === 'cancelado') toast('No se completó el pago. Puedes intentarlo de nuevo cuando quieras.');
+      refrescarEmpresa().catch(function(){ /* sin conexión: se queda la copia guardada */ });
+    }
   } else if(location.hash === '#crear-cuenta'){
     // Permite que la página de ventas (index.html) mande aquí directo al
     // formulario de "Crear cuenta" en vez de al de inicio de sesión.
