@@ -73,6 +73,18 @@ app.post('/api/pagos/webhook', express.raw({ type: 'application/json' }), ah(asy
               // Stripe lo marca como fallido y lo reintenta solo, en vez de
               // darlo por bueno y perder el evento.
               console.error('Error procesando webhook de Stripe:', e.message);
+              // DIAGNÓSTICO TEMPORAL — nada de esto expone el secreto; solo
+              // confirma qué tipo de dato llegó realmente como cuerpo y cómo
+              // es la cabecera de firma, para descartar que algo (Render,
+              // cors(), etc.) esté tocando el body antes de llegar aquí.
+              console.error('DEBUG webhook -> esBuffer:', Buffer.isBuffer(req.body),
+                      'tipoBody:', typeof req.body,
+                      'largoBody:', req.body ? req.body.length : null,
+                      'contentType:', req.headers['content-type'],
+                      'contentEncoding:', req.headers['content-encoding'],
+                      'firmaHeaderTipo:', typeof firma,
+                      'firmaLargo:', firma ? firma.length : null,
+                      'firmaValor:', firma);
               res.status(400).json({ error: e.message });
       }
 }));
