@@ -5,9 +5,67 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ARGAYES — Lealtad digital para tu negocio</title>
 <meta name="description" content="Tarjetas de lealtad digitales con QR, Apple Wallet y Google Wallet para tu negocio. $800 MXN/mes, sin letras chiquitas.">
+<link rel="canonical" href="https://argayes.com/">
+
+<!-- Favicon -->
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<meta name="theme-color" content="#b8872b">
+
+<!-- Open Graph / WhatsApp y redes -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://argayes.com/">
+<meta property="og:title" content="ARGAYES — Lealtad digital para tu negocio">
+<meta property="og:description" content="Tus clientes juntan sellos con un QR y guardan su tarjeta en Apple Wallet o Google Wallet. $800 MXN/mes, sin letras chiquitas.">
+<meta property="og:image" content="https://argayes.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="es_MX">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ARGAYES — Lealtad digital para tu negocio">
+<meta name="twitter:description" content="Tarjetas de lealtad digitales con QR, Apple Wallet y Google Wallet para tu negocio.">
+<meta name="twitter:image" content="https://argayes.com/og-image.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ARGAYES",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "description": "Tarjetas de lealtad digitales con QR, Apple Wallet y Google Wallet para negocios.",
+  "url": "https://argayes.com/",
+  "offers": {
+    "@type": "Offer",
+    "price": "800",
+    "priceCurrency": "MXN",
+    "priceSpecification": {
+      "@type": "UnitPriceSpecification",
+      "price": "800",
+      "priceCurrency": "MXN",
+      "billingDuration": "P1M"
+    }
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type": "Question", "name": "¿Necesito instalar algo?", "acceptedAnswer": {"@type": "Answer", "text": "No. Tú administras todo desde el navegador, en tu computadora o celular. Tus clientes tampoco instalan nada — la tarjeta vive en la app de Wallet que ya traen en su teléfono."}},
+    {"@type": "Question", "name": "¿Cuándo se me cobra?", "acceptedAnswer": {"@type": "Answer", "text": "Primero revisamos tu solicitud de cuenta. Una vez aprobada, activas tu suscripción de $800 MXN al mes directamente desde tu panel."}},
+    {"@type": "Question", "name": "¿Puedo cancelar cuando quiera?", "acceptedAnswer": {"@type": "Answer", "text": "Sí, sin penalización. Cancelas desde tu panel y tu tarjeta deja de cobrarse al terminar el periodo ya pagado."}},
+    {"@type": "Question", "name": "¿Qué pasa con los datos de mis clientes?", "acceptedAnswer": {"@type": "Answer", "text": "Son tuyos. ARGAYES solo los usa para hacer funcionar tu programa de lealtad."}}
+  ]
+}
+</script>
 <script>
   // Aplica el tema guardado ANTES de pintar la página, para que no se vea
   // un parpadeo (cargar en claro y luego cambiar a oscuro de golpe).
@@ -91,8 +149,9 @@
   .mock .mock-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
   .mock .mock-brand{font-family:var(--font-display);font-size:18px}
   .mock .mock-stamps{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
-  .mock .mock-stamp{aspect-ratio:1;border-radius:50%;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:16px}
-  .mock .mock-stamp.on{background:#fff;color:var(--accent-ink)}
+  .mock .mock-stamp{aspect-ratio:1;border-radius:50%;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:16px;transition:background .35s ease,transform .35s ease,color .35s ease}
+  .mock .mock-stamp.on{background:#fff;color:var(--accent-ink);transform:scale(1.08)}
+  @media (prefers-reduced-motion: reduce){ .mock .mock-stamp{transition:none} }
   .mock .mock-foot{margin-top:20px;font-size:12px;opacity:.85}
 
   /* ---- sections ---- */
@@ -145,38 +204,56 @@
     box-shadow:0 8px 20px rgba(0,0,0,.25);text-decoration:none;font-size:28px;
   }
 
-  /* ---- menú de 3 rayas (navegación en móvil + tema claro/oscuro) ---- */
-  .menu-wrap{position:relative}
+  /* ---- menú de 3 rayas: panel deslizable + tema claro/oscuro
+     (mismo componente en index.html, registro.html y mi-tarjeta.html) ---- */
   .menu-btn{
     display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;
     width:40px;height:40px;border-radius:8px;border:1.5px solid var(--border);
-    background:var(--surface);cursor:pointer;padding:0;
+    background:var(--surface);cursor:pointer;padding:0;flex:none;
   }
+  .menu-btn:hover{border-color:var(--accent)}
   .menu-btn span{display:block;width:18px;height:2px;background:var(--ink);border-radius:2px}
-  .menu-panel{
-    position:absolute;top:calc(100% + 10px);right:0;min-width:220px;
-    background:var(--surface);border:1px solid var(--border);border-radius:12px;
-    box-shadow:0 16px 40px -16px rgba(0,0,0,.35);padding:10px;z-index:25;
+  .scrim{
+    position:fixed;inset:0;background:rgba(0,0,0,.35);
+    opacity:0;pointer-events:none;transition:opacity .18s ease;z-index:40;
   }
+  .scrim.open{opacity:1;pointer-events:auto}
+  .menu-panel{
+    position:fixed;top:0;bottom:0;left:0;width:min(300px,86vw);
+    background:var(--surface);border-right:1px solid var(--border);
+    transform:translateX(-100%);transition:transform .2s ease;z-index:41;
+    padding:calc(18px + env(safe-area-inset-top,0px)) 20px 20px max(20px, env(safe-area-inset-left,0px));
+    display:flex;flex-direction:column;gap:18px;
+  }
+  .menu-panel.open{transform:translateX(0)}
+  .menu-panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-dim);margin:0}
+  .panel-close{align-self:flex-end;background:none;border:none;color:var(--ink-dim);font-size:22px;line-height:1;cursor:pointer;margin:-6px -6px 0 0}
   .menu-panel a.navlink{
-    display:block;padding:10px 12px;border-radius:8px;font-size:14px;
+    display:block;padding:10px 12px;border-radius:8px;font-size:15px;font-weight:500;
     color:var(--ink);text-decoration:none;
   }
   .menu-panel a.navlink:hover{background:var(--surface-2)}
-  .menu-divider{height:1px;background:var(--border);margin:8px 4px}
-  .theme-switch{padding:6px 12px 2px}
-  .theme-switch > span{display:block;font-size:12px;color:var(--ink-dim);margin-bottom:8px}
+  .menu-divider{height:1px;background:var(--border);margin:4px 0}
+  .theme-switch > span{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-dim);margin-bottom:8px}
   .theme-options{display:flex;gap:8px}
   .theme-opt{
     flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
     border:1.5px solid var(--border);border-radius:8px;background:transparent;
     color:var(--ink);font-family:var(--font-body);font-size:13px;font-weight:600;
-    padding:8px 6px;cursor:pointer;
+    padding:10px 6px;cursor:pointer;
   }
   .theme-opt.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
   @media (min-width:761px){
-    .menu-panel a.navlink.mobile-only,
-    .menu-panel div.mobile-only{display:none}
+    .menu-panel a.navlink.mobile-only{display:none}
+  }
+
+  /* ---- micro-animaciones ---- */
+  @media (prefers-reduced-motion: no-preference){
+    .reveal{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .6s ease}
+    .reveal.in-view{opacity:1;transform:none}
+    .feature,.step{transition:transform .2s ease,box-shadow .2s ease}
+    .feature:hover,.step:hover{transform:translateY(-4px)}
+    .feature:hover{box-shadow:0 14px 30px -18px rgba(0,0,0,.3)}
   }
 </style>
 </head>
@@ -194,28 +271,29 @@
     <div class="nav-actions">
       <a class="btn ghost" href="panel.html">Iniciar sesión</a>
       <a class="btn primary" href="panel.html#crear-cuenta">Crear cuenta</a>
-      <div class="menu-wrap">
-        <button type="button" class="menu-btn" id="menuBtn" aria-label="Abrir menú" aria-expanded="false" aria-controls="menuPanel">
-          <span></span><span></span><span></span>
-        </button>
-        <div class="menu-panel" id="menuPanel" hidden>
-          <a class="navlink mobile-only" href="#caracteristicas">Características</a>
-          <a class="navlink mobile-only" href="#precio">Precio</a>
-          <a class="navlink mobile-only" href="#preguntas">Preguntas</a>
-          <a class="navlink mobile-only" href="#contacto">Contacto</a>
-          <div class="menu-divider mobile-only"></div>
-          <div class="theme-switch">
-            <span>Tema</span>
-            <div class="theme-options">
-              <button type="button" class="theme-opt" data-theme-choice="light">☀️ Claro</button>
-              <button type="button" class="theme-opt" data-theme-choice="dark">🌙 Oscuro</button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <button type="button" class="menu-btn" id="menuBtn" aria-label="Abrir menú" aria-expanded="false" aria-controls="menuPanel">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </div>
 </header>
+
+<div class="scrim" id="scrim"></div>
+<nav class="menu-panel" id="menuPanel" aria-label="Menú">
+  <button class="panel-close" id="panelClose" aria-label="Cerrar menú">&times;</button>
+  <a class="navlink mobile-only" href="#caracteristicas">Características</a>
+  <a class="navlink mobile-only" href="#precio">Precio</a>
+  <a class="navlink mobile-only" href="#preguntas">Preguntas</a>
+  <a class="navlink mobile-only" href="#contacto">Contacto</a>
+  <div class="menu-divider mobile-only"></div>
+  <div class="theme-switch">
+    <span>Tema</span>
+    <div class="theme-options">
+      <button type="button" class="theme-opt" data-theme-choice="light">☀️ Claro</button>
+      <button type="button" class="theme-opt" data-theme-choice="dark">🌙 Oscuro</button>
+    </div>
+  </div>
+</nav>
 
 <div id="top"></div>
 
@@ -232,7 +310,7 @@
     <div class="mock">
       <div class="mock-top">
         <span class="mock-brand">Tu Negocio</span>
-        <span style="font-size:13px;opacity:.85">7/10 sellos</span>
+        <span id="mockContador" style="font-size:13px;opacity:.85">7/10 sellos</span>
       </div>
       <div class="mock-stamps">
         <div class="mock-stamp on">★</div>
@@ -246,7 +324,7 @@
         <div class="mock-stamp">☆</div>
         <div class="mock-stamp">☆</div>
       </div>
-      <div class="mock-foot">Junta 3 sellos más y gana tu recompensa</div>
+      <div class="mock-foot" id="mockFoot">Junta 3 sellos más y gana tu recompensa</div>
     </div>
   </div>
 </section>
@@ -376,17 +454,15 @@
   (function(){
     var btn = document.getElementById('menuBtn');
     var panel = document.getElementById('menuPanel');
+    var scrim = document.getElementById('scrim');
+    var panelClose = document.getElementById('panelClose');
 
-    function openMenu(){ panel.hidden = false; btn.setAttribute('aria-expanded', 'true'); }
-    function closeMenu(){ panel.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
+    function openMenu(){ panel.classList.add('open'); scrim.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
+    function closeMenu(){ panel.classList.remove('open'); scrim.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); }
 
-    btn.addEventListener('click', function(e){
-      e.stopPropagation();
-      if (panel.hidden) openMenu(); else closeMenu();
-    });
-    document.addEventListener('click', function(e){
-      if (!panel.hidden && !panel.contains(e.target) && e.target !== btn) closeMenu();
-    });
+    btn.addEventListener('click', openMenu);
+    panelClose.addEventListener('click', closeMenu);
+    scrim.addEventListener('click', closeMenu);
     document.addEventListener('keydown', function(e){
       if (e.key === 'Escape') closeMenu();
     });
@@ -413,6 +489,47 @@
       });
     });
     markActive();
+  })();
+
+  // ---- fade-in al hacer scroll ----
+  (function(){
+    var targets = document.querySelectorAll('.feature, .step, .price-card, .section-title, .section-sub, .faq details');
+    targets.forEach(function(el){ el.classList.add('reveal'); });
+    if (!('IntersectionObserver' in window)){
+      targets.forEach(function(el){ el.classList.add('in-view'); });
+      return;
+    }
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (entry.isIntersecting){
+          entry.target.classList.add('in-view');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+    targets.forEach(function(el){ io.observe(el); });
+  })();
+
+  // ---- mockup del hero: animación de "sellando" en bucle ----
+  (function(){
+    var stamps = document.querySelectorAll('.mock-stamp');
+    var contador = document.getElementById('mockContador');
+    var foot = document.getElementById('mockFoot');
+    if (!stamps.length) return;
+    var total = stamps.length;
+    var llenos = 7;
+    function pintar(){
+      stamps.forEach(function(s, i){ s.classList.toggle('on', i < llenos); });
+      if (contador) contador.textContent = llenos + '/' + total + ' sellos';
+      if (foot) foot.textContent = (llenos >= total)
+        ? '¡Recompensa lista para canjear!'
+        : 'Junta ' + (total - llenos) + ' sello' + (total - llenos === 1 ? '' : 's') + ' más y gana tu recompensa';
+    }
+    pintar();
+    setInterval(function(){
+      llenos = (llenos >= total) ? 4 : llenos + 1;
+      pintar();
+    }, 1400);
   })();
 </script>
 
