@@ -28,6 +28,17 @@ if (!JWT_SECRET || !ADMIN_SECRET) {
 const app = express();
 app.use(cors());
 
+// Cabeceras básicas de seguridad HTTP (equivalente a lo mínimo de "helmet",
+// sin agregar esa dependencia): evita que el navegador adivine el tipo de
+// contenido, bloquea que esta API se cargue dentro de un <iframe> ajeno, y
+// no manda el Referer completo a terceros.
+app.use((req, res, next) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
+      res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+      next();
+});
+
 // IMPORTANTE: con Postgres, cada ruta ahora es "async" y puede rechazar su
 // promesa (por ejemplo si alguien manda un id que no es un UUID válido, o si
 // la base de datos tiene un hipo momentáneo). Express 4 NO atrapa esos
