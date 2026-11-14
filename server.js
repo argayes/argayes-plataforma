@@ -2,6 +2,7 @@ require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const db = require('./lib/db');
@@ -26,7 +27,24 @@ if (!JWT_SECRET || !ADMIN_SECRET) {
 }
 
 const app = express();
+// Render pone un proxy delante del servidor. Sin esto Express cree que TODAS
+// las peticiones vienen de la misma dirección (la del proxy), y los límites
+// de intentos de más abajo se compartían entre todos los negocios y clientes
+// del mundo: 20 inicios de sesión cada 15 minutos EN TOTAL, no por persona
+// (y express-rate-limit llenaba los logs con ERR_ERL_UNEXPECTED_X_FORWARDED_FOR).
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
 app.use(cors());
+
+// La dirección real de quien hace la petición. Render recibe el tráfico a
+// través de Cloudflare, que la manda en "CF-Connecting-IP" (el visitante no
+// puede falsificarla: Cloudflare la sobreescribe). Si no viene, se usa la
+// que calcula Express con "trust proxy".
+function ipCliente(req) {
+      const cf = req.headers['cf-connecting-ip'];
+      if (typeof cf === 'string' && /^[0-9a-fA-F:.]{3,45}$/.test(cf)) return cf;
+      return req.ip;
+}
 
 // Cabeceras básicas de seguridad HTTP (equivalente a lo mínimo de "helmet",
 // sin agregar esa dependencia): evita que el navegador adivine el tipo de
@@ -36,6 +54,10 @@ app.use((req, res, next) => {
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('X-Frame-Options', 'DENY');
       res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+      res.setHeader('Strict-Transport-Security', 'max-age=31536000');
+      // Las respuestas de la API llevan datos de negocios y clientes: que
+      // ningún navegador ni proxy intermedio las guarde en caché.
+      if (req.path.startsWith('/api/')) res.setHeader('Cache-Control', 'no-store');
       next();
 });
 
@@ -54,7 +76,7 @@ const ah = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch
 // A dónde regresa el negocio después de pagar (o de abrir el portal de
 // facturación) en Stripe. Es el panel, no el backend — por eso es una
 // variable separada de PUBLIC_URL (que es la URL del backend).
-const PANEL_URL = process.env.PANEL_URL || 'https://argayes.netlify.app';
+const PANEL_URL = (process.env.PANEL_URL || 'https://argayes.com').replace(/\/$/, '');
 
 // El webhook de Stripe necesita el cuerpo CRUDO (sin parsear) para poder
 // verificar la firma — por eso esta ruta va ANTES de express.json(), con
@@ -87,6 +109,7 @@ app.use('/public', express.static(path.join(__dirname, 'public')));
 // de login por IP cada 15 minutos. No afecta el uso normal (una empresa no
 // falla su contraseña 20 veces en 15 minutos).
 const limitadorLogin = rateLimit({
+      keyGenerator: ipCliente,
       windowMs: 15 * 60 * 1000,
       limit: 20,
       standardHeaders: true,
@@ -98,6 +121,7 @@ const limitadorLogin = rateLimit({
 // alguien use ese formulario para mandar correos en cadena a un negocio, o
 // para probar miles de códigos de 6 dígitos adivinando.
 const limitadorReset = rateLimit({
+      keyGenerator: ipCliente,
       windowMs: 15 * 60 * 1000,
       limit: 8,
       standardHeaders: true,
@@ -109,6 +133,7 @@ const limitadorReset = rateLimit({
 // mandar miles de solicitudes de suscripción falsas sin límite (no cuesta
 // nada intentarlo, solo llenaría tu lista de "pendientes" de basura).
 const limitadorRegistro = rateLimit({
+      keyGenerator: ipCliente,
       windowMs: 60 * 60 * 1000,
       limit: 10,
       standardHeaders: true,
@@ -123,6 +148,7 @@ const limitadorRegistro = rateLimit({
 // stand de registro real puede tener a varias personas dándose de alta
 // seguido desde el mismo wifi.
 const limitadorClientes = rateLimit({
+      keyGenerator: ipCliente,
       windowMs: 15 * 60 * 1000,
       limit: 40,
       standardHeaders: true,
@@ -130,9 +156,65 @@ const limitadorClientes = rateLimit({
       message: { error: 'Demasiadas solicitudes. Espera unos minutos e intenta de nuevo.' }
 });
 
+// Freno a quien intente adivinar la clave de super-admin: 10 intentos
+// fallidos por conexión cada 15 minutos (los aciertos no cuentan, así que
+// usar el panel de super-admin con normalidad nunca lo dispara).
+const limitadorAdmin = rateLimit({
+      keyGenerator: ipCliente,
+      windowMs: 15 * 60 * 1000,
+      limit: 10,
+      skipSuccessfulRequests: true,
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: { error: 'Demasiados intentos. Espera unos minutos e intenta de nuevo.' }
+});
+
+// Recordatorios por correo: máximo 4 envíos por hora por negocio — para que
+// un botón apretado varias veces no termine en correos repetidos.
+const limitadorRecordatorios = rateLimit({
+      keyGenerator: (req) => 'recordatorio:' + req.empresaId,
+      windowMs: 60 * 60 * 1000,
+      limit: 4,
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: { error: 'Ya enviaste recordatorios hace poco. Intenta de nuevo en un rato.' }
+});
+
 function sinDatosSensibles(empresa) {
       const { passwordHash, ...resto } = empresa;
       return resto;
+}
+
+// Lo ÚNICO de un negocio que puede ver cualquiera con su link de registro:
+// lo que se necesita para pintar su tarjeta. Antes esta ruta pública
+// regresaba todo el registro (correo del dueño, ids de Stripe, estado de la
+// suscripción...).
+function empresaPublica(empresa) {
+      return {
+              id: empresa.id,
+              nombre: empresa.nombre,
+              logoUrl: empresa.logoUrl,
+              color: empresa.color,
+              colorBoton: empresa.colorBoton,
+              fuente: empresa.fuente,
+              selloForma: empresa.selloForma,
+              selloTamano: empresa.selloTamano,
+              slug: empresa.slug,
+              recompensa: empresa.recompensa,
+              umbral: empresa.umbral
+      };
+}
+
+// Lo mismo para un cliente: su tarjeta pública no necesita (ni debe
+// mostrar) su teléfono o correo.
+function clientePublico(cliente) {
+      return {
+              id: cliente.id,
+              empresaId: cliente.empresaId,
+              nombre: cliente.nombre,
+              puntos: cliente.puntos,
+              creado: cliente.creado
+      };
 }
 
 // Protege las rutas del panel: solo responde si el token es válido, y
@@ -158,7 +240,7 @@ const requireEmpresaActiva = ah(async (req, res, next) => {
       const empresa = await db.obtenerEmpresa(req.empresaId);
       if (!empresa) return res.status(401).json({ error: 'Sesión inválida o vencida' });
       if (empresa.activa === false) {
-              return res.status(403).json({ error: 'Tu suscripción no está activa. Contacta a ARGAYES para reactivarla.' });
+              return res.status(403).json({ error: 'Tu suscripción no está activa. Reactívala en Ajustes → Suscripción para seguir sumando visitas.' });
       }
       req.empresa = empresa;
       next();
@@ -168,7 +250,12 @@ const requireEmpresaActiva = ah(async (req, res, next) => {
 // clave fija por header — no hace falta login de usuario para esto.
 function requireAdmin(req, res, next) {
       const clave = req.headers['x-admin-secret'];
-      if (!clave || clave !== ADMIN_SECRET) {
+      // Se comparan los hashes (mismo largo siempre) con timingSafeEqual, para
+      // que el tiempo de respuesta no dé pistas de cuántos caracteres de la
+      // clave van bien.
+      const a = crypto.createHash('sha256').update(String(clave || '')).digest();
+      const b = crypto.createHash('sha256').update(ADMIN_SECRET).digest();
+      if (!clave || !crypto.timingSafeEqual(a, b)) {
               return res.status(401).json({ error: 'Clave de administrador incorrecta' });
       }
       next();
@@ -195,9 +282,21 @@ const TERMINOS_VERSION = '2026-11';
 
 // ---------- Cuenta del negocio: alta y login (Paso 6-A) ----------
 app.post('/api/auth/registro', limitadorRegistro, ah(async (req, res) => {
-      const { nombre, email, password, recompensa, umbral, color, aceptaTerminos } = req.body;
+      const { nombre, email, password, recompensa, umbral, color, aceptaTerminos } = req.body || {};
       if (!nombre || !email || !password) {
               return res.status(400).json({ error: 'Falta nombre, email o password' });
+      }
+      if (!db.textoValido(nombre, 80)) {
+              return res.status(400).json({ error: 'Escribe el nombre de tu negocio (máximo 80 caracteres)' });
+      }
+      if (!db.emailValido(email)) {
+              return res.status(400).json({ error: 'Escribe un email válido' });
+      }
+      if (typeof password !== 'string' || password.length < 6 || password.length > 200) {
+              return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+      }
+      if (recompensa !== undefined && recompensa !== null && db.textoValido(String(recompensa), 120, true) === null) {
+              return res.status(400).json({ error: 'La recompensa no puede pasar de 120 caracteres' });
       }
       // Sin aceptar los Términos y el Aviso de Privacidad no se crea la cuenta
       // (se guarda la fecha y la versión de lo que aceptó — ver db.crearEmpresa).
@@ -210,7 +309,7 @@ app.post('/api/auth/registro', limitadorRegistro, ah(async (req, res) => {
               // no se le da acceso automático. Por eso ya no se regresa un token
               // de sesión — tiene que esperar a que ARGAYES la apruebe desde el
               // panel de super-admin antes de poder iniciar sesión.
-              await db.crearEmpresa({ nombre, email, password, recompensa, umbral, color, terminosAceptados: true, terminosVersion: TERMINOS_VERSION });
+              await db.crearEmpresa({ nombre, email, password, recompensa: recompensa == null ? '' : String(recompensa), umbral, color, terminosAceptados: true, terminosVersion: TERMINOS_VERSION });
               // Mejor esfuerzo: si el correo de aviso falla, la cuenta ya quedó
               // registrada igual — no se bloquea la respuesta por esto.
               enviarAvisoNuevoNegocio(nombre, email).catch((e) => console.error('No se pudo avisar la cuenta nueva:', e.message));
@@ -219,28 +318,38 @@ app.post('/api/auth/registro', limitadorRegistro, ah(async (req, res) => {
                       mensaje: 'Solicitud de suscripción enviada. Nuestro equipo la revisará y activaremos tu cuenta en breve.'
               });
       } catch (e) {
-              res.status(409).json({ error: e.message });
+              // Solo "ya existe esa cuenta" se le explica a quien se registra;
+              // cualquier otro error es nuestro (base de datos, etc.) y cae al
+              // manejador general en vez de mostrarle un mensaje interno.
+              if (/Ya existe/.test(e.message)) return res.status(409).json({ error: e.message });
+              throw e;
       }
 }));
 
 app.post('/api/auth/login', limitadorLogin, ah(async (req, res) => {
-      const { email, password } = req.body;
+      const { email, password } = req.body || {};
+      if (typeof email !== 'string' || typeof password !== 'string') {
+              return res.status(401).json({ error: 'Email o contraseña incorrectos' });
+      }
       const empresa = await db.validarLogin(email, password);
       if (!empresa) return res.status(401).json({ error: 'Email o contraseña incorrectos' });
-      if (empresa.activa === false) {
-              const mensaje = empresa.aprobada === false
-                      ? 'Tu solicitud de suscripción sigue en revisión. Te avisaremos en cuanto sea aprobada.'
-                      : 'Tu suscripción no está activa. Contacta a ARGAYES para reactivarla.';
-              return res.status(403).json({ error: mensaje });
+      if (empresa.aprobada === false) {
+              return res.status(403).json({ error: 'Tu solicitud de suscripción sigue en revisión. Te avisaremos en cuanto sea aprobada.' });
       }
+      // Una cuenta ya aprobada pero con la suscripción inactiva (falló el
+      // cobro, la canceló...) SÍ puede entrar: antes se quedaba fuera con
+      // "contacta a ARGAYES" y no tenía forma de llegar al botón para
+      // actualizar su tarjeta o volver a suscribirse. Lo que no puede hacer
+      // mientras siga inactiva es operar (sumar visitas, canjear, mandar
+      // recordatorios) — eso lo bloquea requireEmpresaActiva.
       const token = jwt.sign({ empresaId: empresa.id }, JWT_SECRET, { expiresIn: '30d' });
       res.json({ token, empresa: sinDatosSensibles(empresa) });
 }));
 
 // ---------- Olvidé mi contraseña (solo negocios) ----------
 app.post('/api/auth/olvide-password', limitadorReset, ah(async (req, res) => {
-      const { email } = req.body;
-      if (!email) return res.status(400).json({ error: 'Falta el email' });
+      const { email } = req.body || {};
+      if (!email || typeof email !== 'string') return res.status(400).json({ error: 'Falta el email' });
       const empresa = await db.obtenerEmpresaPorEmail(String(email).trim());
       // Responde igual exista o no esa cuenta, para no revelar a quien solo
       // está probando direcciones qué emails sí están registrados en ARGAYES.
@@ -259,11 +368,11 @@ app.post('/api/auth/olvide-password', limitadorReset, ah(async (req, res) => {
 }));
 
 app.post('/api/auth/restablecer-password', limitadorReset, ah(async (req, res) => {
-      const { email, codigo, nuevaPassword } = req.body;
+      const { email, codigo, nuevaPassword } = req.body || {};
       if (!email || !codigo || !nuevaPassword) {
               return res.status(400).json({ error: 'Falta email, código o nueva contraseña' });
       }
-      if (String(nuevaPassword).length < 6) {
+      if (typeof nuevaPassword !== 'string' || nuevaPassword.length < 6 || nuevaPassword.length > 200) {
               return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
       }
       const empresa = await db.obtenerEmpresaPorEmail(String(email).trim());
@@ -275,6 +384,7 @@ app.post('/api/auth/restablecer-password', limitadorReset, ah(async (req, res) =
 }));
 
 // ---------- Super-admin (ARGAYES): ver y activar/desactivar negocios ----------
+app.use('/api/admin', limitadorAdmin);
 app.get('/api/admin/empresas', requireAdmin, ah(async (req, res) => {
       const empresas = await db.listarEmpresas();
       res.json(empresas.map(sinDatosSensibles));
@@ -282,7 +392,7 @@ app.get('/api/admin/empresas', requireAdmin, ah(async (req, res) => {
 
 app.patch('/api/admin/empresas/:id/activa', requireAdmin, ah(async (req, res) => {
       if (!esUuidValido(req.params.id)) return res.status(400).json({ error: 'Id inválido' });
-      const empresa = await db.setActivaEmpresa(req.params.id, !!req.body.activa);
+      const empresa = await db.setActivaEmpresa(req.params.id, !!(req.body && req.body.activa));
       if (!empresa) return res.status(404).json({ error: 'Empresa no encontrada' });
       res.json(sinDatosSensibles(empresa));
 }));
@@ -330,6 +440,9 @@ app.get('/api/admin/top-negocios', requireAdmin, ah(async (req, res) => {
 // ---------- Panel: solo ve y toca lo de SU PROPIA empresa ----------
 app.get('/api/mi-empresa', requireAuth, ah(async (req, res) => {
       const empresa = await db.obtenerEmpresa(req.empresaId);
+      // La cuenta pudo haberse borrado mientras el negocio seguía con la
+      // sesión abierta (antes esto tronaba con un error 500).
+      if (!empresa) return res.status(401).json({ error: 'Sesión inválida o vencida' });
       res.json(sinDatosSensibles(empresa));
 }));
 
@@ -341,11 +454,18 @@ app.post('/api/pagos/checkout', requireAuth, ah(async (req, res) => {
               return res.status(500).json({ error: 'Los pagos con tarjeta todavía no están configurados. Contacta a ARGAYES.' });
       }
       const empresa = await db.obtenerEmpresa(req.empresaId);
+      if (!empresa) return res.status(401).json({ error: 'Sesión inválida o vencida' });
+      // Si ya está pagando, no se abre otro cobro: un segundo "checkout"
+      // crearía una SEGUNDA suscripción y le cobraría doble cada mes.
+      if (empresa.suscripcionEstado === 'active' || empresa.suscripcionEstado === 'trialing') {
+              return res.status(400).json({ error: 'Tu suscripción ya está activa. Usa "Administrar mi suscripción" para cambiar tu tarjeta o ver tus recibos.' });
+      }
       try {
               const url = await stripePagos.crearSesionCheckout(empresa, PANEL_URL);
               res.json({ url });
       } catch (e) {
-              res.status(500).json({ error: e.message });
+              console.error('No se pudo crear la sesión de pago de', req.empresaId, ':', e.message);
+              res.status(500).json({ error: 'No se pudo abrir la página de pago. Intenta de nuevo en un momento.' });
       }
 }));
 
@@ -353,6 +473,7 @@ app.post('/api/pagos/checkout', requireAuth, ah(async (req, res) => {
 // tiene una suscripción (si nunca ha pagado, no hay nada que mostrar ahí).
 app.post('/api/pagos/portal', requireAuth, ah(async (req, res) => {
       const empresa = await db.obtenerEmpresa(req.empresaId);
+      if (!empresa) return res.status(401).json({ error: 'Sesión inválida o vencida' });
       try {
               const url = await stripePagos.crearSesionPortal(empresa, PANEL_URL);
               res.json({ url });
@@ -362,7 +483,7 @@ app.post('/api/pagos/portal', requireAuth, ah(async (req, res) => {
 }));
 
 app.patch('/api/mi-empresa', requireAuth, ah(async (req, res) => {
-      const { nombre, color, colorBoton, fuente, selloForma, selloTamano, recompensa, umbral, logoUrl, slug } = req.body;
+      const { nombre, color, colorBoton, fuente, selloForma, selloTamano, recompensa, umbral, logoUrl, slug } = req.body || {};
       try {
               const empresa = await db.actualizarEmpresa(req.empresaId, { nombre, color, colorBoton, fuente, selloForma, selloTamano, recompensa, umbral, logoUrl, slug });
               // db.actualizarEmpresa ya marcó a todos los clientes de este
@@ -392,6 +513,13 @@ app.get('/api/mis-estadisticas', requireAuth, ah(async (req, res) => {
       res.json(await db.estadisticasDeEmpresa(req.empresaId));
 }));
 
+// Lo accionable del panel: quién ya puede cobrar su recompensa, a quién le
+// falta poco, mejores clientes, días y horas fuertes, clientes que dejaron
+// de venir (ver db.insightsDeEmpresa).
+app.get('/api/mis-insights', requireAuth, ah(async (req, res) => {
+      res.json(await db.insightsDeEmpresa(req.empresaId));
+}));
+
 app.get('/api/mis-estadisticas-avanzadas', requireAuth, ah(async (req, res) => {
       res.json(await db.estadisticasAvanzadasDeEmpresa(req.empresaId, req.query.dias));
 }));
@@ -416,53 +544,73 @@ app.delete('/api/mis-clientes/:id', requireAuth, ah(async (req, res) => {
 // hay SMS todavía) y no han vuelto en "dias" días. Sigue mandando aunque
 // alguno falle (buzón inválido, etc.) — al final reporta cuántos sí y
 // cuáles no, en vez de tronar toda la operación por un correo malo.
-app.post('/api/mis-recordatorios', requireAuth, requireEmpresaActiva, ah(async (req, res) => {
+const MAX_RECORDATORIOS_POR_ENVIO = 60;
+const pausa = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+app.post('/api/mis-recordatorios', requireAuth, requireEmpresaActiva, limitadorRecordatorios, ah(async (req, res) => {
       const dias = Number(req.body && req.body.dias) || 14;
       const empresa = req.empresa;
+      // "inactivos" ya excluye a quien recibió un recordatorio en los últimos
+      // 7 días y a quien se registró hace menos de "dias" días.
       const inactivos = await db.clientesInactivos(req.empresaId, dias);
+      // Tope por envío: la petición no puede quedarse abierta minutos, y el
+      // servicio de correo limita cuántos mensajes acepta por segundo.
+      const lote = inactivos.slice(0, MAX_RECORDATORIOS_POR_ENVIO);
       let enviados = 0;
       const fallidos = [];
-      for (const cliente of inactivos) {
+      for (const cliente of lote) {
               try {
                       await enviarRecordatorioInactividad(cliente.contacto, cliente.nombre, empresa.nombre, empresa.recompensa);
+                      await db.marcarRecordatorioEnviado(cliente.id);
                       enviados++;
               } catch (e) {
-                      fallidos.push({ cliente: cliente.nombre, error: e.message });
+                      console.error('No se pudo enviar el recordatorio a un cliente de', req.empresaId, ':', e.message);
+                      fallidos.push({ cliente: cliente.nombre });
               }
+              await pausa(350);
       }
-      res.json({ totalInactivos: inactivos.length, enviados, fallidos });
+      res.json({ totalInactivos: inactivos.length, enviados, fallidos, pendientes: inactivos.length - lote.length });
 }));
 
-// Alta directa de empresa sin password (uso interno/pruebas con curl).
+// Datos públicos de un negocio (los usa la página de registro y la tarjeta
+// del cliente). Solo lo necesario para pintar la tarjeta: ver empresaPublica.
 app.get('/api/empresas/:id', ah(async (req, res) => {
+      if (typeof req.params.id !== 'string' || req.params.id.length > 60) {
+              return res.status(404).json({ error: 'Empresa no encontrada' });
+      }
       // Acepta el id real (UUID, los links viejos) o el slug con marca
       // propia (los links nuevos) — así los dos tipos de link siguen
       // funcionando sin que el que llama tenga que saber cuál es.
       const empresa = await db.obtenerEmpresaPorIdOSlug(req.params.id);
       if (!empresa) return res.status(404).json({ error: 'Empresa no encontrada' });
-      res.json(sinDatosSensibles(empresa));
+      res.json(empresaPublica(empresa));
 }));
 
 // ---------- Paso 6-B: alta de cliente (pública: la usa el cliente final
 // desde el link/QR que le da el negocio, sin necesitar cuenta ni login) ----------
 app.post('/api/clientes', limitadorClientes, ah(async (req, res) => {
-      const { empresaId, nombre, contacto, consentimiento } = req.body;
+      const { empresaId, nombre, contacto, consentimiento } = req.body || {};
       if (!empresaId || !nombre) return res.status(400).json({ error: 'Falta empresaId o nombre' });
       if (!esUuidValido(empresaId)) return res.status(400).json({ error: 'empresaId inválido' });
+      if (!db.textoValido(nombre, 80)) {
+              return res.status(400).json({ error: 'Escribe tu nombre (máximo 80 caracteres)' });
+      }
+      if (contacto !== undefined && contacto !== null && contacto !== '' && !db.textoValido(contacto, 120)) {
+              return res.status(400).json({ error: 'El teléfono o correo no puede pasar de 120 caracteres' });
+      }
       // El checkbox de privacidad es obligatorio: sin la aceptación explícita
       // del cliente no se guarda su nombre y contacto. No aplica a clientes
       // que ya existían antes de este checkbox (esos ya están creados).
       if (!consentimiento) return res.status(400).json({ error: 'Falta aceptar el aviso de privacidad' });
       if (!(await db.obtenerEmpresa(empresaId))) return res.status(404).json({ error: 'Empresa no encontrada' });
-      const cliente = await db.crearCliente({ empresaId, nombre, contacto, consentimiento: true });
-      res.status(201).json(cliente);
+      const cliente = await db.crearCliente({ empresaId, nombre, contacto: contacto || '', consentimiento: true });
+      res.status(201).json(clientePublico(cliente));
 }));
 
 app.get('/api/clientes/:id', ah(async (req, res) => {
       if (!esUuidValido(req.params.id)) return res.status(400).json({ error: 'Id inválido' });
       const cliente = await db.obtenerCliente(req.params.id);
       if (!cliente) return res.status(404).json({ error: 'Cliente no encontrado' });
-      res.json(cliente);
+      res.json(clientePublico(cliente));
 }));
 
 // ---------- Paso 5: generar el pase ----------
@@ -475,7 +623,10 @@ app.get('/api/wallet/google/:clienteId', ah(async (req, res) => {
               const saveUrl = googleWallet.generarSaveUrl(empresa, cliente);
               res.json({ saveUrl });
       } catch (e) {
-              res.status(500).json({ error: e.message });
+              // El detalle (qué credencial falta, etc.) va a los logs; al
+              // cliente final solo se le dice que no se pudo.
+              console.error('No se pudo generar el pase de Google Wallet:', e.message);
+              res.status(503).json({ error: 'Google Wallet no está disponible en este momento. Tu tarjeta ya quedó registrada: puedes usarla desde "Ver mi tarjeta".' });
       }
 }));
 
@@ -490,7 +641,8 @@ app.get('/api/wallet/apple/:clienteId.pkpass', ah(async (req, res) => {
               res.set('Content-Disposition', `attachment; filename=${cliente.id}.pkpass`);
               res.send(buffer);
       } catch (e) {
-              res.status(500).json({ error: e.message });
+              console.error('No se pudo generar el pase de Apple Wallet:', e.message);
+              res.status(503).json({ error: 'Apple Wallet no está disponible en este momento. Tu tarjeta ya quedó registrada: puedes usarla desde "Ver mi tarjeta".' });
       }
 }));
 
@@ -540,7 +692,11 @@ app.delete('/api/apple/v1/devices/:deviceLibraryId/registrations/:passTypeId/:se
 //    No lleva Authorization (es a nivel dispositivo, no a nivel de un pase).
 app.get('/api/apple/v1/devices/:deviceLibraryId/registrations/:passTypeId', ah(async (req, res) => {
       const { deviceLibraryId, passTypeId } = req.params;
-      const desde = req.query.passesUpdatedSince || null;
+      // "passesUpdatedSince" es la fecha que nosotros mismos le dimos antes
+      // al iPhone; si llega algo que no es una fecha, se ignora (pide todo)
+      // en vez de mandarle un texto inválido a la base de datos.
+      const desdeCrudo = req.query.passesUpdatedSince;
+      const desde = (typeof desdeCrudo === 'string' && !Number.isNaN(Date.parse(desdeCrudo))) ? desdeCrudo : null;
       const filas = await db.seriesActualizadasParaDispositivo(deviceLibraryId, passTypeId, desde);
       if (filas.length === 0) return res.status(204).end();
       const ultima = filas[filas.length - 1].actualizado_en.toISOString();
@@ -563,14 +719,15 @@ app.get('/api/apple/v1/passes/:passTypeId/:serialNumber', ah(async (req, res) =>
               res.set('Last-Modified', new Date().toUTCString());
               res.send(buffer);
       } catch (e) {
-              res.status(500).json({ error: e.message });
+              console.error('No se pudo regenerar el pase de Apple Wallet:', e.message);
+              res.status(500).end();
       }
 }));
 
 // 5) Apple manda aquí cualquier error que le pase al iPhone con nuestro
 //    servicio web — no hace falta hacer nada con esto, solo no tronar.
 app.post('/api/apple/v1/log', (req, res) => {
-      console.log('[Apple Wallet log]', JSON.stringify(req.body));
+      console.log('[Apple Wallet log]', JSON.stringify(req.body || {}).slice(0, 2000));
       res.status(200).end();
 });
 
@@ -579,7 +736,7 @@ app.post('/api/apple/v1/log', (req, res) => {
 // negocio y escanea desde ahí) — así un cliente no puede llamar esto él
 // mismo desde su celular para auto-otorgarse visitas.
 app.post('/api/visita', requireAuth, requireEmpresaActiva, ah(async (req, res) => {
-      const { clienteId } = req.body;
+      const { clienteId } = req.body || {};
       if (!esUuidValido(clienteId)) return res.status(400).json({ error: 'clienteId inválido' });
       const cliente = await db.obtenerCliente(clienteId);
       if (!cliente) return res.status(404).json({ error: 'Cliente no encontrado' });
@@ -626,7 +783,7 @@ app.post('/api/visita', requireAuth, requireEmpresaActiva, ah(async (req, res) =
 // También requiere sesión de la empresa, por la misma razón que /api/visita:
 // el canje lo debe generar y confirmar el negocio, no el cliente desde su casa.
 app.post('/api/canje', requireAuth, requireEmpresaActiva, ah(async (req, res) => {
-      const { clienteId } = req.body;
+      const { clienteId } = req.body || {};
       if (!esUuidValido(clienteId)) return res.status(400).json({ error: 'clienteId inválido' });
       const cliente = await db.obtenerCliente(clienteId);
       if (!cliente) return res.status(404).json({ error: 'Cliente no encontrado' });
@@ -642,7 +799,7 @@ app.post('/api/canje', requireAuth, requireEmpresaActiva, ah(async (req, res) =>
 }));
 
 app.post('/api/canje/confirmar', requireAuth, requireEmpresaActiva, ah(async (req, res) => {
-      const { codigo } = req.body;
+      const { codigo } = req.body || {};
       if (!esUuidValido(codigo)) return res.status(400).json({ error: 'codigo inválido' });
       const resultado = await db.confirmarCanje(codigo, req.empresaId);
       if (!resultado.ok) {
@@ -652,16 +809,39 @@ app.post('/api/canje/confirmar', requireAuth, requireEmpresaActiva, ah(async (re
       db.pushTokensDeCliente(resultado.cliente.id)
               .then((tokens) => appleWallet.avisarActualizacion(tokens))
               .catch((e) => console.error('No se pudo avisar la actualización de Apple Wallet tras el canje:', e.message));
-      res.json(resultado);
+      // Antes el pase de Google Wallet se quedaba con los puntos de ANTES
+      // del canje (solo se actualizaba al sumar una visita).
+      googleWallet.patchPuntos(req.empresa, resultado.cliente).catch((e) => {
+              console.error('No se pudo actualizar el pase de Google Wallet tras el canje:', e.message);
+      });
+      res.json({ ok: true, cliente: clientePublico(resultado.cliente) });
 }));
 
 // ---------- Manejador de errores: red de seguridad para TODO lo anterior ----------
 // Si cualquier ruta (envuelta en "ah") truena por lo que sea — un id raro,
 // un hipo de la base de datos, lo que sea — termina aquí en vez de tirar el
 // servidor completo. Debe ir DESPUÉS de todas las rutas.
+// Cualquier dirección que no exista responde JSON (no la página HTML de
+// error de Express), igual que el resto de la API.
+app.use((req, res) => {
+      res.status(404).json({ error: 'No encontrado' });
+});
+
 app.use((err, req, res, next) => {
-      console.error('Error no manejado en una ruta:', err);
       if (res.headersSent) return next(err);
+      // Errores de quien llama, no nuestros: JSON mal formado o un cuerpo
+      // más grande que el límite. Antes salían como "Error interno del
+      // servidor" (500) y ensuciaban los logs como si algo se hubiera roto.
+      if (err && err.type === 'entity.too.large') {
+              return res.status(413).json({ error: 'El archivo o los datos enviados son demasiado grandes' });
+      }
+      if (err && err.type === 'entity.parse.failed') {
+              return res.status(400).json({ error: 'Los datos enviados no tienen un formato válido' });
+      }
+      if (err && err.datosInvalidos) {
+              return res.status(400).json({ error: err.message });
+      }
+      console.error('Error no manejado en una ruta:', err);
       res.status(500).json({ error: 'Error interno del servidor' });
 });
 
