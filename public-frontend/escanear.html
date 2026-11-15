@@ -159,6 +159,18 @@
   }
   #reader{width:100%;height:100%}
   #reader video{width:100% !important;height:100% !important;object-fit:cover}
+
+  /* Marco propio del escáner, siempre centrado. El de la librería se
+     calcula con el tamaño original de la cámara y, como el video se recorta
+     a cuadrado, salía corrido hacia abajo y cortado. */
+  .scan-wrap [id$="qr-shaded-region"], .scan-wrap #qr-shaded-region{display:none !important}
+  .scan-frame{position:absolute;left:50%;top:50%;width:70%;height:70%;transform:translate(-50%,-50%);pointer-events:none;z-index:2;
+    box-shadow:0 0 0 999px rgba(0,0,0,.38);border-radius:16px}
+  .scan-frame::before,.scan-frame::after,.scan-frame i::before,.scan-frame i::after{content:"";position:absolute;width:34px;height:34px;border:4px solid #fff}
+  .scan-frame::before{left:0;top:0;border-right:0;border-bottom:0;border-top-left-radius:16px}
+  .scan-frame::after{right:0;top:0;border-left:0;border-bottom:0;border-top-right-radius:16px}
+  .scan-frame i::before{left:0;bottom:0;border-right:0;border-top:0;border-bottom-left-radius:16px}
+  .scan-frame i::after{right:0;bottom:0;border-left:0;border-top:0;border-bottom-right-radius:16px}
   .scan-placeholder{
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     color:var(--ink-dim);background:var(--surface-2);font-size:13px;text-align:center;padding:20px;
@@ -251,6 +263,7 @@
       <h2>Escanear código QR del cliente</h2>
       <div class="scan-wrap" id="scanWrap">
         <div id="reader"></div>
+          <div class="scan-frame" id="readerMarco" hidden><i></i></div>
         <div class="scan-placeholder" id="scanPlaceholder">Toca "Iniciar cámara" para escanear el QR del cliente</div>
       </div>
       <div class="scan-actions">
@@ -478,11 +491,12 @@
       scanPlaceholder.hidden = true;
       await html5QrCode.start(
         { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 240, height: 240 } },
+        { fps: 10, aspectRatio: 1, qrbox: function(w, h){ var l = Math.floor(Math.min(w, h) * 0.7); return { width: l, height: l }; } },
         onScanSuccess,
         function(){ /* onScanFailure: se ignora, sigue intentando frame a frame */ }
       );
       escaneando = true;
+      document.getElementById('readerMarco').hidden = false;
       startScanBtn.hidden = true;
       stopScanBtn.hidden = false;
     } catch(e){
@@ -496,6 +510,7 @@
     if(html5QrCode && escaneando){
       try { await html5QrCode.stop(); } catch(e){}
       escaneando = false;
+      document.getElementById('readerMarco').hidden = true;
     }
     startScanBtn.hidden = false;
     stopScanBtn.hidden = true;
