@@ -482,8 +482,15 @@ app.post('/api/admin/2fa/nuevo', ah(async (req, res) => {
       const alcance = sesionAdminDe(req);
       if (alcance !== 'configurar') return res.status(401).json({ error: 'Vuelve a entrar con tu clave.' });
       if (await db.leerAjusteAdmin(AJUSTE_TOTP)) return res.status(400).json({ error: 'La verificación en dos pasos ya está activada.' });
-      const secreto = totp.generarSecreto();
-      await db.guardarAjusteAdmin(AJUSTE_TOTP_PENDIENTE, secreto);
+      // Si ya hay un QR pendiente de hace menos de 15 minutos, se regresa el
+      // MISMO (antes, entrar dos veces generaba otro QR y el que ya habías
+      // escaneado dejaba de servir).
+      const previo = String((await db.leerAjusteAdmin(AJUSTE_TOTP_PENDIENTE)) || '').split('|');
+      let secreto = previo[0];
+      if (!secreto || !(Date.now() - Number(previo[1] || 0) < 15 * 60 * 1000)) {
+              secreto = totp.generarSecreto();
+              await db.guardarAjusteAdmin(AJUSTE_TOTP_PENDIENTE, secreto + '|' + Date.now());
+      }
       res.json({ secreto, url: totp.urlOtpauth(secreto, 'super-admin') });
 }));
 
@@ -491,7 +498,7 @@ app.post('/api/admin/2fa/nuevo', ah(async (req, res) => {
 app.post('/api/admin/2fa/activar', ah(async (req, res) => {
       if (sesionAdminDe(req) !== 'configurar') return res.status(401).json({ error: 'Vuelve a entrar con tu clave.' });
       if (await db.leerAjusteAdmin(AJUSTE_TOTP)) return res.status(400).json({ error: 'La verificación en dos pasos ya está activada.' });
-      const pendiente = await db.leerAjusteAdmin(AJUSTE_TOTP_PENDIENTE);
+      const pendiente = String((await db.leerAjusteAdmin(AJUSTE_TOTP_PENDIENTE)) || '').split('|')[0];
       const contador = pendiente ? totp.verificar(pendiente, (req.body || {}).codigo, null) : null;
       if (contador === null) {
               registrarFalloAdmin(req, 'Código incorrecto al activar la verificación en dos pasos');
