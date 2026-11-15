@@ -398,6 +398,9 @@
   .scan-frame::after{right:0;top:0;border-left:0;border-bottom:0;border-top-right-radius:16px}
   .scan-frame i::before{left:0;bottom:0;border-right:0;border-top:0;border-bottom-left-radius:16px}
   .scan-frame i::after{right:0;bottom:0;border-left:0;border-top:0;border-bottom-right-radius:16px}
+  /* Línea que sube y baja dentro del marco: indica que está buscando. */
+  .scan-frame b{position:absolute;left:8%;right:8%;height:3px;border-radius:3px;background:rgba(255,255,255,.85);box-shadow:0 0 12px rgba(255,255,255,.7);animation:barrido 1.8s ease-in-out infinite alternate}
+  @keyframes barrido{from{top:10%}to{top:88%}}
   .scan-placeholder{
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     color:var(--ink-dim);background:var(--surface-2);font-size:13px;text-align:center;padding:20px;
@@ -857,7 +860,7 @@
         <h2>Escanear código QR del cliente</h2>
         <div class="scan-wrap" id="escanerScanWrap">
           <div id="escanerReader"></div>
-          <div class="scan-frame" id="escanerReaderMarco" hidden><i></i></div>
+          <div class="scan-frame" id="escanerReaderMarco" hidden><i></i><b></b></div>
           <div class="scan-placeholder" id="escanerPlaceholder">Toca "Iniciar cámara" para escanear el QR del cliente</div>
         </div>
         <div class="scan-actions">
@@ -1152,7 +1155,8 @@
 </div>
 
 <script src="vendor/qrcode.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="js/lector-qr.js"></script>
 <script>
 (function(){
   "use strict";
@@ -2904,9 +2908,9 @@
   async function iniciarCamara(){
     escanerOcultarResultados();
     escanerHint.classList.remove('error');
-    escanerHint.textContent = 'Apunta la cámara al código QR del cliente.';
+    escanerHint.textContent = 'Buscando código… apunta la cámara al QR del cliente.';
     try {
-      if(!html5QrCode){ html5QrCode = new Html5Qrcode('escanerReader', { verbose: false, formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE], experimentalFeatures: { useBarCodeDetectorIfSupported: true } }); }
+      if(!html5QrCode){ html5QrCode = new LectorQR('escanerReader'); }
       escanerPlaceholder.hidden = true;
       await html5QrCode.start(
         { facingMode: 'environment' },
