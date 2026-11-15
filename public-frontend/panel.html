@@ -2378,7 +2378,7 @@
     document.getElementById('insListosN').textContent = s.listosParaCanje.total;
     pintarListaInsight('insListos', s.listosParaCanje.lista,
       'Nadie por ahora. Aquí aparecerán en cuanto alguien complete su tarjeta.',
-      function(c){ return c.puntos + '/' + umbral + ' sellos'; }, s.listosParaCanje.total);
+      function(c){ return c.puntos > umbral ? (c.puntos + ' sellos (le sobran ' + (c.puntos - umbral) + ')') : (c.puntos + '/' + umbral + ' sellos'); }, s.listosParaCanje.total);
 
     document.getElementById('insCercaN').textContent = s.cercaDeRecompensa.total;
     pintarListaInsight('insCerca', s.cercaDeRecompensa.lista,
@@ -2538,7 +2538,7 @@
       pintarDelta(document.getElementById('kpiRetencionDelta'), s.retencion.deltaPuntos, ' pts', false);
 
       document.getElementById('kpiNuevosNum').textContent = s.nuevosMiembros.actual;
-      document.getElementById('kpiNuevosCap').textContent = 'miembros nuevos en ' + s.dias + ' días';
+      document.getElementById('kpiNuevosCap').textContent = (s.nuevosMiembros.actual === 1 ? 'miembro nuevo en ' : 'miembros nuevos en ') + s.dias + ' días';
       pintarDelta(document.getElementById('kpiNuevosDelta'), s.nuevosMiembros.deltaPct, '%', false);
 
       var frecuenciaVal = s.promedioDiasEntreVisitas.valor;

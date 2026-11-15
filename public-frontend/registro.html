@@ -1,8 +1,9 @@
 <meta charset="utf-8">
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ARGAYES Lealtad</title>
-<meta name="description" content="Registra a tus clientes y genera su tarjeta de lealtad con QR para Apple Wallet y Google Wallet.">
+<title>Tu tarjeta de lealtad</title>
+<meta name="description" content="Crea tu tarjeta de lealtad digital en segundos y guárdala en Apple Wallet o Google Wallet.">
+<meta name="robots" content="noindex">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -301,6 +302,64 @@
     .reveal{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
     .reveal.in-view{opacity:1;transform:none}
   }
+
+  /* ---- registro del cliente ---- */
+  main{max-width:520px}
+  .estado{text-align:center;padding:60px 16px;color:var(--ink-dim);font-size:14px}
+  .aviso{
+    background:var(--accent-soft);border:1px solid var(--accent);border-radius:14px;
+    padding:20px;color:var(--ink);font-size:15px;line-height:1.5;
+  }
+  .aviso h2{margin:0 0 6px;font-size:17px}
+  .aviso p{margin:0}
+  .hero-negocio{
+    border-radius:18px;padding:26px 22px;text-align:center;margin-bottom:16px;
+    box-shadow:0 14px 34px -14px rgba(0,0,0,.35);
+  }
+  .hn-logo{
+    width:68px;height:68px;border-radius:16px;overflow:hidden;margin:0 auto 12px;
+    display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.2);
+  }
+  .hn-logo img{width:100%;height:100%;object-fit:cover}
+  .hn-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.12em;opacity:.85;margin:0 0 6px;font-weight:600}
+  .hero-negocio h1{font-size:28px;line-height:1.15;margin:0 0 10px;font-weight:700;overflow-wrap:anywhere}
+  .hn-promo{font-size:16px;line-height:1.4;margin:0;font-weight:500}
+  .hn-sellos{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-top:16px}
+  .hn-sellos i{width:20px;height:20px;border-radius:50%;border:2px solid currentColor;opacity:.55}
+  .card.form{display:flex;flex-direction:column;gap:16px;padding:22px}
+  .card.form h2, .listo h2{font-size:20px;margin:0;font-weight:700;letter-spacing:0;text-transform:none;color:var(--ink)}
+  .opcional{font-weight:400;color:var(--ink-dim)}
+  .card.form input[type=text], .card.form input:not([type=checkbox]){font-size:16px;padding:13px 14px;width:100%}
+  .btn-principal{
+    font-family:var(--font-body);font-weight:700;font-size:16px;min-height:52px;padding:0 20px;
+    border-radius:12px;border:0;background:var(--accent);color:var(--accent-ink);cursor:pointer;width:100%;
+  }
+  .btn-principal:disabled{opacity:.6;cursor:default}
+  .consent-row a, .pie a{color:inherit}
+  .listo{display:flex;flex-direction:column;align-items:center;gap:14px;padding:26px 22px;text-align:center}
+  .listo .check{
+    width:56px;height:56px;border-radius:50%;background:var(--accent);color:var(--accent-ink);
+    display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;
+  }
+  .listo p{margin:0;font-size:15px;line-height:1.5;color:var(--ink-dim)}
+  .listo p b{color:var(--ink)}
+  .listo .wallet-row{width:100%;flex-direction:column;align-items:stretch}
+  a.wallet-btn, button.wallet-btn{
+    font-family:var(--font-body);font-weight:600;font-size:15px;min-height:52px;padding:0 20px;
+    border-radius:12px;border:1px solid transparent;cursor:pointer;text-decoration:none;
+    display:flex;align-items:center;gap:9px;justify-content:center;min-width:0;width:100%;
+  }
+  a.wallet-btn.apple{background:#000;color:#fff}
+  .aviso-mini{
+    background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;
+    padding:10px 12px;font-size:13px!important;color:var(--ink)!important;width:100%;
+  }
+  .link-tarjeta{font-size:14px;font-weight:600;color:var(--ink)}
+  #listo{scroll-margin-top:96px}
+  #qrbox{background:#fff;padding:12px;border-radius:14px;border:1px solid var(--border)}
+  #qrbox canvas, #qrbox img{display:block;width:180px!important;height:180px!important}
+  .link-btn{background:none;border:0;color:var(--ink-dim);font:inherit;font-size:13px;text-decoration:underline;cursor:pointer;padding:6px}
+  .pie{text-align:center;font-size:12px;color:var(--ink-dim);margin:26px 0 0}
 </style>
 
 <div class="scrim" id="scrim"></div>
@@ -324,83 +383,65 @@
 </header>
 
 <main>
-  <p class="lede">Registra el negocio y al cliente, luego genera su <strong>código QR</strong> de lealtad para que lo agregue a su wallet.</p>
+  <div id="estadoCarga" class="estado">Cargando…</div>
 
-  <div id="setupError" class="card" hidden style="border-color:var(--accent);background:var(--accent-soft)">
-    <h3 style="color:var(--ink)">Nos falta un dato para continuar</h3>
-    <p class="hint" id="setupErrorMsg" style="font-size:14px;color:var(--ink)"></p>
-    <div class="field">
-      <label for="manualBackend">URL del backend (si lo conoces)</label>
-      <input id="manualBackend" placeholder="https://tu-backend.onrender.com">
-    </div>
-    <div class="field">
-      <label for="manualEmpresaId">ID del negocio</label>
-      <input id="manualEmpresaId" placeholder="Pégalo del link que te dio tu panel">
-    </div>
-    <button type="button" class="copy-btn" id="manualSaveBtn" style="align-self:flex-start">Guardar y continuar</button>
+  <div id="setupError" class="aviso" hidden>
+    <h2>No pudimos abrir este registro</h2>
+    <p id="setupErrorMsg"></p>
   </div>
 
-  <div id="form" hidden>
-    <div class="grid">
-      <section class="card">
-        <h3><span class="step">1</span>Negocio</h3>
-        <div class="result-row">Registrando clientes para: <b id="bizNameDisplay">—</b></div>
-        <div class="result-row" id="bizRewardRow" hidden>Recompensa: <b id="bizRewardDisplay"></b></div>
-      </section>
+  <div id="registro" hidden>
+    <section class="hero-negocio" id="heroNegocio">
+      <div class="hn-logo" id="hnLogo" hidden></div>
+      <p class="hn-kicker">Programa de lealtad</p>
+      <h1 id="hnNombre"></h1>
+      <p class="hn-promo" id="hnPromo"></p>
+      <div class="hn-sellos" id="hnSellos" aria-hidden="true"></div>
+    </section>
 
-      <section class="card">
-        <h3><span class="step">2</span>Cliente</h3>
-        <div class="field">
-          <label for="custName">Nombre del cliente</label>
-          <input id="custName" name="custName" placeholder="Nombre y apellido" required>
-        </div>
-        <div class="field">
-          <label for="custContact">Teléfono o email</label>
-          <input id="custContact" name="custContact" placeholder="55 1234 5678">
-        </div>
-        <label class="consent-row">
-          <input type="checkbox" id="custConsent">
-          <span>Acepto que mi nombre y contacto se usen para este programa de lealtad.</span>
-        </label>
-      </section>
-    </div>
+    <form class="card form" id="formRegistro" novalidate>
+      <h2>Crea tu tarjeta en 10 segundos</h2>
+      <div class="field">
+        <label for="custName">Tu nombre</label>
+        <input id="custName" name="name" type="text" autocomplete="name" maxlength="80" placeholder="Nombre y apellido" required>
+      </div>
+      <div class="field">
+        <label for="custContact">Tu teléfono o correo <span class="opcional">(opcional)</span></label>
+        <input id="custContact" name="contact" type="text" autocomplete="email" maxlength="120" placeholder="998 123 4567 o tu@correo.com">
+        <span class="hint">Con él recuperas tu tarjeta si cambias de teléfono, y el negocio puede avisarte de tu recompensa.</span>
+      </div>
+      <label class="consent-row">
+        <input type="checkbox" id="custConsent">
+        <span>Acepto que mi nombre y contacto se usen para este programa de lealtad. <a href="index.html#privacidad" target="_blank" rel="noopener">Aviso de privacidad</a></span>
+      </label>
+      <button type="submit" class="btn-principal" id="crearBtn">Crear mi tarjeta</button>
+      <p class="hint error" id="formHint" role="alert" hidden></p>
+    </form>
 
-    <div class="actions">
-      <p class="legend">Generar código QR</p>
+    <section class="card listo" id="listo" hidden>
+      <div class="check" aria-hidden="true">✓</div>
+      <h2 id="listoTitulo"></h2>
+      <p id="listoSub"></p>
+      <p class="aviso-mini" id="yaExisteAviso" hidden></p>
       <div class="wallet-row">
-        <button type="button" class="wallet-btn apple" id="appleBtn" data-wallet="apple">
+        <a class="wallet-btn apple" id="appleBtn" href="#">
           <svg width="15" height="18" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76-19.7C63.3 141 0 184.8 0 273.5c0 25.5 4.7 51.9 14 79.1 12.4 36.6 57.2 126.5 104 125.4 23.6-.5 40.3-16.7 71.2-16.7 29.8 0 45.5 16.7 71.2 16.7 47.1-.7 88.1-82.4 100-119.2-63.6-30-63.1-88-61.7-89.1zM262.7 86.5c23.5-27.9 21.3-53.4 20.6-62.5-20.6 1.2-44.4 14-57.9 29.7-14.9 16.8-23.9 37.7-21.9 58.6 23.4 2 44.4-10 59.2-25.8z"/></svg>
           Agregar a Apple Wallet
-        </button>
-        <button type="button" class="wallet-btn google" id="googleBtn" data-wallet="google">
+        </a>
+        <button type="button" class="wallet-btn google" id="googleBtn">
           <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.1-.4-4.6H24v9h11.8c-.5 2.8-2.1 5.1-4.4 6.7v5.6h7.1c4.2-3.8 6.6-9.5 6.6-16.7z"/><path fill="#34A853" d="M24 46c6 0 11-2 14.6-5.4l-7.1-5.6c-2 1.3-4.5 2.1-7.5 2.1-5.8 0-10.6-3.9-12.4-9.1H4.3v5.7C8 41.8 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.6 27.9c-.5-1.3-.7-2.7-.7-4.1s.3-2.8.7-4.1v-5.7H4.3C2.8 16.9 2 20.3 2 23.8s.8 6.9 2.3 9.8z"/><path fill="#EA4335" d="M24 10.6c3.3 0 6.2 1.1 8.5 3.3l6.3-6.3C35 4.2 30 2 24 2 15.4 2 8 6.2 4.3 14l7.3 5.7c1.8-5.2 6.6-9.1 12.4-9.1z"/></svg>
-          Generar QR para Google Wallet
+          Agregar a Google Wallet
         </button>
       </div>
-      <span class="hint" id="formHint">Completa el nombre del cliente</span>
-    </div>
+      <p class="hint error" id="walletMsg" role="alert" hidden></p>
+      <div id="qrbox"></div>
+      <p>Este es tu código. <b>Muéstralo en cada visita</b> para sumar tu sello.</p>
+      <a href="#" class="link-tarjeta" id="verTarjetaLink">Ver mi tarjeta</a>
+      <button type="button" class="link-btn" id="otraPersonaBtn">Registrar a otra persona en este teléfono</button>
+    </section>
   </div>
 
-  <section class="result" id="result" hidden>
-    <div id="qrbox"></div>
-    <div class="result-meta">
-      <span class="badge" id="resBadge"></span>
-      <div class="rbrand" id="resBrand"></div>
-      <div class="result-row">Cliente: <b id="resClient"></b></div>
-      <div class="result-row">ID: <span class="code" id="resId"></span></div>
-      <p class="preview-note" id="yaExisteAviso" hidden style="border-color:var(--accent);background:var(--accent-soft);color:var(--ink)"></p>
-      <p class="preview-note" id="resNote"></p>
-      <a href="#" class="copy-btn" id="addWalletLink" hidden style="text-decoration:none;display:inline-block;background:var(--accent);color:var(--accent-ink);border-color:var(--accent)">Agregar a Wallet</a>
-      <a href="#" target="_blank" rel="noopener" class="copy-btn" id="verTarjetaLink" style="text-decoration:none;display:inline-block">Ver su tarjeta personalizada</a>
-      <button type="button" class="copy-btn" id="copyBtn">Copiar datos del QR</button>
-      <span class="hint" id="copyHint" hidden>Copiado</span>
-    </div>
-  </section>
-
-  <section class="history" id="history" hidden>
-    <h4>Clientes registrados en este dispositivo</h4>
-    <ul id="historyList"></ul>
-  </section>
+  <p class="pie">Tarjeta de lealtad digital por <a href="index.html">ARGAYES</a></p>
 </main>
 
 <script src="vendor/qrcode.min.js"></script>
@@ -445,15 +486,12 @@
   scrim.addEventListener('click', closePanel);
   document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closePanel(); });
 
-  // ---- conexión al backend real: toma empresaId/backend de la URL que
-  // generó el panel (?empresaId=...&backend=...), y si faltan, de lo que
-  // ya se guardó antes en este dispositivo ----
+  // ---- conexión con el servidor ----
   var qs = new URLSearchParams(location.search);
-  // Estas páginas SOLO hablan con el servidor oficial de ARGAYES (o con uno
+  // Esta página SOLO habla con el servidor oficial de ARGAYES (o con uno
   // local cuando se está desarrollando en la propia computadora). Antes,
   // cualquier link con "?backend=..." cambiaba el servidor y lo dejaba
-  // guardado: un link tramposo podía hacer que alguien escribiera su
-  // contraseña en un servidor ajeno creyendo que era ARGAYES.
+  // guardado.
   var BACKEND_OFICIAL = 'https://argayes-backend.onrender.com';
   var ES_DESARROLLO = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
   function backendPermitido(u){
@@ -463,302 +501,262 @@
       return ES_DESARROLLO && (x.hostname === 'localhost' || x.hostname === '127.0.0.1');
     } catch(e){ return false; }
   }
-  function getBackendUrl(){
-    var v = null;
-    try { v = localStorage.getItem('argayes-backend-url'); } catch(e){}
-    return (v && backendPermitido(v)) ? v.replace(/\/$/, '') : BACKEND_OFICIAL;
-  }
-  function setBackendUrl(v){
-    if(!backendPermitido(v)) return;
-    try { localStorage.setItem('argayes-backend-url', v.replace(/\/$/, '')); } catch(e){}
-  }
-  // Los campos de "Conexión al backend" son una herramienta de desarrollo:
-  // un negocio o un cliente no tiene por qué verlos.
-  if(!ES_DESARROLLO){
-    document.querySelectorAll('.backend-settings, [data-solo-desarrollo]').forEach(function(el){ el.hidden = true; el.style.display = 'none'; });
-  }
-  function getEmpresaId(){
-    try { return localStorage.getItem('argayes-registro-empresaId') || ''; } catch(e){ return ''; }
-  }
-  function setEmpresaId(v){
-    try { localStorage.setItem('argayes-registro-empresaId', v); } catch(e){}
-  }
+  function guardado(clave){ try { return localStorage.getItem(clave); } catch(e){ return null; } }
+  function guardar(clave, valor){ try { if(valor === null) localStorage.removeItem(clave); else localStorage.setItem(clave, valor); } catch(e){} }
 
   var backendParam = (qs.get('backend') || '').trim();
-  var backendUrl = (backendParam && backendPermitido(backendParam)) ? backendParam.replace(/\/$/, '') : getBackendUrl();
-  var empresaId = qs.get('empresaId') || getEmpresaId();
-  if(qs.get('backend')) setBackendUrl(backendUrl);
-  if(qs.get('empresaId')) setEmpresaId(empresaId);
+  var backendGuardado = guardado('argayes-backend-url');
+  var backendUrl = (backendParam && backendPermitido(backendParam)) ? backendParam.replace(/\/$/, '')
+    : ((backendGuardado && backendPermitido(backendGuardado)) ? backendGuardado.replace(/\/$/, '') : BACKEND_OFICIAL);
+
+  // El negocio viene en el link (?empresaId=mi-negocio). Si alguien abre la
+  // página sin él, se usa el último negocio visto en este teléfono.
+  var empresaRef = (qs.get('empresaId') || qs.get('negocio') || '').trim() || guardado('argayes-empresa-id') || '';
 
   async function api(path, opts){
-    opts = opts || {};
-    opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
-    var res = await fetch(backendUrl.replace(/\/$/, '') + path, opts);
+    var res;
+    try {
+      res = await fetch(backendUrl + path, opts);
+    } catch(e){
+      throw new Error('No hay conexión. Revisa tu internet e intenta de nuevo.');
+    }
     var data = null;
     try { data = await res.json(); } catch(e){}
-    if(!res.ok) throw new Error((data && data.error) || 'No se pudo conectar con el backend');
+    if(!res.ok){
+      var err = new Error((data && data.error) || 'Algo salió mal. Intenta de nuevo en un momento.');
+      err.status = res.status;
+      throw err;
+    }
     return data;
   }
 
-  var setupError = document.getElementById('setupError');
-  var setupErrorMsg = document.getElementById('setupErrorMsg');
-  var form = document.getElementById('form');
-  var bizNameDisplay = document.getElementById('bizNameDisplay');
-  var bizRewardRow = document.getElementById('bizRewardRow');
-  var bizRewardDisplay = document.getElementById('bizRewardDisplay');
+  var $ = function(id){ return document.getElementById(id); };
+  var empresa = null;
+  var clienteActual = null;
 
-  var empresaActual = null;
-
-  async function init(){
-    if(!backendUrl || !empresaId){
-      setupErrorMsg.textContent = !backendUrl
-        ? 'Este link no trae la información de conexión. Pide al negocio que te comparta de nuevo el link desde su panel.'
-        : 'Este link no indica de qué negocio son los clientes. Pide al negocio que te comparta de nuevo el link desde su panel.';
-      document.getElementById('manualBackend').value = backendUrl;
-      document.getElementById('manualEmpresaId').value = empresaId;
-      setupError.hidden = false;
-      form.hidden = true;
-      return;
-    }
-    try {
-      empresaActual = await api('/api/empresas/' + encodeURIComponent(empresaId));
-      // El link puede traer el id real (UUID) o el link con marca propia
-      // (slug) — de aquí en adelante se usa el id real, porque es lo que
-      // espera /api/clientes al dar de alta al cliente.
-      empresaId = empresaActual.id;
-      bizNameDisplay.textContent = empresaActual.nombre;
-      if(empresaActual.recompensa){
-        bizRewardDisplay.textContent = empresaActual.recompensa;
-        bizRewardRow.hidden = false;
-      }
-      setupError.hidden = true;
-      form.hidden = false;
-    } catch(e){
-      setupErrorMsg.textContent = 'No pudimos conectarnos todavía (' + e.message + '). Intenta de nuevo en un momento.';
-      document.getElementById('manualBackend').value = backendUrl;
-      document.getElementById('manualEmpresaId').value = empresaId;
-      setupError.hidden = false;
-      form.hidden = true;
-    }
+  function esClaro(hex){
+    var h = String(hex || '').replace('#', '');
+    if(h.length !== 6) return false;
+    var r = parseInt(h.substr(0,2),16), g = parseInt(h.substr(2,2),16), b = parseInt(h.substr(4,2),16);
+    return (0.299*r + 0.587*g + 0.114*b) / 255 > 0.62;
   }
 
-  document.getElementById('manualSaveBtn').addEventListener('click', function(){
-    backendUrl = document.getElementById('manualBackend').value.trim().replace(/\/$/, '');
-    empresaId = document.getElementById('manualEmpresaId').value.trim();
-    setBackendUrl(backendUrl);
-    setEmpresaId(empresaId);
-    init();
-  });
-
-  init();
-
-  // ---- form + qr ----
-  var appleBtn = document.getElementById('appleBtn');
-  var googleBtn = document.getElementById('googleBtn');
-  var formHint = document.getElementById('formHint');
-  var custName = document.getElementById('custName');
-  var custContact = document.getElementById('custContact');
-  var custConsent = document.getElementById('custConsent');
-
-  var result = document.getElementById('result');
-  var qrbox = document.getElementById('qrbox');
-  var resBadge = document.getElementById('resBadge');
-  var resBrand = document.getElementById('resBrand');
-  var resClient = document.getElementById('resClient');
-  var resId = document.getElementById('resId');
-  var resNote = document.getElementById('resNote');
-  var copyBtn = document.getElementById('copyBtn');
-  var copyHint = document.getElementById('copyHint');
-
-  var WALLET_NOTES = {
-    apple: 'Se descargó el pase (.pkpass) de este cliente — ábrelo para agregarlo a Apple Wallet.',
-    google: 'Se abrió el link de Google Wallet de este cliente — toca "Guardar" para agregarlo.'
-  };
-
-  var historySec = document.getElementById('history');
-  var historyList = document.getElementById('historyList');
-  var entries = [];
-  try {
-    var stored = localStorage.getItem('argayes-entries');
-    if(stored) entries = JSON.parse(stored);
-  } catch(e){ entries = []; }
-
-  function renderHistory(){
-    if(!entries.length){ historySec.hidden = true; return; }
-    historySec.hidden = false;
-    historyList.innerHTML = '';
-    entries.slice().reverse().slice(0,8).forEach(function(e){
-      var li = document.createElement('li');
-      var left = document.createElement('span'); left.textContent = e.cliente + ' — ' + e.empresa;
-      var right = document.createElement('span'); right.textContent = e.id.slice(0,8);
-      li.appendChild(left); li.appendChild(right);
-      historyList.appendChild(li);
-    });
+  function mostrarErrorInicial(msg){
+    $('estadoCarga').hidden = true;
+    $('registro').hidden = true;
+    $('setupErrorMsg').textContent = msg;
+    $('setupError').hidden = false;
   }
-  renderHistory();
 
-  var currentPayload = '';
-  var generating = false;
-
-  async function generate(wallet){
-    if(generating) return;
-    if(!custName.value.trim()){
-      formHint.textContent = 'Falta el nombre del cliente';
-      formHint.classList.add('error');
-      return;
+  // La cabecera lleva la marca del NEGOCIO (su color, su logo, su
+  // recompensa): el cliente tiene que sentir que es la tarjeta de ese
+  // lugar, no un formulario genérico.
+  function pintarNegocio(){
+    var fondo = /^#[0-9a-fA-F]{6}$/.test(empresa.color || '') ? empresa.color : '#b8872b';
+    var hero = $('heroNegocio');
+    hero.style.background = fondo;
+    hero.style.color = esClaro(fondo) ? '#1b1f23' : '#ffffff';
+    $('hnNombre').textContent = empresa.nombre || 'Programa de lealtad';
+    var umbral = Math.min(20, Math.max(1, Number(empresa.umbral) || 10));
+    var sellosTxt = umbral === 1 ? '1 sello' : umbral + ' sellos';
+    $('hnPromo').textContent = empresa.recompensa
+      ? 'Junta ' + sellosTxt + ' y llévate: ' + empresa.recompensa
+      : 'Junta ' + sellosTxt + ' y gana tu recompensa';
+    var sellos = $('hnSellos');
+    sellos.textContent = '';
+    for(var i = 0; i < umbral; i++){ sellos.appendChild(document.createElement('i')); }
+    var logo = $('hnLogo');
+    logo.textContent = '';
+    if(typeof empresa.logoUrl === 'string' && /^(data:image\/(png|jpeg|webp);base64,|https:\/\/)/.test(empresa.logoUrl)){
+      var img = document.createElement('img');
+      img.alt = '';
+      img.src = empresa.logoUrl;
+      logo.appendChild(img);
+      logo.hidden = false;
+    } else {
+      logo.hidden = true;
     }
-    if(!custConsent.checked){
-      formHint.textContent = 'Falta aceptar el aviso de privacidad';
-      formHint.classList.add('error');
-      return;
+    document.title = 'Tu tarjeta de ' + (empresa.nombre || 'lealtad');
+    var tc = document.querySelector('meta[name="theme-color"]');
+    if(tc) tc.setAttribute('content', fondo);
+  }
+
+  function claveTarjeta(){ return 'argayes-tarjeta-' + empresa.id; }
+
+  function mostrarFormulario(){
+    clienteActual = null;
+    $('listo').hidden = true;
+    $('formRegistro').hidden = false;
+    $('formHint').hidden = true;
+  }
+
+  function mostrarListo(cliente, opciones){
+    opciones = opciones || {};
+    clienteActual = cliente;
+    guardar(claveTarjeta(), JSON.stringify({ id: cliente.id, nombre: cliente.nombre }));
+    $('formRegistro').hidden = true;
+    $('listo').hidden = false;
+
+    var primerNombre = String(cliente.nombre || '').trim().split(/\s+/)[0] || '';
+    $('listoTitulo').textContent = opciones.regreso ? 'Hola de nuevo' + (primerNombre ? ', ' + primerNombre : '') : '¡Listo' + (primerNombre ? ', ' + primerNombre : '') + '!';
+    var umbral = Math.min(20, Math.max(1, Number(empresa.umbral) || 10));
+    var puntos = Math.max(0, Number(cliente.puntos) || 0);
+    $('listoSub').textContent = opciones.regreso
+      ? 'Ya tienes tu tarjeta de ' + empresa.nombre + ': llevas ' + Math.min(puntos, umbral) + ' de ' + umbral + ' sellos.'
+      : 'Tu tarjeta de ' + empresa.nombre + ' ya está creada. Guárdala en tu teléfono para tenerla siempre a la mano:';
+    var aviso = $('yaExisteAviso');
+    if(opciones.yaExistia){
+      aviso.textContent = 'Ya tenías una tarjeta con ese contacto, así que recuperamos la tuya: llevas ' + Math.min(puntos, umbral) + ' de ' + umbral + ' sellos.';
+      aviso.hidden = false;
+    } else {
+      aviso.hidden = true;
     }
-    formHint.classList.remove('error');
-    formHint.textContent = 'Registrando cliente…';
-    generating = true;
-    appleBtn.disabled = true;
-    googleBtn.disabled = true;
 
-    // Se abre la pestaña AQUÍ, de forma síncrona, dentro del mismo clic del
-    // usuario — si se abriera después de los "await" de abajo, el celular
-    // (sobre todo iPhone) la bloquea como si fuera un pop-up no deseado y
-    // el cliente solo ve el link, nunca la pantalla de "agregar a Wallet".
-    // Se le asigna la URL real más abajo, una vez que ya se sabe cuál es.
-    // (Para Apple no hace falta: ese pase usa la misma pestaña, ver abajo.)
-    var walletTab = (wallet === 'google') ? window.open('', '_blank') : null;
+    // En iPhone se ofrece Apple Wallet, en Android Google Wallet, y en una
+    // computadora los dos.
+    var ua = navigator.userAgent || '';
+    var esIOS = /iPhone|iPad|iPod/.test(ua);
+    var esAndroid = /Android/.test(ua);
+    $('appleBtn').hidden = esAndroid;
+    $('googleBtn').hidden = esIOS;
+    $('appleBtn').href = backendUrl + '/api/wallet/apple/' + encodeURIComponent(cliente.id) + '.pkpass';
+    $('walletMsg').hidden = true;
+    $('verTarjetaLink').href = 'mi-tarjeta.html?id=' + encodeURIComponent(cliente.id);
 
+    var qrbox = $('qrbox');
+    qrbox.textContent = '';
+    if(typeof QRCode !== 'undefined'){
+      new QRCode(qrbox, { text: cliente.id, width: 360, height: 360, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+      qrbox.hidden = false;
+    } else {
+      qrbox.hidden = true;
+    }
+    try { $('listo').scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch(e){}
+  }
+
+  // ---- crear la tarjeta ----
+  var enviando = false;
+  $('formRegistro').addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    if(enviando) return;
+    var hint = $('formHint');
+    var nombre = $('custName').value.replace(/\s+/g, ' ').trim();
+    var contacto = $('custContact').value.trim();
+    function error(msg, campo){
+      hint.textContent = msg;
+      hint.hidden = false;
+      if(campo) campo.focus();
+    }
+    hint.hidden = true;
+    if(nombre.length < 2) return error('Escribe tu nombre para crear tu tarjeta.', $('custName'));
+    if(!$('custConsent').checked) return error('Marca la casilla para aceptar el uso de tus datos en este programa.', $('custConsent'));
+
+    enviando = true;
+    var btn = $('crearBtn');
+    btn.disabled = true;
+    btn.textContent = 'Creando tu tarjeta…';
     try {
-      // 1) Da de alta al cliente de verdad en el backend — a partir de
-      // aquí ya aparece en "Mis clientes" del panel del negocio.
-      var nombreTecleado = custName.value.trim();
       var cliente = await api('/api/clientes', {
         method: 'POST',
-        body: JSON.stringify({
-          empresaId: empresaId,
-          nombre: nombreTecleado,
-          contacto: custContact.value.trim(),
-          consentimiento: custConsent.checked
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ empresaId: empresa.id, nombre: nombre, contacto: contacto, consentimiento: true })
       });
-      // El backend evita duplicados: si ese teléfono/correo ya estaba
-      // registrado, regresa la tarjeta YA EXISTENTE de esa persona (con su
-      // nombre original) en vez de crear una nueva — para que no le queden
-      // dos tarjetas distintas al mismo cliente. Si eso pasó, se avisa aquí
-      // para que no parezca que se guardó mal el nombre que se tecleó.
-      var yaExistia = cliente.nombre !== nombreTecleado;
-
-      // 2) El QR lleva el ID real del cliente — es lo que se escaneará
-      // en tienda para sumarle visitas/puntos.
-      currentPayload = cliente.id;
-      qrbox.innerHTML = '';
-      new QRCode(qrbox, {
-        text: currentPayload,
-        width: 168,
-        height: 168,
-        colorDark: '#1b1f23',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M
-      });
-
-      resBadge.textContent = wallet === 'apple' ? 'Apple Wallet' : 'Google Wallet';
-      resBadge.className = 'badge ' + wallet;
-      resBrand.textContent = empresaActual.nombre;
-      resClient.textContent = cliente.nombre;
-      resId.textContent = cliente.id;
-      result.hidden = false;
-      copyHint.hidden = true;
-      var yaExisteAviso = document.getElementById('yaExisteAviso');
-      if(yaExistia){
-        yaExisteAviso.textContent = 'Ese teléfono o correo ya tenía una tarjeta a nombre de "' + cliente.nombre + '" — usamos esa misma tarjeta en vez de crear una nueva.';
-        yaExisteAviso.hidden = false;
-      } else {
-        yaExisteAviso.hidden = true;
-      }
-      // Link a la tarjeta personalizada (mi-tarjeta.html): es la que de verdad
-      // refleja el diseño que el negocio armó en su panel (tipografía, forma y
-      // tamaño de sellos) — el pase de Apple/Google Wallet no soporta eso.
-      document.getElementById('verTarjetaLink').href =
-        'mi-tarjeta.html?id=' + encodeURIComponent(cliente.id) + '&backend=' + encodeURIComponent(backendUrl);
-
-      // 3) Pase real.
-      var walletUrl;
-      if(wallet === 'apple'){
-        resNote.textContent = WALLET_NOTES.apple;
-        walletUrl = backendUrl.replace(/\/$/, '') + '/api/wallet/apple/' + cliente.id + '.pkpass';
-        // El .pkpass NO se abre en una pestaña nueva: el iPhone solo muestra
-        // la pantalla nativa de "Agregar a Apple Wallet" (encima de esta
-        // misma página) cuando la descarga pasa por la pestaña principal.
-        // En una pestaña nueva, Safari a veces no la reconoce y no pasa nada.
-        window.location.href = walletUrl;
-      } else {
-        var w = await api('/api/wallet/google/' + cliente.id);
-        resNote.textContent = WALLET_NOTES.google;
-        walletUrl = w.saveUrl;
-        if(walletTab){
-          try { walletTab.location = walletUrl; } catch(e){ walletTab = null; }
-        }
-        if(!walletTab){
-          window.open(walletUrl, '_blank');
-        }
-      }
-      // Por si el celular bloqueó lo anterior (o el usuario cerró la
-      // pantalla sin terminar), siempre queda un botón real y visible
-      // para agregarla a mano.
-      var addWalletLink = document.getElementById('addWalletLink');
-      addWalletLink.href = walletUrl;
-      addWalletLink.textContent = wallet === 'apple' ? 'Agregar a Apple Wallet' : 'Agregar a Google Wallet';
-      addWalletLink.hidden = false;
-
-      entries.push({ id: cliente.id, cliente: cliente.nombre, empresa: empresaActual.nombre });
-      try { localStorage.setItem('argayes-entries', JSON.stringify(entries)); } catch(e){}
-      renderHistory();
-
-      // Se limpia el formulario — si no, se queda con el nombre del cliente
-      // anterior y parece que la tarjeta de arriba (que sigue siendo la de
-      // ese cliente anterior hasta el PRÓXIMO registro) es la de alguien
-      // que todavía no se registra.
-      custName.value = '';
-      custContact.value = '';
-      custConsent.checked = false;
-      formHint.textContent = 'Cliente registrado. Completa el nombre del siguiente cliente';
-      result.scrollIntoView({behavior:'smooth', block:'nearest'});
+      // Si el servidor regresó una tarjeta creada hace más de un minuto, es
+      // que ese contacto ya estaba registrado y se recuperó la existente.
+      var yaExistia = cliente.creado && (Date.now() - new Date(cliente.creado).getTime() > 60000);
+      mostrarListo(cliente, { yaExistia: yaExistia });
+      $('formRegistro').reset();
     } catch(e){
-      if(walletTab){ try { walletTab.close(); } catch(e2){} }
-      formHint.textContent = 'No se pudo registrar: ' + e.message;
-      formHint.classList.add('error');
+      error(e.status === 429 ? 'Hay muchos registros desde esta red en este momento. Espera unos minutos e intenta de nuevo.' : e.message);
     } finally {
-      generating = false;
-      appleBtn.disabled = false;
-      googleBtn.disabled = false;
-    }
-  }
-
-  appleBtn.addEventListener('click', function(){ generate('apple'); });
-  googleBtn.addEventListener('click', function(){ generate('google'); });
-
-  copyBtn.addEventListener('click', function(){
-    function shown(){ copyHint.hidden = false; setTimeout(function(){ copyHint.hidden = true; }, 1800); }
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(currentPayload).then(shown).catch(function(){
-        var ta = document.createElement('textarea');
-        ta.value = currentPayload; document.body.appendChild(ta); ta.select();
-        try { document.execCommand('copy'); } catch(e){}
-        document.body.removeChild(ta); shown();
-      });
+      enviando = false;
+      btn.disabled = false;
+      btn.textContent = 'Crear mi tarjeta';
     }
   });
 
-  // ---- fade-in al hacer scroll ----
-  var revealTargets = document.querySelectorAll('.card, .result, .history');
-  revealTargets.forEach(function(el){ el.classList.add('reveal'); });
-  if ('IntersectionObserver' in window){
-    var io = new IntersectionObserver(function(entries){
-      entries.forEach(function(entry){
-        if (entry.isIntersecting){ entry.target.classList.add('in-view'); io.unobserve(entry.target); }
-      });
-    }, { threshold: 0.12, rootMargin: '0px 0px -30px 0px' });
-    revealTargets.forEach(function(el){ io.observe(el); });
-  } else {
-    revealTargets.forEach(function(el){ el.classList.add('in-view'); });
+  // ---- wallets ----
+  function avisoWallet(msg){
+    var el = $('walletMsg');
+    el.textContent = msg;
+    el.hidden = false;
   }
+  $('googleBtn').addEventListener('click', async function(){
+    if(!clienteActual) return;
+    var btn = this;
+    btn.disabled = true;
+    $('walletMsg').hidden = true;
+    try {
+      var r = await api('/api/wallet/google/' + encodeURIComponent(clienteActual.id));
+      window.location.href = r.saveUrl;
+    } catch(e){
+      avisoWallet(e.message);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+  // Antes de mandar al iPhone a descargar el pase se comprueba que el
+  // servidor sí lo puede generar: si no, se explica aquí en vez de dejar al
+  // cliente frente a una página de error.
+  $('appleBtn').addEventListener('click', async function(ev){
+    if(!clienteActual) return;
+    ev.preventDefault();
+    var url = this.href;
+    $('walletMsg').hidden = true;
+    try {
+      var res = await fetch(url);
+      if(!res.ok){
+        var data = null;
+        try { data = await res.json(); } catch(e){}
+        avisoWallet((data && data.error) || 'Apple Wallet no está disponible en este momento. Tu tarjeta ya quedó registrada: ábrela con "Ver mi tarjeta".');
+        return;
+      }
+      window.location.href = url;
+    } catch(e){
+      avisoWallet('No hay conexión. Revisa tu internet e intenta de nuevo.');
+    }
+  });
+
+  $('otraPersonaBtn').addEventListener('click', function(){
+    guardar(claveTarjeta(), null);
+    mostrarFormulario();
+    $('custName').focus();
+  });
+
+  // ---- arranque ----
+  (async function(){
+    if(!empresaRef){
+      mostrarErrorInicial('Este link no dice de qué negocio es la tarjeta. Escanea de nuevo el código QR del negocio o pídeles que te compartan su link.');
+      return;
+    }
+    try {
+      empresa = await api('/api/empresas/' + encodeURIComponent(empresaRef));
+    } catch(e){
+      mostrarErrorInicial(e.status === 404
+        ? 'No encontramos ese negocio. Puede que el link esté incompleto: escanea de nuevo el código QR o pídeles que te lo compartan otra vez.'
+        : 'No pudimos cargar el registro en este momento. Revisa tu conexión e intenta de nuevo en un minuto.');
+      return;
+    }
+    guardar('argayes-empresa-id', empresa.slug || empresa.id);
+    pintarNegocio();
+    $('estadoCarga').hidden = true;
+    $('registro').hidden = false;
+
+    // ¿Este teléfono ya tiene tarjeta de este negocio? Entonces no se
+    // vuelve a pedir el registro (antes, cada vez que alguien escaneaba el
+    // QR del mostrador se creaba una tarjeta nueva y los sellos quedaban
+    // repartidos entre varias).
+    var previa = null;
+    try { previa = JSON.parse(guardado(claveTarjeta()) || 'null'); } catch(e){}
+    if(previa && previa.id){
+      try {
+        var cliente = await api('/api/clientes/' + encodeURIComponent(previa.id));
+        if(cliente.empresaId === empresa.id){ mostrarListo(cliente, { regreso: true }); return; }
+      } catch(e){
+        if(e.status === 404) guardar(claveTarjeta(), null);
+      }
+    }
+    mostrarFormulario();
+  })();
 })();
 </script>
