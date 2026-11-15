@@ -491,7 +491,7 @@ app.post('/api/admin/2fa/nuevo', ah(async (req, res) => {
               secreto = totp.generarSecreto();
               await db.guardarAjusteAdmin(AJUSTE_TOTP_PENDIENTE, secreto + '|' + Date.now());
       }
-      res.json({ secreto, url: totp.urlOtpauth(secreto, 'super-admin') });
+      res.json({ secreto, url: totp.urlOtpauth(secreto, 'super-admin'), horaServidor: Date.now() });
 }));
 
 // Confirma con el primer código que la app quedó bien configurada.
@@ -501,6 +501,16 @@ app.post('/api/admin/2fa/activar', ah(async (req, res) => {
       const pendiente = String((await db.leerAjusteAdmin(AJUSTE_TOTP_PENDIENTE)) || '').split('|')[0];
       const contador = pendiente ? totp.verificar(pendiente, (req.body || {}).codigo, null) : null;
       if (contador === null) {
+              // Diagnóstico (sin secretos): ¿había QR pendiente? ¿el código
+              // habría coincidido con otra hora? (desfase en ventanas de 30 s)
+              let desfase = null;
+              if (pendiente) {
+                      const ahora = Math.floor(Date.now() / 30000);
+                      for (let d = -40; d <= 40 && desfase === null; d++) {
+                              if (totp.codigoEn(pendiente, ahora + d) === String((req.body || {}).codigo || '').replace(/\s/g, '')) desfase = d;
+                      }
+              }
+              console.warn('[2FA] activación fallida', JSON.stringify({ hayPendiente: !!pendiente, desfaseVentanas: desfase, horaServidor: new Date().toISOString() }));
               registrarFalloAdmin(req, 'Código incorrecto al activar la verificación en dos pasos');
               return res.status(400).json({ error: 'Ese código no coincide. Revisa que escaneaste el QR y usa el código que aparece ahora.' });
       }
