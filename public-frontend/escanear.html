@@ -487,11 +487,11 @@
     scanHint.classList.remove('error');
     scanHint.textContent = 'Apunta la cámara al código QR del cliente.';
     try {
-      if(!html5QrCode){ html5QrCode = new Html5Qrcode('reader'); }
+      if(!html5QrCode){ html5QrCode = new Html5Qrcode('reader', { verbose: false, formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE], experimentalFeatures: { useBarCodeDetectorIfSupported: true } }); }
       scanPlaceholder.hidden = true;
       await html5QrCode.start(
         { facingMode: 'environment' },
-        { fps: 10, aspectRatio: 1, qrbox: function(w, h){ var l = Math.floor(Math.min(w, h) * 0.7); return { width: l, height: l }; } },
+        { fps: 15, aspectRatio: 1, disableFlip: true },
         onScanSuccess,
         function(){ /* onScanFailure: se ignora, sigue intentando frame a frame */ }
       );
