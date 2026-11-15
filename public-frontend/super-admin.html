@@ -315,8 +315,8 @@
   <section id="dashView" hidden>
     <div class="stat-grid">
       <div class="stat"><span class="n" id="statTotal">—</span><span class="l">Negocios registrados</span></div>
-      <div class="stat"><span class="n" id="statActivos">—</span><span class="l">Suscripciones activas</span></div>
-      <div class="stat"><span class="n" id="statInactivos">—</span><span class="l">Suscripciones inactivas</span></div>
+      <div class="stat"><span class="n" id="statActivos">—</span><span class="l">Negocios activos</span></div>
+      <div class="stat"><span class="n" id="statInactivos">—</span><span class="l">Pagando suscripción</span></div>
       <div class="stat pendiente"><span class="n" id="statPendientes">—</span><span class="l">Solicitudes pendientes</span></div>
     </div>
 
@@ -689,7 +689,8 @@
     var activos = lista.filter(function(e){ return e.activa !== false; }).length;
     document.getElementById('statTotal').textContent = todas.length;
     document.getElementById('statActivos').textContent = activos;
-    document.getElementById('statInactivos').textContent = lista.length - activos;
+    // "Pagando" = suscripción de Stripe al corriente (no cuenta pruebas gratis).
+    document.getElementById('statInactivos').textContent = lista.filter(function(e){ return e.suscripcionEstado === 'active' || e.suscripcionEstado === 'trialing'; }).length;
 
     if(!lista.length){
       tabla.hidden = true;
