@@ -994,13 +994,6 @@
                   <input type="text" id="cfgColorTxt" value="#b8872b">
                 </div>
               </div>
-              <div class="field" style="margin-top:14px">
-                <label for="cfgColorBoton">Color de los botones</label>
-                <div class="color-row">
-                  <input type="color" id="cfgColorBoton" value="#1b1f23">
-                  <input type="text" id="cfgColorBotonTxt" value="#1b1f23">
-                </div>
-              </div>
               <div class="config-actions">
                 <button class="primary" id="saveColoresBtn">Guardar cambios</button>
                 <span class="saved-hint" id="savedHintColores">Guardado</span>
@@ -1767,8 +1760,6 @@
     document.getElementById('cfgFuente').value = tarjeta.fuente;
     document.getElementById('cfgColor').value = tarjeta.color;
     document.getElementById('cfgColorTxt').value = tarjeta.color;
-    document.getElementById('cfgColorBoton').value = tarjeta.colorBoton;
-    document.getElementById('cfgColorBotonTxt').value = tarjeta.colorBoton;
     document.getElementById('cfgRecompensa').value = tarjeta.recompensa;
     document.getElementById('cfgUmbral').value = tarjeta.umbral;
     marcarFormaSeleccionada(tarjeta.selloForma);
@@ -1891,7 +1882,7 @@
       new QRCode(qrWrap, {
         text: 'EJEMPLO-' + (getEmpresaCache() ? getEmpresaCache().id : 'demo'),
         width: 72, height: 72,
-        colorDark: colorQrSeguro(tarjeta.colorBoton),
+        colorDark: '#1b1f23',
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M
       });
@@ -2098,7 +2089,6 @@
     });
   }
   sincronizarColor('cfgColor', 'cfgColorTxt', 'color');
-  sincronizarColor('cfgColorBoton', 'cfgColorBotonTxt', 'colorBoton');
 
   document.getElementById('saveColoresBtn').addEventListener('click', async function(){
     var hint = document.getElementById('savedHintColores');

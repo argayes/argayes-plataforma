@@ -378,7 +378,7 @@
       width: 84, height: 84,
       // Un QR claro sobre blanco no lo lee ninguna cámara: si el color que
       // eligió el negocio es claro, el QR se pinta oscuro.
-      colorDark: (/^#[0-9a-fA-F]{6}$/.test(empresa.colorBoton || '') && !esClaro(empresa.colorBoton)) ? empresa.colorBoton : '#1b1f23',
+      colorDark: '#1b1f23',
       colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M
     });
