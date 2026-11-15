@@ -182,16 +182,30 @@
   .view{max-width:900px;margin:0 auto}
   .view-title{font-size:20px;font-weight:700;margin:0 0 20px}
 
+  .nl-corto{display:none}
+  /* En teléfono el menú se vuelve una barra inferior con íconos y nombres,
+     como en las apps (antes era una franja de íconos sin texto a la
+     izquierda que le quitaba espacio al contenido). "Cerrar sesión" sigue
+     disponible en Ajustes. */
   @media (max-width:760px){
-    :root{--sidebar-w:72px}
-    .sidebar-brand{padding:16px 10px;text-align:center;font-size:0}
-    .sidebar-brand::before{content:"A";font-size:20px}
-    .sidebar-brand small{display:none}
-    .nav-label{display:none}
-    .nav-btn{justify-content:center;padding:12px}
-    .sidebar-account-name{display:none}
-    .sidebar-account{justify-content:center}
-    .main{padding:calc(20px + env(safe-area-inset-top,0px)) 14px 50px}
+    :root{--sidebar-w:0px}
+    .sidebar{
+      top:auto;bottom:0;left:0;right:0;width:auto;flex-direction:row;
+      border-right:0;border-top:1px solid var(--border);
+      padding:0 0 env(safe-area-inset-bottom,0px);
+      background:color-mix(in srgb, var(--surface) 94%, transparent);
+      backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    }
+    .sidebar-brand,.sidebar-foot{display:none}
+    .sidebar-nav{flex-direction:row;padding:6px 4px;gap:2px;overflow:visible}
+    .nav-btn{
+      flex:1;flex-direction:column;justify-content:center;gap:4px;
+      padding:7px 2px;font-size:10.5px;text-align:center;min-width:0;
+    }
+    .nav-btn svg{width:22px;height:22px}
+    .nl-largo{display:none}
+    .nl-corto{display:inline}
+    .main{padding:calc(18px + env(safe-area-inset-top,0px)) 14px calc(92px + env(safe-area-inset-bottom,0px))}
   }
 
   /* ---- paneles / tarjetas de contenido reutilizables ---- */
@@ -420,6 +434,7 @@
     transition:opacity .2s, transform .2s;z-index:100;text-align:center;
   }
   .toast.show{opacity:1;transform:translate(-50%,0)}
+  @media (max-width:760px){ .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))} }
   .toast.error{background:var(--danger);color:#fff}
 
   /* ---- "Para hoy": listas accionables ---- */
@@ -617,7 +632,7 @@
       </button>
       <button class="nav-btn" type="button" data-view="tarjeta">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 9.5h19"/><path d="M6 14h4"/></svg>
-        <span class="nav-label">Tarjeta de fidelidad</span>
+        <span class="nav-label"><span class="nl-largo">Tarjeta de fidelidad</span><span class="nl-corto">Tarjeta</span></span>
       </button>
       <button class="nav-btn" type="button" data-view="ajustes">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4.6a7.7 7.7 0 0 0-1.7-1l-.4-2.6h-4l-.4 2.6a7.7 7.7 0 0 0-1.7 1l-2.4-.6-2 3.4 2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-.6a7.7 7.7 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.7 7.7 0 0 0 1.7-1l2.4.6 2-3.4z"/></svg>
