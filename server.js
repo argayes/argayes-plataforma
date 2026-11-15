@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const db = require('./lib/db');
 const googleWallet = require('./lib/google-wallet');
+const sellosPng = require('./lib/sellos-png');
 const appleWallet = require('./lib/apple-wallet');
 const { enviarCodigoReset, enviarRecordatorioInactividad, enviarAvisoNuevoNegocio, enviarAlertaAdmin } = require('./lib/email');
 const totp = require('./lib/totp');
@@ -639,6 +640,8 @@ app.patch('/api/mi-empresa', requireAuth, ah(async (req, res) => {
               // (no por cliente) alcanza para que a TODOS los que ya tengan
               // el pase guardado les llegue el color/logo/recompensa nuevos.
               googleWallet.patchClase(empresa)
+                      .then(() => db.clientesConGoogleWallet(req.empresaId))
+                      .then((clientes) => googleWallet.patchObjetos(empresa, clientes))
                       .catch((e) => console.error('No se pudo avisar la actualización de Google Wallet del negocio', req.empresaId, ':', e.message));
               res.json(sinDatosSensibles(empresa));
       } catch (e) {
@@ -763,6 +766,9 @@ app.get('/api/wallet/google/:clienteId', ah(async (req, res) => {
       const empresa = await db.obtenerEmpresa(cliente.empresaId);
       try {
               const saveUrl = googleWallet.generarSaveUrl(empresa, cliente);
+              if (process.env.GOOGLE_ISSUER_ID) {
+                      db.marcarGoogleWallet(cliente.id, googleWallet.objetoId(process.env.GOOGLE_ISSUER_ID, cliente.id)).catch(() => {});
+              }
               res.json({ saveUrl });
       } catch (e) {
               // El detalle (qué credencial falta, etc.) va a los logs; al
@@ -770,6 +776,30 @@ app.get('/api/wallet/google/:clienteId', ah(async (req, res) => {
               console.error('No se pudo generar el pase de Google Wallet:', e.message);
               res.status(503).json({ error: 'Google Wallet no está disponible en este momento. Tu tarjeta ya quedó registrada: puedes usarla desde "Ver mi tarjeta".' });
       }
+}));
+
+// Imágenes públicas para Google Wallet (Google solo acepta URLs https, no
+// base64). La "versión" en la URL es una huella del diseño: si el negocio
+// cambia algo, la URL cambia; por eso se pueden guardar en caché un año.
+app.get('/api/wallet/google-img/logo/:empresaId/:version.png', ah(async (req, res) => {
+      if (!esUuidValido(req.params.empresaId)) return res.status(400).end();
+      const empresa = await db.obtenerEmpresa(req.params.empresaId);
+      if (!empresa) return res.status(404).end();
+      const png = sellosPng.logoCuadrado({ logoUrl: empresa.logoUrl, color: empresa.color, selloForma: empresa.selloForma }, 660);
+      res.set('Content-Type', 'image/png').set('Cache-Control', 'public, max-age=31536000, immutable').send(png);
+}));
+app.get('/api/wallet/google-img/sellos/:empresaId/:puntos/:version.png', ah(async (req, res) => {
+      if (!esUuidValido(req.params.empresaId)) return res.status(400).end();
+      const puntos = Number(req.params.puntos);
+      if (!Number.isInteger(puntos) || puntos < 0 || puntos > 20) return res.status(400).end();
+      const empresa = await db.obtenerEmpresa(req.params.empresaId);
+      if (!empresa) return res.status(404).end();
+      const png = sellosPng.franjaDeSellos(
+              { color: empresa.color, selloForma: empresa.selloForma, selloTamano: empresa.selloTamano, umbral: empresa.umbral, puntos },
+              null,
+              { ancho: 1032, alto: 336, anchoSeguro: 0.86 }
+      );
+      res.set('Content-Type', 'image/png').set('Cache-Control', 'public, max-age=31536000, immutable').send(png);
 }));
 
 app.get('/api/wallet/apple/:clienteId.pkpass', ah(async (req, res) => {
