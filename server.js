@@ -460,7 +460,7 @@ app.post('/api/admin/sesion', ah(async (req, res) => {
       const { clave, codigo } = req.body || {};
       if (!claveAdminCorrecta(clave)) {
               registrarFalloAdmin(req, 'Clave incorrecta');
-              return res.status(401).json({ error: 'Clave de administrador incorrecta' });
+              return res.status(401).json({ error: 'Contraseña incorrecta' });
       }
       const secreto = await db.leerAjusteAdmin(AJUSTE_TOTP);
       if (!secreto) {

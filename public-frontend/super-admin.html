@@ -1,7 +1,8 @@
 <meta charset="utf-8">
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Super-admin ARGAYES</title>
+<title>ARGAYES</title>
+<meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -252,7 +253,7 @@
 </style>
 
 <header>
-  <div class="brand">ARGAYES<small>Super-admin · dueño de la plataforma</small></div>
+  <div class="brand">ARGAYES</div>
   <div style="display:flex;gap:8px">
     <button class="ghost" id="graficasBtn" hidden>📊 Gráficas</button>
     <button class="ghost" id="themeBtn" title="Cambiar tema">🌓 Tema</button>
@@ -264,12 +265,11 @@
   <!-- ---- Login con clave de administrador ---- -->
   <section class="auth-wrap" id="authView">
     <div class="auth-card">
-      <h1>Panel de super-admin</h1>
-      <p class="sub">Solo para ti, dueño de ARGAYES — aquí ves y activas/desactivas los negocios que usan la plataforma.</p>
+      <h1>Iniciar sesión</h1>
 
       <form id="adminLoginForm">
         <div class="field">
-          <label for="adminSecret">Clave de administrador</label>
+          <label for="adminSecret">Contraseña</label>
           <input id="adminSecret" type="password" required autocomplete="current-password">
         </div>
         <div class="field" id="codigoField" hidden>
@@ -281,7 +281,7 @@
       </form>
 
       <div id="setup2fa" hidden>
-        <h2 style="font-size:18px;margin:4px 0 6px">Protege tu super-admin</h2>
+        <h2 style="font-size:18px;margin:4px 0 6px">Activa la verificación en dos pasos</h2>
         <p class="sub" style="margin-bottom:12px">Vamos a activar la verificación en dos pasos: además de tu clave, te pediremos un código de tu celular. Así, aunque alguien consiga tu clave, sin tu teléfono no entra.</p>
         <ol class="setup-pasos">
           <li>Instala <b>Google Authenticator</b> (o Microsoft Authenticator / Authy) en tu celular.</li>

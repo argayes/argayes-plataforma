@@ -1,7 +1,6 @@
 User-agent: *
 Allow: /
 Disallow: /panel.html
-Disallow: /super-admin.html
 Disallow: /escanear.html
 
 Sitemap: https://argayes.com/sitemap.xml
