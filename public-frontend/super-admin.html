@@ -267,14 +267,15 @@
     <div class="auth-card">
       <h1>Iniciar sesión</h1>
 
-      <form id="adminLoginForm">
+      <form id="adminLoginForm" novalidate>
+        <input type="text" name="username" autocomplete="username" value="admin" hidden aria-hidden="true" tabindex="-1">
         <div class="field">
           <label for="adminSecret">Contraseña</label>
           <input id="adminSecret" type="password" required autocomplete="current-password">
         </div>
         <div class="field" id="codigoField" hidden>
           <label for="adminCodigo">Código de tu app autenticadora</label>
-          <input id="adminCodigo" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" placeholder="123 456">
+          <input id="adminCodigo" inputmode="numeric" maxlength="7" autocomplete="one-time-code" placeholder="123 456" disabled>
         </div>
         <p class="auth-error" id="adminLoginError"></p>
         <button class="primary" type="submit" style="margin-top:14px;width:100%">Entrar</button>
@@ -289,10 +290,10 @@
         </ol>
         <div id="setupQr" class="setup-qr"></div>
         <p class="sub" style="font-size:12px;text-align:center">¿No puedes escanear? Escribe esta clave en la app:<br><code id="setupSecreto" class="setup-secreto"></code></p>
-        <form id="setupForm">
+        <form id="setupForm" novalidate>
           <div class="field">
             <label for="setupCodigo">3. Escribe el código de 6 dígitos que te muestra la app</label>
-            <input id="setupCodigo" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" required placeholder="123 456">
+            <input id="setupCodigo" inputmode="numeric" maxlength="7" autocomplete="one-time-code" placeholder="123 456">
           </div>
           <p class="auth-error" id="setupError"></p>
           <button class="primary" type="submit" style="margin-top:14px;width:100%">Activar y entrar</button>
@@ -1066,6 +1067,7 @@
     document.getElementById('setup2fa').hidden = true;
     document.getElementById('adminLoginForm').hidden = false;
     document.getElementById('codigoField').hidden = true;
+    document.getElementById('adminCodigo').disabled = true;
     return adminApi('/api/admin/empresas').then(function(lista){
       mostrarDash();
       pintarEmpresas(lista);
@@ -1096,6 +1098,11 @@
     ev.preventDefault();
     var errorEl = document.getElementById('adminLoginError');
     errorEl.classList.remove('show');
+    if(!document.getElementById('adminSecret').value.trim()){
+      errorEl.textContent = 'Escribe tu contraseña.';
+      errorEl.classList.add('show');
+      return;
+    }
     var btn = this.querySelector('button[type=submit]');
     btn.disabled = true;
     btn.textContent = 'Entrando…';
@@ -1108,7 +1115,7 @@
       method: 'POST',
       token: '-',
       body: JSON.stringify({
-        clave: document.getElementById('adminSecret').value,
+        clave: document.getElementById('adminSecret').value.trim(),
         codigo: document.getElementById('adminCodigo').value.replace(/\s/g, '')
       })
     }).then(function(d){
@@ -1123,6 +1130,7 @@
         var campo = document.getElementById('codigoField');
         var yaVisible = !campo.hidden;
         campo.hidden = false;
+        document.getElementById('adminCodigo').disabled = false;
         document.getElementById('adminCodigo').value = '';
         document.getElementById('adminCodigo').focus();
         if(!yaVisible){ return; } // primera vez: solo pide el código, sin marcar error
