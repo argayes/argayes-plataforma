@@ -1098,6 +1098,12 @@
     errorEl.classList.remove('show');
     var btn = this.querySelector('button[type=submit]');
     btn.disabled = true;
+    btn.textContent = 'Entrando…';
+    // El servidor gratis de Render se duerme; la primera vez puede tardar ~50 s.
+    var avisoLento = setTimeout(function(){
+      errorEl.textContent = 'El servidor está despertando, puede tardar hasta un minuto…';
+      errorEl.classList.add('show');
+    }, 6000);
     adminApi('/api/admin/sesion', {
       method: 'POST',
       token: '-',
@@ -1121,9 +1127,14 @@
         document.getElementById('adminCodigo').focus();
         if(!yaVisible){ return; } // primera vez: solo pide el código, sin marcar error
       }
-      errorEl.textContent = err.message;
+      errorEl.textContent = err.message === 'Failed to fetch' ? 'No se pudo conectar con el servidor. Revisa tu internet e intenta de nuevo.' : err.message;
       errorEl.classList.add('show');
-    }).then(function(){ btn.disabled = false; });
+    }).then(function(){
+      clearTimeout(avisoLento);
+      if(errorEl.textContent.indexOf('despertando') !== -1) errorEl.classList.remove('show');
+      btn.disabled = false;
+      btn.textContent = 'Entrar';
+    });
   });
 
   document.getElementById('setupForm').addEventListener('submit', function(ev){
@@ -1162,3 +1173,4 @@
   }
 })();
 </script>
+<script src="js/ojito.js"></script>
