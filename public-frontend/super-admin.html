@@ -347,7 +347,7 @@
       <h2>Negocios en la plataforma</h2>
       <div class="table-wrap">
         <table id="empresasTable" hidden>
-          <thead><tr><th>Negocio</th><th>Email</th><th>Alta</th><th>Estado</th><th></th></tr></thead>
+          <thead><tr><th>Negocio</th><th>Email</th><th>Alta</th><th>Clientes</th><th>Estado</th><th></th></tr></thead>
           <tbody id="empresasBody"></tbody>
         </table>
       </div>
@@ -714,6 +714,17 @@
       var tdAlta = document.createElement('td');
       tdAlta.textContent = emp.creado ? new Date(emp.creado).toLocaleDateString('es-MX') : '—';
       tr.appendChild(tdAlta);
+
+      // Clientes registrados + visitas de los últimos 30 días.
+      var tdClientes = document.createElement('td');
+      var nCli = document.createElement('strong');
+      nCli.textContent = (emp.totalClientes || 0).toLocaleString('es-MX');
+      tdClientes.appendChild(nCli);
+      var vis = document.createElement('span');
+      vis.className = 'badge-prueba';
+      vis.textContent = (emp.visitas30d || 0).toLocaleString('es-MX') + ' visitas (30 días)';
+      tdClientes.appendChild(vis);
+      tr.appendChild(tdClientes);
 
       var tdEstado = document.createElement('td');
       var badge = document.createElement('span');
