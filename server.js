@@ -916,9 +916,17 @@ app.post('/api/visita', requireAuth, requireEmpresaActiva, ah(async (req, res) =
               return res.status(403).json({ error: 'Ese cliente no pertenece a tu negocio' });
       }
 
-                                                                if (await db.yaVisitoHoy(clienteId)) {
-                                                                        return res.status(409).json({ error: 'Ya se registró una visita hoy para este cliente' });
-                                                                }
+      // Si ya tiene sello de hoy, se regresa también cómo va: si ya completó
+      // su tarjeta, el escáner ofrece entregarle la recompensa.
+      const respuestaYaVisito = (mensaje) => res.status(409).json({
+              error: mensaje,
+              cliente: clientePublico(cliente),
+              umbral: req.empresa.umbral,
+              listoParaCanje: cliente.puntos >= req.empresa.umbral
+      });
+      if (await db.yaVisitoHoy(clienteId)) {
+              return respuestaYaVisito('Ya se registró una visita hoy para este cliente');
+      }
 
                                                                 let actualizado;
                                                                 try {
@@ -927,7 +935,7 @@ app.post('/api/visita', requireAuth, requireEmpresaActiva, ah(async (req, res) =
                                                                         // Ver comentario en db.registrarVisita: esto solo puede pasar si otra
                                                                         // petición para el mismo cliente ganó la carrera justo entre el
                                                                         // "yaVisitoHoy" de arriba y este registro.
-                                                                        if (e.yaVisito) return res.status(409).json({ error: e.message });
+                                                                        if (e.yaVisito) return respuestaYaVisito(e.message);
                                                                         throw e;
                                                                 }
       const empresa = req.empresa;
@@ -947,8 +955,8 @@ app.post('/api/visita', requireAuth, requireEmpresaActiva, ah(async (req, res) =
                                                                         .then((tokens) => appleWallet.avisarActualizacion(tokens))
                                                                         .catch((e) => console.error('No se pudo avisar la actualización de Apple Wallet del cliente', clienteId, ':', e.message));
 
-                                                                const listoParaCanje = actualizado.puntos >= empresa.umbral;
-      res.json({ cliente: actualizado, listoParaCanje });
+      const listoParaCanje = actualizado.puntos >= empresa.umbral;
+      res.json({ cliente: clientePublico(actualizado), umbral: empresa.umbral, listoParaCanje });
 }));
 
 // ---------- Paso 9: recompensa y canje de un solo uso ----------
@@ -964,7 +972,7 @@ app.post('/api/canje', requireAuth, requireEmpresaActiva, ah(async (req, res) =>
       }
       const empresa = req.empresa;
       if (cliente.puntos < empresa.umbral) {
-              return res.status(400).json({ error: 'El cliente todavía no llega al umbral de puntos' });
+              return res.status(400).json({ error: `Todavía no completa su tarjeta: lleva ${cliente.puntos} de ${empresa.umbral} sellos.` });
       }
       const canje = await db.crearCanje(clienteId);
       res.status(201).json(canje);

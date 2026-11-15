@@ -313,7 +313,7 @@
   </section>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" onerror="var x=document.createElement('script');x.src='https://unpkg.com/jsqr@1.4.0/dist/jsQR.js';document.head.appendChild(x)"></script>
 <script src="js/lector-qr.js"></script>
 <script>
 (function(){
@@ -420,7 +420,10 @@
       throw new Error('Tu sesión venció. Entra de nuevo.');
     }
     if(!res.ok){
-      throw new Error((data && data.error) || ('Error ' + res.status));
+      var err = new Error((data && data.error) || ('Error ' + res.status));
+      err.status = res.status;
+      err.data = data;
+      throw err;
     }
     return data;
   }
@@ -435,7 +438,10 @@
     authView.hidden = false;
     scanView.hidden = true;
     logoutBtn.hidden = true;
-    detenerCamara();
+    // Solo si la cámara está prendida. Antes se llamaba siempre, incluso al
+    // abrir la página sin sesión, cuando el botón de la cámara todavía no
+    // existía: el script tronaba ahí y "Iniciar cámara" nunca funcionaba.
+    if(escaneando) detenerCamara();
   }
   function mostrarScan(){
     authView.hidden = true;
@@ -506,7 +512,12 @@
     } catch(e){
       scanPlaceholder.hidden = false;
       scanHint.classList.add('error');
-      scanHint.textContent = 'No se pudo abrir la cámara: ' + (e.message || e) + '. Revisa los permisos de cámara del navegador.';
+      var nom = e && e.name;
+      scanHint.textContent = (nom === 'NotAllowedError' || nom === 'SecurityError')
+        ? 'No diste permiso para usar la cámara. Actívalo en los ajustes del navegador (en iPhone: Ajustes → Safari → Cámara → Permitir) y vuelve a intentar.'
+        : (nom === 'NotFoundError' || nom === 'OverconstrainedError')
+          ? 'No encontramos una cámara en este dispositivo.'
+          : 'No se pudo abrir el escáner: ' + ((e && e.message) || e) + '.';
     }
   }
 
@@ -522,6 +533,7 @@
   }
 
   startScanBtn.addEventListener('click', iniciarCamara);
+  document.addEventListener('visibilitychange', function(){ if(document.hidden && escaneando) detenerCamara(); });
   stopScanBtn.addEventListener('click', detenerCamara);
 
   var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -559,6 +571,9 @@
   });
 
   function iconoSvg(nombre){
+    if(nombre === 'gift'){
+      return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 7h-2.2A3 3 0 0 0 12 3.8 3 3 0 0 0 6.2 7H4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8h1a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zm-7.5-1.5A1.5 1.5 0 1 1 14 7h-1.5zM10 5.5a1.5 1.5 0 0 1 1.5 1.5H10a1.5 1.5 0 0 1 0-1.5zM11 19H7v-7h4zm0-9H5V9h6zm6 9h-4v-7h4zm2-9h-6V9h6z"/></svg>';
+    }
     if(nombre === 'check'){
       return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>';
     }
@@ -585,7 +600,7 @@
         icon.className = 'result-icon warn';
         icon.innerHTML = iconoSvg('gift');
         title.textContent = '¡' + r.cliente.nombre + ' ya puede canjear su recompensa!';
-        sub.textContent = 'Puntos actuales: ' + r.cliente.puntos;
+        sub.textContent = 'Lleva ' + r.cliente.puntos + ' sellos. Genera el código y entrégale su recompensa.';
         var btnCanjear = document.createElement('button');
         btnCanjear.type = 'button';
         btnCanjear.className = 'primary';
@@ -601,8 +616,8 @@
       } else {
         icon.className = 'result-icon good';
         icon.innerHTML = iconoSvg('check');
-        title.textContent = 'Punto sumado a ' + r.cliente.nombre;
-        sub.textContent = 'Puntos: ' + r.cliente.puntos + ' — se actualiza solo en su wallet.';
+        title.textContent = 'Sello sumado a ' + r.cliente.nombre;
+        sub.textContent = 'Lleva ' + r.cliente.puntos + (r.umbral ? ' de ' + r.umbral : '') + ' sellos. Su tarjeta se actualiza sola.';
         var btnOtro2 = document.createElement('button');
         btnOtro2.type = 'button';
         btnOtro2.className = 'primary';
@@ -613,7 +628,28 @@
     } catch(e){
       var msg = e.message || 'Error desconocido';
       var titulo = 'No se pudo registrar la visita';
-      if(/ya se registr[oó]/i.test(msg)) titulo = 'Ya se le sumó un punto hoy';
+      // Ya tiene sello de hoy, pero completó su tarjeta: que el negocio
+      // pueda entregarle la recompensa igual (antes se quedaba atorado).
+      if(e.status === 409 && e.data && e.data.listoParaCanje && e.data.cliente){
+        ocultarResultados();
+        box.hidden = false;
+        icon.className = 'result-icon warn';
+        icon.innerHTML = iconoSvg('gift');
+        title.textContent = '¡' + e.data.cliente.nombre + ' ya puede canjear su recompensa!';
+        sub.textContent = 'Hoy ya se le sumó su sello. Lleva ' + e.data.cliente.puntos + ' sellos.';
+        var bC = document.createElement('button');
+        bC.type = 'button'; bC.className = 'primary'; bC.textContent = 'Generar código de canje';
+        bC.addEventListener('click', function(){ generarCanje(clienteId); });
+        var bO = document.createElement('button');
+        bO.type = 'button'; bO.className = 'ghost'; bO.textContent = 'Escanear otro cliente';
+        bO.addEventListener('click', function(){ ocultarResultados(); iniciarCamara(); });
+        actions.appendChild(bC); actions.appendChild(bO);
+        return;
+      }
+      if(/ya se registr[oó]/i.test(msg)){
+        titulo = 'Ya se le sumó un sello hoy';
+        msg = 'Cada cliente puede sumar un sello por día.' + (e.data && e.data.cliente ? ' Lleva ' + e.data.cliente.puntos + ' sellos.' : '');
+      }
       if(/no pertenece/i.test(msg)) titulo = 'Ese cliente es de otro negocio';
       if(/no encontrado/i.test(msg)) titulo = 'Cliente no encontrado';
       mostrarError(titulo, msg);
@@ -661,7 +697,7 @@
       icon.className = 'result-icon good';
       icon.innerHTML = iconoSvg('check');
       document.getElementById('visitaTitle').textContent = 'Canje confirmado';
-      document.getElementById('visitaSub').textContent = r.cliente ? ('Puntos restantes: ' + r.cliente.puntos) : 'Recompensa entregada.';
+      document.getElementById('visitaSub').textContent = r.cliente ? ('Le quedan ' + r.cliente.puntos + ' sellos en su tarjeta.') : 'Recompensa entregada.';
       var actions = document.getElementById('visitaActions');
       actions.innerHTML = '';
       var btnOtro = document.createElement('button');
@@ -674,9 +710,9 @@
     } catch(e){
       var msg = e.message || 'Error desconocido';
       var titulo = 'No se pudo confirmar el canje';
-      if(/ya_usado/i.test(msg)) titulo = 'Ese código ya se usó';
-      if(/codigo_no_existe/i.test(msg)) titulo = 'Código de canje no válido';
-      if(/no_pertenece/i.test(msg)) titulo = 'Ese código es de otro negocio';
+      if(/ya_usado/i.test(msg)){ titulo = 'Ese código ya se usó'; msg = 'Esta recompensa ya se entregó antes.'; }
+      if(/codigo_no_existe/i.test(msg)){ titulo = 'Código de canje no válido'; msg = 'Genera un código nuevo escaneando la tarjeta del cliente.'; }
+      if(/no_pertenece/i.test(msg)){ titulo = 'Ese código es de otro negocio'; msg = 'Solo puedes confirmar canjes de tus propios clientes.'; }
       if(/puntos_insuficientes/i.test(msg)){
         titulo = 'A este cliente ya no le alcanzan los sellos';
         msg = 'Ese código se generó antes: la recompensa ya se entregó o todavía le faltan sellos. Escanea su tarjeta para ver cuántos lleva.';
