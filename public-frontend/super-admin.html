@@ -105,6 +105,12 @@
   button.primary:hover{filter:brightness(1.06)}
   .auth-error{font-size:13px;color:var(--danger);display:none}
   .auth-error.show{display:block}
+  .setup-pasos{margin:0 0 10px 18px;padding:0;font-size:14px;line-height:1.5}
+  .setup-qr{display:flex;justify-content:center;margin:10px auto;background:#fff;padding:12px;border-radius:12px;width:max-content}
+  .setup-secreto{display:inline-block;margin-top:4px;font-size:13px;letter-spacing:.06em;word-break:break-all;user-select:all}
+  .prueba-sel{font:inherit;font-size:13px;padding:6px 8px;border-radius:8px;border:1px solid var(--line, #ccc);background:transparent;color:inherit}
+  .badge-prueba{display:block;font-size:11px;margin-top:4px;opacity:.8}
+  .badge-prueba.vencida{color:var(--danger);opacity:1;font-weight:600}
   details.backend-settings{font-size:12px;color:var(--ink-dim)}
   details.backend-settings summary{cursor:pointer}
   details.backend-settings .field{margin-top:8px}
@@ -264,11 +270,34 @@
       <form id="adminLoginForm">
         <div class="field">
           <label for="adminSecret">Clave de administrador</label>
-          <input id="adminSecret" type="password" required autocomplete="off">
+          <input id="adminSecret" type="password" required autocomplete="current-password">
+        </div>
+        <div class="field" id="codigoField" hidden>
+          <label for="adminCodigo">Código de tu app autenticadora</label>
+          <input id="adminCodigo" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" placeholder="123 456">
         </div>
         <p class="auth-error" id="adminLoginError"></p>
         <button class="primary" type="submit" style="margin-top:14px;width:100%">Entrar</button>
       </form>
+
+      <div id="setup2fa" hidden>
+        <h2 style="font-size:18px;margin:4px 0 6px">Protege tu super-admin</h2>
+        <p class="sub" style="margin-bottom:12px">Vamos a activar la verificación en dos pasos: además de tu clave, te pediremos un código de tu celular. Así, aunque alguien consiga tu clave, sin tu teléfono no entra.</p>
+        <ol class="setup-pasos">
+          <li>Instala <b>Google Authenticator</b> (o Microsoft Authenticator / Authy) en tu celular.</li>
+          <li>En la app toca <b>+</b> → <b>Escanear código QR</b> y escanea este:</li>
+        </ol>
+        <div id="setupQr" class="setup-qr"></div>
+        <p class="sub" style="font-size:12px;text-align:center">¿No puedes escanear? Escribe esta clave en la app:<br><code id="setupSecreto" class="setup-secreto"></code></p>
+        <form id="setupForm">
+          <div class="field">
+            <label for="setupCodigo">3. Escribe el código de 6 dígitos que te muestra la app</label>
+            <input id="setupCodigo" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" autocomplete="one-time-code" required placeholder="123 456">
+          </div>
+          <p class="auth-error" id="setupError"></p>
+          <button class="primary" type="submit" style="margin-top:14px;width:100%">Activar y entrar</button>
+        </form>
+      </div>
 
       <details class="backend-settings">
         <summary>Conexión al backend</summary>
@@ -294,6 +323,13 @@
       <div class="section-head">
         <h2>Solicitudes de suscripción pendientes</h2>
         <div class="bulk-actions">
+          <label style="font-size:13px;display:flex;align-items:center;gap:6px">Prueba gratis:
+            <select id="pruebaDias" class="prueba-sel">
+              <option value="14">14 días</option>
+              <option value="30" selected>30 días</option>
+              <option value="0">Sin límite</option>
+            </select>
+          </label>
           <button type="button" class="bulk aprobar-todas" id="aprobarTodasBtn">Aprobar todas</button>
           <button type="button" class="bulk denegar-todas" id="denegarTodasBtn">Denegar todas</button>
         </div>
@@ -414,6 +450,7 @@
   </div>
 </main>
 
+<script src="vendor/qrcode.min.js"></script>
 <script>
 (function(){
   "use strict";
@@ -446,15 +483,19 @@
   if(!ES_DESARROLLO){
     document.querySelectorAll('.backend-settings, [data-solo-desarrollo]').forEach(function(el){ el.hidden = true; el.style.display = 'none'; });
   }
-  function getAdminSecret(){
-    try { return sessionStorage.getItem('argayes-admin-secret') || ''; } catch(e){ return ''; }
+  // La clave ya no se guarda en el navegador: con clave + código se recibe
+  // una sesión de 8 horas (token) y solo eso se guarda, en esta pestaña.
+  try { sessionStorage.removeItem('argayes-admin-secret'); } catch(e){}
+  function getAdminToken(){
+    try { return sessionStorage.getItem('argayes-admin-token') || ''; } catch(e){ return ''; }
   }
-  function setAdminSecret(v){
+  function setAdminToken(v){
     try {
-      if(v) sessionStorage.setItem('argayes-admin-secret', v);
-      else sessionStorage.removeItem('argayes-admin-secret');
+      if(v) sessionStorage.setItem('argayes-admin-token', v);
+      else sessionStorage.removeItem('argayes-admin-token');
     } catch(e){}
   }
+  var tokenConfigurar = '';
 
   // ---- tema claro/oscuro: ciclo manual -> claro -> oscuro -> automático (según el sistema) ----
   function getTheme(){
@@ -485,13 +526,22 @@
     }
     opts = opts || {};
     opts.headers = Object.assign({'Content-Type':'application/json'}, opts.headers || {});
-    var secret = getAdminSecret();
-    if(secret) opts.headers['x-admin-secret'] = secret;
+    var token = opts.token || getAdminToken();
+    delete opts.token;
+    if(token) opts.headers['Authorization'] = 'Bearer ' + token;
     var res = await fetch(base + path, opts);
     var data = null;
     try { data = await res.json(); } catch(e){}
     if(!res.ok){
-      throw new Error((data && data.error) || ('Error ' + res.status));
+      var err = new Error((data && data.error) || ('Error ' + res.status));
+      err.status = res.status;
+      err.data = data;
+      // Sesión vencida en medio del uso: de vuelta a la pantalla de entrada.
+      if(res.status === 401 && path.indexOf('/api/admin/empresas') === 0 || res.status === 401 && path.indexOf('/api/admin/estadisticas') === 0){
+        setAdminToken('');
+        mostrarLogin();
+      }
+      throw err;
     }
     return data;
   }
@@ -522,9 +572,10 @@
   var ultimasPendientes = [];
 
   function aprobarUna(id){
+    var dias = Number(document.getElementById('pruebaDias').value);
     return adminApi('/api/admin/empresas/' + id + '/activa', {
       method: 'PATCH',
-      body: JSON.stringify({ activa: true })
+      body: JSON.stringify({ activa: true, diasPrueba: dias })
     });
   }
   function denegarUna(id){
@@ -668,6 +719,20 @@
       badge.className = 'badge ' + (activa ? 'on' : 'off');
       badge.textContent = activa ? 'Activa' : 'Inactiva';
       tdEstado.appendChild(badge);
+      var pagando = emp.suscripcionEstado === 'active' || emp.suscripcionEstado === 'trialing';
+      var infoPrueba = document.createElement('span');
+      infoPrueba.className = 'badge-prueba';
+      if(pagando){
+        infoPrueba.textContent = 'Pagando con tarjeta';
+      } else if(emp.pruebaHasta){
+        var fin = new Date(emp.pruebaHasta);
+        var dias = Math.ceil((fin.getTime() - Date.now()) / 86400000);
+        if(dias <= 0){ infoPrueba.textContent = 'Prueba vencida'; infoPrueba.classList.add('vencida'); }
+        else infoPrueba.textContent = 'Prueba: ' + (dias === 1 ? '1 día' : dias + ' días') + ' (hasta ' + fin.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) + ')';
+      } else if(activa){
+        infoPrueba.textContent = 'Gratis sin límite';
+      }
+      if(infoPrueba.textContent) tdEstado.appendChild(infoPrueba);
       tr.appendChild(tdEstado);
 
       var tdBtn = document.createElement('td');
@@ -698,6 +763,27 @@
         });
       });
       acciones.appendChild(btn);
+
+      if(!pagando){
+        var btnPrueba = document.createElement('button');
+        btnPrueba.type = 'button';
+        btnPrueba.className = 'toggle ver';
+        btnPrueba.textContent = 'Prueba…';
+        btnPrueba.title = 'Dar o cambiar días de prueba gratis';
+        btnPrueba.addEventListener('click', function(){
+          var v = prompt('¿Cuántos días de prueba gratis le das a "' + (emp.nombre || 'este negocio') + '" desde hoy?\n(0 = sin límite)', '30');
+          if(v === null) return;
+          var d = parseInt(v, 10);
+          if(!(d >= 0 && d <= 365)){ alert('Escribe un número de 0 a 365.'); return; }
+          btnPrueba.disabled = true;
+          adminApi('/api/admin/empresas/' + emp.id + '/activa', {
+            method: 'PATCH',
+            body: JSON.stringify({ activa: true, diasPrueba: d })
+          }).then(function(){ cargarEmpresas(); })
+            .catch(function(err){ alert(err.message); btnPrueba.disabled = false; });
+        });
+        acciones.appendChild(btnPrueba);
+      }
 
       var btnBorrar = document.createElement('button');
       btnBorrar.type = 'button';
@@ -973,32 +1059,102 @@
     cargarGraficas(periodoActual);
   });
 
+  function entrarConToken(token){
+    setAdminToken(token);
+    document.getElementById('adminSecret').value = '';
+    document.getElementById('adminCodigo').value = '';
+    document.getElementById('setup2fa').hidden = true;
+    document.getElementById('adminLoginForm').hidden = false;
+    document.getElementById('codigoField').hidden = true;
+    return adminApi('/api/admin/empresas').then(function(lista){
+      mostrarDash();
+      pintarEmpresas(lista);
+    });
+  }
+
+  function mostrarSetup2fa(){
+    document.getElementById('adminLoginForm').hidden = true;
+    var cont = document.getElementById('setup2fa');
+    cont.hidden = false;
+    var qr = document.getElementById('setupQr');
+    qr.textContent = 'Generando…';
+    adminApi('/api/admin/2fa/nuevo', { method: 'POST', token: tokenConfigurar }).then(function(d){
+      qr.textContent = '';
+      if(typeof QRCode !== 'undefined'){
+        new QRCode(qr, { text: d.url, width: 200, height: 200, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+      }
+      document.getElementById('setupSecreto').textContent = d.secreto.replace(/(.{4})/g, '$1 ').trim();
+      document.getElementById('setupCodigo').focus();
+    }).catch(function(err){
+      qr.textContent = '';
+      var e = document.getElementById('setupError');
+      e.textContent = err.message; e.classList.add('show');
+    });
+  }
+
   document.getElementById('adminLoginForm').addEventListener('submit', function(ev){
     ev.preventDefault();
     var errorEl = document.getElementById('adminLoginError');
     errorEl.classList.remove('show');
-    setAdminSecret(document.getElementById('adminSecret').value);
-    adminApi('/api/admin/empresas').then(function(lista){
-      mostrarDash();
-      pintarEmpresas(lista);
+    var btn = this.querySelector('button[type=submit]');
+    btn.disabled = true;
+    adminApi('/api/admin/sesion', {
+      method: 'POST',
+      token: '-',
+      body: JSON.stringify({
+        clave: document.getElementById('adminSecret').value,
+        codigo: document.getElementById('adminCodigo').value.replace(/\s/g, '')
+      })
+    }).then(function(d){
+      if(d.configurar2fa){
+        tokenConfigurar = d.token;
+        mostrarSetup2fa();
+        return;
+      }
+      return entrarConToken(d.token);
     }).catch(function(err){
-      setAdminSecret('');
+      if(err.data && err.data.requiere2fa){
+        var campo = document.getElementById('codigoField');
+        var yaVisible = !campo.hidden;
+        campo.hidden = false;
+        document.getElementById('adminCodigo').value = '';
+        document.getElementById('adminCodigo').focus();
+        if(!yaVisible){ return; } // primera vez: solo pide el código, sin marcar error
+      }
+      errorEl.textContent = err.message;
+      errorEl.classList.add('show');
+    }).then(function(){ btn.disabled = false; });
+  });
+
+  document.getElementById('setupForm').addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var errorEl = document.getElementById('setupError');
+    errorEl.classList.remove('show');
+    adminApi('/api/admin/2fa/activar', {
+      method: 'POST',
+      token: tokenConfigurar,
+      body: JSON.stringify({ codigo: document.getElementById('setupCodigo').value.replace(/\s/g, '') })
+    }).then(function(d){
+      tokenConfigurar = '';
+      return entrarConToken(d.token);
+    }).catch(function(err){
       errorEl.textContent = err.message;
       errorEl.classList.add('show');
     });
   });
 
   logoutBtn.addEventListener('click', function(){
-    setAdminSecret('');
+    setAdminToken('');
     mostrarLogin();
   });
 
-  // Si ya había una clave guardada en esta pestaña, entra directo.
-  if(getAdminSecret() && getBackendUrl()){
+  // Si ya había una sesión abierta en esta pestaña (dura 8 horas), entra directo.
+  if(getAdminToken() && getBackendUrl()){
     adminApi('/api/admin/empresas').then(function(lista){
       mostrarDash();
       pintarEmpresas(lista);
     }).catch(function(){
+      setAdminToken('');
       mostrarLogin();
     });
   } else {

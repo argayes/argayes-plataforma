@@ -8,7 +8,8 @@ const rateLimit = require('express-rate-limit');
 const db = require('./lib/db');
 const googleWallet = require('./lib/google-wallet');
 const appleWallet = require('./lib/apple-wallet');
-const { enviarCodigoReset, enviarRecordatorioInactividad, enviarAvisoNuevoNegocio } = require('./lib/email');
+const { enviarCodigoReset, enviarRecordatorioInactividad, enviarAvisoNuevoNegocio, enviarAlertaAdmin } = require('./lib/email');
+const totp = require('./lib/totp');
 const stripePagos = require('./lib/stripe-pagos');
 
 // No hay valor "por default" para estas dos claves a propósito: si faltan,
@@ -242,23 +243,85 @@ const requireEmpresaActiva = ah(async (req, res, next) => {
       if (empresa.activa === false) {
               return res.status(403).json({ error: 'Tu suscripción no está activa. Reactívala en Ajustes → Suscripción para seguir sumando visitas.' });
       }
+      if (db.pruebaVencida(empresa)) {
+              return res.status(403).json({ error: 'Tu prueba gratis terminó. Activa tu suscripción en Ajustes → Suscripción para seguir sumando visitas.' });
+      }
       req.empresa = empresa;
       next();
 });
 
-// Protege las rutas de super-admin (solo tú, dueño de ARGAYES) con una
-// clave fija por header — no hace falta login de usuario para esto.
-function requireAdmin(req, res, next) {
-      const clave = req.headers['x-admin-secret'];
-      // Se comparan los hashes (mismo largo siempre) con timingSafeEqual, para
-      // que el tiempo de respuesta no dé pistas de cuántos caracteres de la
-      // clave van bien.
+// ---------- Super-admin: clave + código del teléfono (2 pasos) ----------
+// Entrar al super-admin pide la clave (ADMIN_SECRET) Y un código de 6
+// dígitos de una app autenticadora (Google Authenticator, etc.). Con las
+// dos se emite una sesión de 8 horas. La sesión se firma con una llave
+// derivada de APP_JWT_SECRET + ADMIN_SECRET: cambiar ADMIN_SECRET en Render
+// cierra al instante todas las sesiones abiertas del super-admin. Y como es
+// otra llave, un token de negocio nunca sirve como token de admin (ni al
+// revés).
+const LLAVE_SESION_ADMIN = crypto.createHash('sha256').update('argayes-admin:' + JWT_SECRET + ':' + ADMIN_SECRET).digest();
+const AJUSTE_TOTP = 'totp_secreto';
+const AJUSTE_TOTP_PENDIENTE = 'totp_pendiente';
+let ultimoContadorTotp = null; // un código ya usado no se acepta otra vez
+
+function claveAdminCorrecta(clave) {
       const a = crypto.createHash('sha256').update(String(clave || '')).digest();
       const b = crypto.createHash('sha256').update(ADMIN_SECRET).digest();
-      if (!clave || !crypto.timingSafeEqual(a, b)) {
-              return res.status(401).json({ error: 'Clave de administrador incorrecta' });
+      return !!clave && crypto.timingSafeEqual(a, b);
+}
+
+function firmarSesionAdmin(alcance) {
+      return jwt.sign({ adm: alcance }, LLAVE_SESION_ADMIN, { expiresIn: alcance === 'completo' ? '8h' : '15m' });
+}
+
+function sesionAdminDe(req) {
+      const header = req.headers.authorization || '';
+      if (!header.startsWith('Bearer ')) return null;
+      try {
+              const p = jwt.verify(header.slice(7), LLAVE_SESION_ADMIN);
+              return p && p.adm ? p.adm : null;
+      } catch (e) {
+              return null;
+      }
+}
+
+// Rutas normales del super-admin: solo con sesión completa (clave + código).
+function requireAdmin(req, res, next) {
+      if (sesionAdminDe(req) !== 'completo') {
+              return res.status(401).json({ error: 'Tu sesión de super-admin expiró. Vuelve a entrar.' });
       }
       next();
+}
+
+// Alertas por correo. Las entradas exitosas se avisan siempre; los
+// intentos fallidos se juntan y se avisa máximo una vez cada 15 minutos
+// (para que un ataque no te llene el correo de mensajes).
+// Además hay un freno global: más de 30 fallos en 15 minutos (desde
+// cualquier conexión) bloquea la entrada al super-admin 15 minutos, por si
+// alguien intenta adivinar desde muchas conexiones distintas.
+const fallosAdmin = { lista: [], ultimoAviso: 0, pendientes: 0, bloqueadoHasta: 0 };
+function registrarFalloAdmin(req, motivo) {
+      const ahora = Date.now();
+      fallosAdmin.lista = fallosAdmin.lista.filter((t) => ahora - t < 15 * 60 * 1000);
+      fallosAdmin.lista.push(ahora);
+      fallosAdmin.pendientes++;
+      if (fallosAdmin.lista.length > 30) fallosAdmin.bloqueadoHasta = ahora + 15 * 60 * 1000;
+      if (ahora - fallosAdmin.ultimoAviso > 15 * 60 * 1000) {
+              const n = fallosAdmin.pendientes;
+              fallosAdmin.ultimoAviso = ahora;
+              fallosAdmin.pendientes = 0;
+              enviarAlertaAdmin(
+                      'Alerta: intento fallido de entrar al super-admin',
+                      n === 1 ? 'Alguien intentó entrar al super-admin y falló.' : `Hubo ${n} intentos fallidos de entrar al super-admin.`,
+                      [['Motivo', motivo], ['IP', ipCliente(req)], ['Navegador', String(req.headers['user-agent'] || '—').slice(0, 160)], ['Hora', new Date().toLocaleString('es-MX', { timeZone: db.ZONA_HORARIA })]]
+              ).catch((e) => console.error('Alerta admin:', e.message));
+      }
+}
+function avisarEntradaAdmin(req, detalle) {
+      enviarAlertaAdmin(
+              'Alguien entró al super-admin de ARGAYES',
+              'Se inició sesión en el super-admin.',
+              [['Detalle', detalle], ['IP', ipCliente(req)], ['Navegador', String(req.headers['user-agent'] || '—').slice(0, 160)], ['Hora', new Date().toLocaleString('es-MX', { timeZone: db.ZONA_HORARIA })]]
+      ).catch((e) => console.error('Aviso entrada admin:', e.message));
 }
 
 // Valida que un id tenga forma de UUID antes de usarlo en una consulta —
@@ -385,6 +448,61 @@ app.post('/api/auth/restablecer-password', limitadorReset, ah(async (req, res) =
 
 // ---------- Super-admin (ARGAYES): ver y activar/desactivar negocios ----------
 app.use('/api/admin', limitadorAdmin);
+
+// Paso único de entrada: { clave, codigo }.
+// - Si la verificación en dos pasos ya está activada: clave + código → sesión completa.
+// - Si todavía no: la clave sola da una sesión de 15 minutos que SOLO sirve
+//   para activar la verificación (no deja ver ni tocar negocios).
+app.post('/api/admin/sesion', ah(async (req, res) => {
+      if (Date.now() < fallosAdmin.bloqueadoHasta) {
+              return res.status(429).json({ error: 'Demasiados intentos fallidos. La entrada está bloqueada unos minutos.' });
+      }
+      const { clave, codigo } = req.body || {};
+      if (!claveAdminCorrecta(clave)) {
+              registrarFalloAdmin(req, 'Clave incorrecta');
+              return res.status(401).json({ error: 'Clave de administrador incorrecta' });
+      }
+      const secreto = await db.leerAjusteAdmin(AJUSTE_TOTP);
+      if (!secreto) {
+              return res.json({ token: firmarSesionAdmin('configurar'), configurar2fa: true });
+      }
+      if (!codigo) return res.status(401).json({ error: 'Escribe el código de 6 dígitos de tu app autenticadora.', requiere2fa: true });
+      const contador = totp.verificar(secreto, codigo, ultimoContadorTotp);
+      if (contador === null) {
+              registrarFalloAdmin(req, 'Clave correcta, código del teléfono incorrecto');
+              return res.status(401).json({ error: 'Código incorrecto o vencido. Usa el que aparece ahora en tu app.', requiere2fa: true });
+      }
+      ultimoContadorTotp = contador;
+      avisarEntradaAdmin(req, 'Clave + código del teléfono');
+      res.json({ token: firmarSesionAdmin('completo') });
+}));
+
+// Genera un secreto nuevo para escanear con la app autenticadora.
+app.post('/api/admin/2fa/nuevo', ah(async (req, res) => {
+      const alcance = sesionAdminDe(req);
+      if (alcance !== 'configurar') return res.status(401).json({ error: 'Vuelve a entrar con tu clave.' });
+      if (await db.leerAjusteAdmin(AJUSTE_TOTP)) return res.status(400).json({ error: 'La verificación en dos pasos ya está activada.' });
+      const secreto = totp.generarSecreto();
+      await db.guardarAjusteAdmin(AJUSTE_TOTP_PENDIENTE, secreto);
+      res.json({ secreto, url: totp.urlOtpauth(secreto, 'super-admin') });
+}));
+
+// Confirma con el primer código que la app quedó bien configurada.
+app.post('/api/admin/2fa/activar', ah(async (req, res) => {
+      if (sesionAdminDe(req) !== 'configurar') return res.status(401).json({ error: 'Vuelve a entrar con tu clave.' });
+      if (await db.leerAjusteAdmin(AJUSTE_TOTP)) return res.status(400).json({ error: 'La verificación en dos pasos ya está activada.' });
+      const pendiente = await db.leerAjusteAdmin(AJUSTE_TOTP_PENDIENTE);
+      const contador = pendiente ? totp.verificar(pendiente, (req.body || {}).codigo, null) : null;
+      if (contador === null) {
+              registrarFalloAdmin(req, 'Código incorrecto al activar la verificación en dos pasos');
+              return res.status(400).json({ error: 'Ese código no coincide. Revisa que escaneaste el QR y usa el código que aparece ahora.' });
+      }
+      await db.guardarAjusteAdmin(AJUSTE_TOTP, pendiente);
+      await db.borrarAjusteAdmin(AJUSTE_TOTP_PENDIENTE);
+      ultimoContadorTotp = contador;
+      avisarEntradaAdmin(req, 'Se ACTIVÓ la verificación en dos pasos y se inició sesión');
+      res.json({ token: firmarSesionAdmin('completo') });
+}));
 app.get('/api/admin/empresas', requireAdmin, ah(async (req, res) => {
       const empresas = await db.listarEmpresas();
       res.json(empresas.map(sinDatosSensibles));
@@ -392,7 +510,14 @@ app.get('/api/admin/empresas', requireAdmin, ah(async (req, res) => {
 
 app.patch('/api/admin/empresas/:id/activa', requireAdmin, ah(async (req, res) => {
       if (!esUuidValido(req.params.id)) return res.status(400).json({ error: 'Id inválido' });
-      const empresa = await db.setActivaEmpresa(req.params.id, !!(req.body && req.body.activa));
+      const activa = !!(req.body && req.body.activa);
+      let diasPrueba;
+      if (activa && req.body.diasPrueba !== undefined) {
+              const d = Number(req.body.diasPrueba);
+              if (!Number.isInteger(d) || d < 0 || d > 365) return res.status(400).json({ error: 'Días de prueba inválidos' });
+              diasPrueba = d;
+      }
+      const empresa = await db.setActivaEmpresa(req.params.id, activa, diasPrueba);
       if (!empresa) return res.status(404).json({ error: 'Empresa no encontrada' });
       res.json(sinDatosSensibles(empresa));
 }));
@@ -594,16 +719,16 @@ app.post('/api/clientes', limitadorClientes, ah(async (req, res) => {
       if (!db.textoValido(nombre, 80)) {
               return res.status(400).json({ error: 'Escribe tu nombre (máximo 80 caracteres)' });
       }
-      if (contacto !== undefined && contacto !== null && contacto !== '' && !db.textoValido(contacto, 120)) {
-              return res.status(400).json({ error: 'El teléfono o correo no puede pasar de 120 caracteres' });
+      if (typeof contacto !== 'string' || contacto.length > 120 || !db.normalizarContacto(contacto)) {
+              return res.status(400).json({ error: 'Escribe tu teléfono (10 dígitos) o tu correo: es lo que identifica tu tarjeta.' });
       }
       // El checkbox de privacidad es obligatorio: sin la aceptación explícita
       // del cliente no se guarda su nombre y contacto. No aplica a clientes
       // que ya existían antes de este checkbox (esos ya están creados).
       if (!consentimiento) return res.status(400).json({ error: 'Falta aceptar el aviso de privacidad' });
       if (!(await db.obtenerEmpresa(empresaId))) return res.status(404).json({ error: 'Empresa no encontrada' });
-      const cliente = await db.crearCliente({ empresaId, nombre, contacto: contacto || '', consentimiento: true });
-      res.status(201).json(clientePublico(cliente));
+      const cliente = await db.crearCliente({ empresaId, nombre, contacto, consentimiento: true });
+      res.status(cliente.yaExistia ? 200 : 201).json({ ...clientePublico(cliente), yaExistia: !!cliente.yaExistia });
 }));
 
 app.get('/api/clientes/:id', ah(async (req, res) => {
@@ -858,7 +983,15 @@ process.on('uncaughtException', (err) => {
 const PORT = process.env.PORT || 3000;
 
 db.init()
-  .then(() => {
+  .then(async () => {
+          // Recuperación si pierdes el teléfono: pon ADMIN_2FA_RESET=si en
+          // Render, deja que reinicie, entra y vuelve a escanear el QR, y
+          // luego BORRA esa variable (si se queda, cada reinicio la vuelve
+          // a desactivar).
+          if (process.env.ADMIN_2FA_RESET === 'si') {
+                  await db.borrarAjusteAdmin('totp_secreto');
+                  console.warn('ADMIN_2FA_RESET=si: se desactivó la verificación en dos pasos del super-admin. Quita esa variable en cuanto la vuelvas a activar.');
+          }
           app.listen(PORT, () => {
                     console.log(`ARGAYES backend corriendo en http://localhost:${PORT}`);
           });

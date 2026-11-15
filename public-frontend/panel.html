@@ -656,7 +656,7 @@
 
   <main class="main">
     <div class="aviso-suscripcion" id="avisoSuscripcion" hidden>
-      <div><strong>Tu suscripción no está activa.</strong> Puedes ver tu información, pero el escáner y los recordatorios están en pausa hasta que la reactives.</div>
+      <div id="avisoSuscripcionTexto"><strong>Tu suscripción no está activa.</strong> Puedes ver tu información, pero el escáner y los recordatorios están en pausa hasta que la reactives.</div>
       <button type="button" class="primary" id="avisoSuscripcionBtn">Reactivar suscripción</button>
     </div>
     <!-- ---- Panel ---- -->
@@ -1391,7 +1391,27 @@
     if(!texto || !btnPagar || !btnAdmin) return;
     var estado = empresa.suscripcionEstado;
     var aviso = document.getElementById('avisoSuscripcion');
-    if(aviso) aviso.hidden = empresa.activa !== false;
+    var avisoTxt = document.getElementById('avisoSuscripcionTexto');
+    var avisoBtn = document.getElementById('avisoSuscripcionBtn');
+    var pagando = estado === 'active' || estado === 'trialing';
+    var finPrueba = empresa.pruebaHasta ? new Date(empresa.pruebaHasta) : null;
+    var diasPrueba = finPrueba ? Math.ceil((finPrueba.getTime() - Date.now()) / 86400000) : null;
+    if(aviso && avisoTxt){
+      aviso.hidden = true;
+      if(empresa.activa === false){
+        aviso.hidden = false;
+        avisoTxt.innerHTML = '<strong>Tu suscripción no está activa.</strong> Puedes ver tu información, pero el escáner y los recordatorios están en pausa hasta que la reactives.';
+        if(avisoBtn) avisoBtn.textContent = 'Reactivar suscripción';
+      } else if(finPrueba && !pagando && diasPrueba <= 0){
+        aviso.hidden = false;
+        avisoTxt.innerHTML = '<strong>Tu prueba gratis terminó.</strong> Tus datos y tus clientes siguen aquí; activa tu suscripción para volver a sumar sellos.';
+        if(avisoBtn) avisoBtn.textContent = 'Activar suscripción';
+      } else if(finPrueba && !pagando && diasPrueba <= 7){
+        aviso.hidden = false;
+        avisoTxt.innerHTML = '<strong>Te ' + (diasPrueba === 1 ? 'queda 1 día' : 'quedan ' + diasPrueba + ' días') + ' de prueba gratis.</strong> Activa tu suscripción para que tu programa no se detenga.';
+        if(avisoBtn) avisoBtn.textContent = 'Activar suscripción';
+      }
+    }
     var NOMBRE_ESTADO = { past_due: 'pago atrasado', unpaid: 'pago pendiente', incomplete: 'pago sin completar', paused: 'en pausa' };
     btnPagar.textContent = 'Pagar con tarjeta';
     if(estado === 'active' || estado === 'trialing'){
@@ -1414,6 +1434,14 @@
       texto.textContent = 'Estamos confirmando tu pago. Esto tarda unos segundos; si no cambia, recarga la página.';
       btnPagar.hidden = true;
       btnAdmin.hidden = false;
+    } else if(finPrueba && diasPrueba > 0){
+      texto.textContent = 'Estás en tu prueba gratis: termina el ' + finPrueba.toLocaleDateString('es-MX', { day: 'numeric', month: 'long' }) + ' (' + (diasPrueba === 1 ? 'queda 1 día' : 'quedan ' + diasPrueba + ' días') + '). Suscríbete por $800 MXN/mes para seguir sin interrupciones.';
+      btnPagar.hidden = false;
+      btnAdmin.hidden = true;
+    } else if(finPrueba){
+      texto.textContent = 'Tu prueba gratis terminó. Suscríbete por $800 MXN/mes para volver a sumar sellos.';
+      btnPagar.hidden = false;
+      btnAdmin.hidden = true;
     } else {
       texto.textContent = 'Todavía no activas el cobro automático. Suscríbete por $800 MXN/mes para que tu panel no dependa de una aprobación manual.';
       btnPagar.hidden = false;

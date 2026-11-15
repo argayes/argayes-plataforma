@@ -410,9 +410,9 @@
         <input id="custName" name="name" type="text" autocomplete="name" maxlength="80" placeholder="Nombre y apellido" required>
       </div>
       <div class="field">
-        <label for="custContact">Tu teléfono o correo <span class="opcional">(opcional)</span></label>
-        <input id="custContact" name="contact" type="text" autocomplete="email" maxlength="120" placeholder="998 123 4567 o tu@correo.com">
-        <span class="hint">Con él recuperas tu tarjeta si cambias de teléfono, y el negocio puede avisarte de tu recompensa.</span>
+        <label for="custContact">Tu teléfono o correo</label>
+        <input id="custContact" name="contact" type="text" autocomplete="tel" maxlength="120" placeholder="998 123 4567 o tu@correo.com" required>
+        <span class="hint">Es lo que identifica tu tarjeta: con él la recuperas si cambias de teléfono, y el negocio puede avisarte de tu recompensa.</span>
       </div>
       <label class="consent-row">
         <input type="checkbox" id="custConsent">
@@ -673,6 +673,12 @@
     }
     hint.hidden = true;
     if(nombre.length < 2) return error('Escribe tu nombre para crear tu tarjeta.', $('custName'));
+    var esCorreo = contacto.indexOf('@') !== -1;
+    var digitos = contacto.replace(/\D/g, '');
+    if(!contacto) return error('Escribe tu teléfono o tu correo: es lo que identifica tu tarjeta.', $('custContact'));
+    if(esCorreo ? !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(contacto) : (/[^0-9+\s().-]/.test(contacto) || digitos.length < 10 || digitos.length > 15)){
+      return error(esCorreo ? 'Revisa tu correo, parece que tiene un error.' : 'Escribe tu teléfono completo, de 10 dígitos.', $('custContact'));
+    }
     if(!$('custConsent').checked) return error('Marca la casilla para aceptar el uso de tus datos en este programa.', $('custConsent'));
 
     enviando = true;
@@ -685,10 +691,9 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ empresaId: empresa.id, nombre: nombre, contacto: contacto, consentimiento: true })
       });
-      // Si el servidor regresó una tarjeta creada hace más de un minuto, es
-      // que ese contacto ya estaba registrado y se recuperó la existente.
-      var yaExistia = cliente.creado && (Date.now() - new Date(cliente.creado).getTime() > 60000);
-      mostrarListo(cliente, { yaExistia: yaExistia });
+      // El servidor dice explícitamente si ese teléfono/correo ya tenía
+      // tarjeta (antes se adivinaba comparando relojes y fallaba).
+      mostrarListo(cliente, { yaExistia: cliente.yaExistia === true });
       $('formRegistro').reset();
     } catch(e){
       error(e.status === 429 ? 'Hay muchos registros desde esta red en este momento. Espera unos minutos e intenta de nuevo.' : e.message);
