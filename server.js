@@ -839,6 +839,13 @@ app.post('/api/voz/:tablero/:tipo', limitadorVoz, ah(async (req, res) => {
                       return res.status(200).json({ ok: false, mensaje: 'NO se registró el pedido: este número está bloqueado por el restaurante por pedidos anteriores que no se recogieron. Dile amablemente al cliente que para pedidos debe acudir en persona al restaurante.' });
               }
               espera = await calcularEspera(tablero, r);
+              // La IA a veces suma mal: si todos los platillos están en el
+              // menú, el total lo calcula el servidor con los precios reales.
+              const calc = totalSegunMenu(datos.articulos, r.menu);
+              if (calc !== null) {
+                      if (datos.total && numeroDe(datos.total) !== calc) datos.total_ia = datos.total;
+                      datos.total = '$' + calc.toLocaleString('es-MX');
+              }
       }
       const ev = await db.guardarEventoVoz(tablero, tipo, datos);
       // Respuesta corta para que la IA pueda decirle al cliente su número.
@@ -846,7 +853,7 @@ app.post('/api/voz/:tablero/:tipo', limitadorVoz, ah(async (req, res) => {
               ok: true,
               folio: ev.id,
               mensaje: tipo === 'pedido'
-                      ? `Pedido recibido en cocina, folio ${ev.id}. Tiempo estimado: ${espera.minutos} minutos.`
+                      ? `Pedido recibido en cocina, folio ${ev.id}. Tiempo estimado: ${espera.minutos} minutos.${datos.total_ia ? ` OJO: el total correcto según el menú es ${datos.total} (no ${datos.total_ia}); díselo al cliente disculpándote por el error.` : ''}`
                       : `Reservación registrada, folio ${ev.id}`
       });
 }));
@@ -856,6 +863,34 @@ app.post('/api/voz/:tablero/:tipo', limitadorVoz, ah(async (req, res) => {
 function numeroClave(v) {
       const d = String(v || '').replace(/\D/g, '');
       return d.length >= 7 ? d.slice(-10) : '';
+}
+
+function numeroDe(v) {
+      const n = parseFloat(String(v || '').replace(/[^\d.]/g, ''));
+      return Number.isFinite(n) ? n : null;
+}
+function normalizar(t) {
+      return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\([^)]*\)/g, ' ').replace(/[^a-z0-9ñ ]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+// Suma "2x Tacos de pescado (sin cebolla)" con los precios del menú. Devuelve
+// null si algún renglón no se reconoce (entonces se deja el total de la IA).
+function totalSegunMenu(articulos, menu) {
+      const platillos = (menu || []).filter((p) => numeroDe(p.precio) !== null).map((p) => ({ n: normalizar(p.nombre), precio: numeroDe(p.precio) }));
+      if (!platillos.length) return null;
+      const lineas = String(articulos || '').split(/\n|;/).map((l) => l.trim()).filter(Boolean);
+      if (!lineas.length) return null;
+      let total = 0;
+      for (const l of lineas) {
+              const m = l.match(/^(\d+)\s*(?:x|×|\*)?\s*(.+)$/i);
+              const cant = m ? parseInt(m[1], 10) : 1;
+              const nombre = normalizar(m ? m[2] : l);
+              if (!nombre || cant < 1 || cant > 200) return null;
+              // El nombre más largo del menú contenido en el renglón (o al revés).
+              const cand = platillos.filter((p) => nombre.includes(p.n) || p.n.includes(nombre)).sort((a, b) => b.n.length - a.n.length);
+              if (!cand.length) return null;
+              total += cant * cand[0].precio;
+      }
+      return Math.round(total * 100) / 100;
 }
 
 // Tiempo de espera de los pedidos para llevar: cada "tanda" de pedidos que
