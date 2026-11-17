@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Comandas en vivo · ARGAYES</title>
+<link rel="icon" type="image/png" href="favicon-48.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#121417; --panel:#1b1e23; --panel-2:#22262c; --line:#2f343b;
+    --ink:#f2efe8; --muted:#9aa0a8; --accent:#d9a84a; --accent-ink:#1b1206;
+    --nuevo:#e5a64a; --prep:#5aa9e6; --listo:#58c08a; --reserva:#b58cf0;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .marca{display:flex;align-items:center;gap:10px}
+  .marca b{font-size:20px;letter-spacing:.02em}
+  .vivo{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+  .vivo i{width:9px;height:9px;border-radius:50%;background:#58c08a;box-shadow:0 0 0 0 rgba(88,192,138,.7);animation:latido 1.6s infinite}
+  .vivo.caido i{background:#e5604a;animation:none}
+  @keyframes latido{0%{box-shadow:0 0 0 0 rgba(88,192,138,.6)}70%{box-shadow:0 0 0 10px rgba(88,192,138,0)}100%{box-shadow:0 0 0 0 rgba(88,192,138,0)}}
+  .acciones{display:flex;gap:8px;flex-wrap:wrap}
+  button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);padding:9px 14px;font-weight:600}
+  button.primario{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+  main{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.1fr);gap:14px;padding:16px 20px 40px}
+  @media (max-width:1100px){main{grid-template-columns:1fr 1fr}}
+  @media (max-width:640px){main{grid-template-columns:1fr;padding:12px 12px 40px}header{padding:12px}}
+  .col{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px;min-height:200px}
+  .col h2{margin:2px 4px 12px;font-size:13px;letter-spacing:.12em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
+  .col h2 span{background:var(--panel-2);border-radius:999px;padding:2px 9px;font-size:12px;color:var(--muted)}
+  .col[data-c="nuevo"] h2{color:var(--nuevo)} .col[data-c="en_preparacion"] h2{color:var(--prep)}
+  .col[data-c="listo"] h2{color:var(--listo)} .col[data-c="reservaciones"] h2{color:var(--reserva)}
+  .vacio{color:var(--muted);font-size:14px;text-align:center;padding:28px 8px}
+  .tarjeta{background:var(--panel-2);border:1px solid var(--line);border-left:5px solid var(--nuevo);border-radius:12px;padding:12px 12px 10px;margin-bottom:10px}
+  .tarjeta.prep{border-left-color:var(--prep)} .tarjeta.listo{border-left-color:var(--listo)} .tarjeta.reserva{border-left-color:var(--reserva)}
+  .tarjeta.recien{animation:entra .6s ease-out}
+  @keyframes entra{from{transform:translateY(-8px);box-shadow:0 0 0 3px var(--accent)}to{transform:none;box-shadow:none}}
+  .t-cab{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .folio{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted)}
+  .nombre{font-weight:700;font-size:17px}
+  .articulos{white-space:pre-wrap;font-size:16px;line-height:1.45;margin:8px 0}
+  .meta{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}
+  .meta span{font-size:12px;background:#2a2f36;border-radius:999px;padding:3px 9px;color:#d6d2c8}
+  .meta span.idioma{background:#3a2f17;color:#f0c450}
+  .notas{font-size:13px;color:#f0c450;margin-top:4px}
+  .t-acc{display:flex;gap:6px;margin-top:10px}
+  .t-acc button{flex:1;padding:8px 10px;font-size:14px}
+  .aviso{margin:14px 20px 0;padding:12px 14px;border:1px solid #4a3a17;background:#2a2213;color:#f0d7a0;border-radius:12px;font-size:14px;line-height:1.5}
+  .aviso code{background:#1b160c;padding:2px 6px;border-radius:6px;font-size:12px;word-break:break-all}
+  [hidden]{display:none !important}
+</style>
+</head>
+<body>
+<header>
+  <div class="marca">
+    <b>Comandas en vivo</b>
+    <span class="vivo" id="estadoVivo"><i></i><span id="estadoTexto">Conectando…</span></span>
+  </div>
+  <div class="acciones">
+    <button type="button" id="btnSonido" class="primario">🔔 Activar sonido</button>
+    <button type="button" id="btnInfo">Conexión de la IA</button>
+  </div>
+</header>
+
+<div class="aviso" id="info" hidden>
+  <b>Para conectar la recepcionista de IA</b> a esta pantalla, en las herramientas del agente de voz usa estas direcciones (método POST):<br>
+  Pedidos: <code id="urlPedido"></code><br>
+  Reservaciones: <code id="urlReserva"></code><br>
+  Guarda el link de esta página: es la llave de este tablero.
+</div>
+
+<main>
+  <section class="col" data-c="nuevo"><h2>Nuevos <span id="nNuevo">0</span></h2><div id="cNuevo"></div></section>
+  <section class="col" data-c="en_preparacion"><h2>En preparación <span id="nPrep">0</span></h2><div id="cPrep"></div></section>
+  <section class="col" data-c="listo"><h2>Listos <span id="nListo">0</span></h2><div id="cListo"></div></section>
+  <section class="col" data-c="reservaciones"><h2>Reservaciones <span id="nRes">0</span></h2><div id="cRes"></div></section>
+</main>
+
+<script>
+(function(){
+  var BACKEND = 'https://argayes-backend.onrender.com';
+  try {
+    var dev = localStorage.getItem('argayes-backend-url');
+    if(dev && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(dev) && /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) BACKEND = dev;
+  } catch(e){}
+
+  // El tablero va en el link (?t=...). Si no hay, se crea uno nuevo y aleatorio.
+  var params = new URLSearchParams(location.search);
+  var tablero = (params.get('t') || '').toLowerCase();
+  if(!/^[a-z0-9-]{16,64}$/.test(tablero)){
+    var a = new Uint8Array(12); crypto.getRandomValues(a);
+    tablero = 'demo-' + Array.from(a, function(b){ return b.toString(16).padStart(2, '0'); }).join('');
+    params.set('t', tablero);
+    history.replaceState(null, '', location.pathname + '?' + params.toString());
+    document.getElementById('info').hidden = false;
+  }
+  document.getElementById('urlPedido').textContent = BACKEND + '/api/voz/' + tablero + '/pedido';
+  document.getElementById('urlReserva').textContent = BACKEND + '/api/voz/' + tablero + '/reservacion';
+  document.getElementById('btnInfo').addEventListener('click', function(){
+    var i = document.getElementById('info'); i.hidden = !i.hidden;
+  });
+
+  // Sonido al llegar un pedido (el navegador exige un clic antes de sonar).
+  var audio = null;
+  function campana(){
+    if(!audio) return;
+    var t = audio.currentTime;
+    [880, 1320].forEach(function(f, k){
+      var o = audio.createOscillator(), g = audio.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t + k * 0.18);
+      g.gain.exponentialRampToValueAtTime(0.35, t + k * 0.18 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + k * 0.18 + 0.5);
+      o.connect(g).connect(audio.destination); o.start(t + k * 0.18); o.stop(t + k * 0.18 + 0.55);
+    });
+  }
+  document.getElementById('btnSonido').addEventListener('click', function(){
+    try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); campana(); } catch(e){}
+    this.textContent = '🔔 Sonido activado'; this.classList.remove('primario');
+  });
+
+  var eventos = {};   // id → evento
+  var ultimoId = 0;
+  var primeraCarga = true;
+
+  function el(tag, cls, txt){ var e = document.createElement(tag); if(cls) e.className = cls; if(txt !== undefined) e.textContent = txt; return e; }
+  function hora(iso){ try { return new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }); } catch(e){ return ''; } }
+
+  function tarjeta(ev, recien){
+    var d = ev.datos || {};
+    var esRes = ev.tipo === 'reservacion';
+    var t = el('div', 'tarjeta' + (esRes ? ' reserva' : ev.estado === 'en_preparacion' ? ' prep' : ev.estado === 'listo' ? ' listo' : '') + (recien ? ' recien' : ''));
+    var cab = el('div', 't-cab');
+    cab.appendChild(el('span', 'nombre', d.nombre || 'Cliente'));
+    cab.appendChild(el('span', 'folio', '#' + ev.id + ' · ' + hora(ev.creado)));
+    t.appendChild(cab);
+    if(esRes){
+      t.appendChild(el('div', 'articulos', (d.personas ? d.personas + ' personas' : '') + (d.fecha ? ' · ' + d.fecha : '') + (d.hora ? ' · ' + d.hora : '')));
+    } else {
+      // Un platillo por renglón (la IA a veces los separa con ; o comas antes de una cantidad).
+      t.appendChild(el('div', 'articulos', String(d.articulos || '').replace(/\s*;\s*/g, '\n').replace(/,\s*(?=\d+\s*x)/gi, '\n')));
+    }
+    var meta = el('div', 'meta');
+    if(d.idioma) meta.appendChild(el('span', 'idioma', '🌐 ' + d.idioma));
+    if(!esRes && d.modalidad) meta.appendChild(el('span', '', d.modalidad));
+    if(!esRes && d.hora) meta.appendChild(el('span', '', '🕒 ' + d.hora));
+    if(!esRes && d.total) meta.appendChild(el('span', '', '💵 ' + d.total));
+    if(d.telefono) meta.appendChild(el('span', '', '📞 ' + d.telefono));
+    t.appendChild(meta);
+    if(d.notas) t.appendChild(el('div', 'notas', '⚠ ' + d.notas));
+    var acc = el('div', 't-acc');
+    function boton(txt, estado){
+      var b = el('button', '', txt); b.type = 'button';
+      b.addEventListener('click', function(){ cambiar(ev, estado); });
+      acc.appendChild(b);
+    }
+    if(esRes){ if(ev.estado !== 'confirmada') boton('Confirmar', 'confirmada'); }
+    else if(ev.estado === 'nuevo') boton('Preparar', 'en_preparacion');
+    else if(ev.estado === 'en_preparacion') boton('Listo', 'listo');
+    if(acc.children.length) t.appendChild(acc);
+    return t;
+  }
+
+  var recientes = {};
+  function pintar(){
+    var cols = { nuevo: [], en_preparacion: [], listo: [], reservaciones: [] };
+    Object.keys(eventos).map(Number).sort(function(a, b){ return b - a; }).forEach(function(id){
+      var ev = eventos[id];
+      if(ev.tipo === 'reservacion') cols.reservaciones.push(ev);
+      else (cols[ev.estado] || cols.nuevo).push(ev);
+    });
+    [['nuevo', 'cNuevo', 'nNuevo', 'Esperando pedidos de la IA…'], ['en_preparacion', 'cPrep', 'nPrep', 'Nada en preparación'],
+     ['listo', 'cListo', 'nListo', 'Nada listo todavía'], ['reservaciones', 'cRes', 'nRes', 'Sin reservaciones']].forEach(function(c){
+      var cont = document.getElementById(c[1]); cont.innerHTML = '';
+      document.getElementById(c[2]).textContent = cols[c[0]].length;
+      if(!cols[c[0]].length){ cont.appendChild(el('div', 'vacio', c[3])); return; }
+      cols[c[0]].forEach(function(ev){ cont.appendChild(tarjeta(ev, recientes[ev.id])); });
+    });
+    recientes = {};
+  }
+
+  function cambiar(ev, estado){
+    ev.estado = estado; pintar();
+    fetch(BACKEND + '/api/voz/' + tablero + '/eventos/' + ev.id, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estado: estado })
+    }).catch(function(){});
+  }
+
+  function estadoConexion(ok){
+    var v = document.getElementById('estadoVivo');
+    v.classList.toggle('caido', !ok);
+    document.getElementById('estadoTexto').textContent = ok ? 'En vivo' : 'Reconectando…';
+  }
+
+  async function revisar(){
+    try {
+      var r = await fetch(BACKEND + '/api/voz/' + tablero + '/eventos?desde=' + ultimoId, { cache: 'no-store' });
+      if(!r.ok) throw new Error(r.status);
+      var lista = await r.json();
+      var hayNuevo = false;
+      lista.forEach(function(ev){
+        if(!eventos[ev.id]){ hayNuevo = true; if(!primeraCarga) recientes[ev.id] = true; }
+        eventos[ev.id] = ev;
+        if(ev.id > ultimoId) ultimoId = ev.id;
+      });
+      if(hayNuevo || primeraCarga) pintar();
+      if(hayNuevo && !primeraCarga) campana();
+      primeraCarga = false;
+      estadoConexion(true);
+    } catch(e){ estadoConexion(false); }
+    setTimeout(revisar, 2000);
+  }
+  pintar();
+  revisar();
+})();
+</script>
+</body>
+</html>

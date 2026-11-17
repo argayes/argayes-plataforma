@@ -778,6 +778,68 @@ app.get('/api/wallet/google/:clienteId', ah(async (req, res) => {
       }
 }));
 
+// ---------- Recepcionista de IA por voz (demo) ----------
+// La IA (en la plataforma de voz) llama a estas rutas cuando toma un pedido o
+// una reservación por teléfono; la pantalla comandas.html las muestra en vivo.
+// El "tablero" es un identificador largo y aleatorio que funciona como llave.
+const TABLERO_VALIDO = /^[a-z0-9-]{16,64}$/;
+const limitadorVoz = rateLimit({
+      keyGenerator: ipCliente,
+      windowMs: 60 * 1000,
+      limit: 60,
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: { error: 'Demasiadas solicitudes.' }
+});
+function textoCorto(v, max) {
+      if (v === undefined || v === null) return '';
+      return String(v).replace(/[\u0000-\u0009\u000b-\u001f]/g, ' ').trim().slice(0, max); // se conservan los saltos de línea
+}
+app.post('/api/voz/:tablero/:tipo', limitadorVoz, ah(async (req, res) => {
+      const { tablero, tipo } = req.params;
+      if (!TABLERO_VALIDO.test(tablero)) return res.status(400).json({ error: 'Tablero inválido' });
+      if (tipo !== 'pedido' && tipo !== 'reservacion') return res.status(400).json({ error: 'Tipo inválido' });
+      const b = req.body || {};
+      const datos = tipo === 'pedido'
+              ? {
+                      nombre: textoCorto(b.nombre, 80),
+                      telefono: textoCorto(b.telefono, 30),
+                      articulos: textoCorto(b.articulos, 1200),
+                      modalidad: textoCorto(b.modalidad, 40),
+                      hora: textoCorto(b.hora, 40),
+                      notas: textoCorto(b.notas, 400),
+                      total: textoCorto(b.total, 30),
+                      idioma: textoCorto(b.idioma, 30)
+              }
+              : {
+                      nombre: textoCorto(b.nombre, 80),
+                      telefono: textoCorto(b.telefono, 30),
+                      fecha: textoCorto(b.fecha, 40),
+                      hora: textoCorto(b.hora, 40),
+                      personas: textoCorto(b.personas, 10),
+                      notas: textoCorto(b.notas, 400),
+                      idioma: textoCorto(b.idioma, 30)
+              };
+      if (!datos.nombre || (tipo === 'pedido' && !datos.articulos)) {
+              return res.status(400).json({ error: 'Faltan datos: nombre' + (tipo === 'pedido' ? ' y artículos' : '') });
+      }
+      const ev = await db.guardarEventoVoz(tablero, tipo, datos);
+      // Respuesta corta para que la IA pueda decirle al cliente su número.
+      res.status(201).json({ ok: true, folio: ev.id, mensaje: tipo === 'pedido' ? `Pedido recibido en cocina, folio ${ev.id}` : `Reservación registrada, folio ${ev.id}` });
+}));
+app.get('/api/voz/:tablero/eventos', limitadorVoz, ah(async (req, res) => {
+      if (!TABLERO_VALIDO.test(req.params.tablero)) return res.status(400).json({ error: 'Tablero inválido' });
+      res.json(await db.eventosVoz(req.params.tablero, req.query.desde));
+}));
+app.patch('/api/voz/:tablero/eventos/:id', limitadorVoz, ah(async (req, res) => {
+      if (!TABLERO_VALIDO.test(req.params.tablero)) return res.status(400).json({ error: 'Tablero inválido' });
+      const estado = (req.body || {}).estado;
+      if (!['nuevo', 'en_preparacion', 'listo', 'confirmada'].includes(estado)) return res.status(400).json({ error: 'Estado inválido' });
+      const r = await db.marcarEventoVoz(req.params.tablero, Number(req.params.id), estado);
+      if (!r) return res.status(404).json({ error: 'No encontrado' });
+      res.json(r);
+}));
+
 // Imágenes públicas para Google Wallet (Google solo acepta URLs https, no
 // base64). La "versión" en la URL es una huella del diseño: si el negocio
 // cambia algo, la URL cambia; por eso se pueden guardar en caché un año.
