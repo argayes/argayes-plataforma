@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Menú del restaurante · ARGAYES</title>
+<link rel="icon" type="image/png" href="favicon-48.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#121417; --panel:#1b1e23; --panel-2:#22262c; --line:#2f343b;
+    --ink:#f2efe8; --muted:#9aa0a8; --accent:#d9a84a; --accent-ink:#1b1206;
+    --ok:#58c08a; --mal:#e5604a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  header b{font-size:20px}
+  a{color:var(--accent)}
+  .envoltura{max-width:920px;margin:0 auto;padding:18px 16px 120px}
+  section.caja{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
+  section.caja h2{margin:0 0 4px;font-size:17px}
+  .ayuda{color:var(--muted);font-size:14px;margin:0 0 14px;line-height:1.5}
+  .rejilla{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:640px){.rejilla{grid-template-columns:1fr}}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px;font-weight:500}
+  input,textarea{width:100%;font:inherit;font-size:15px;color:var(--ink);background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  textarea{resize:vertical;min-height:64px}
+  input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+  .ancho{grid-column:1/-1}
+  button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);padding:9px 14px;font-weight:600}
+  button.primario{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+  button.chico{padding:6px 10px;font-size:13px}
+  .categoria{border:1px solid var(--line);border-radius:12px;margin-bottom:14px;overflow:hidden}
+  .cat-cab{display:flex;gap:8px;align-items:center;background:var(--panel-2);padding:10px}
+  .cat-cab input{font-weight:700;background:transparent;border-color:transparent}
+  .cat-cab input:hover{border-color:var(--line)}
+  .platillo{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,2.4fr) 90px auto auto;gap:8px;align-items:center;padding:8px 10px;border-top:1px solid var(--line)}
+  .platillo.agotado input{opacity:.5;text-decoration:line-through}
+  @media (max-width:720px){.platillo{grid-template-columns:1fr 90px;}.platillo .desc{grid-column:1/-1;order:3}.platillo .agot{order:4}.platillo .quitar{order:5;justify-self:end}}
+  .agot{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);white-space:nowrap;cursor:pointer;user-select:none}
+  .agot input{width:18px;height:18px;accent-color:var(--mal)}
+  .quitar{background:transparent;border-color:transparent;color:var(--muted);font-size:18px;padding:4px 8px}
+  .quitar:hover{color:var(--mal)}
+  .cat-pie{padding:8px 10px;border-top:1px solid var(--line)}
+  .barra{position:fixed;left:0;right:0;bottom:0;background:rgba(18,20,23,.94);backdrop-filter:blur(6px);border-top:1px solid var(--line);padding:12px 16px;display:flex;justify-content:center}
+  .barra .dentro{max-width:920px;width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  #estado{font-size:14px;color:var(--muted)}
+  #estado.pendiente{color:var(--accent)} #estado.ok{color:var(--ok)} #estado.error{color:var(--mal)}
+  dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:18px;width:min(640px,94vw)}
+  dialog::backdrop{background:rgba(0,0,0,.6)}
+  dialog textarea{min-height:260px;font-family:ui-monospace,Menlo,monospace;font-size:13px}
+  .fila{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+  [hidden]{display:none !important}
+</style>
+</head>
+<body>
+<header>
+  <b>Menú del restaurante</b>
+  <a id="linkCocina" href="#">← Pantalla de cocina</a>
+</header>
+
+<div class="envoltura">
+  <p class="ayuda">Todo lo que guardes aquí lo usa la recepcionista de IA <b>al instante</b>, en la siguiente llamada. Si se acaba un platillo, márcalo como <b>agotado</b> y deja de ofrecerlo.</p>
+
+  <section class="caja">
+    <h2>Datos del restaurante</h2>
+    <p class="ayuda">Lo que la recepcionista contesta cuando le preguntan por horarios, ubicación o pagos.</p>
+    <div class="rejilla">
+      <div><label for="fNombre">Nombre</label><input id="fNombre" maxlength="100"></div>
+      <div><label for="fHorario">Horario</label><input id="fHorario" maxlength="400" placeholder="Todos los días de 1:00 pm a 11:00 pm"></div>
+      <div class="ancho"><label for="fDescripcion">Tipo de cocina / descripción</label><input id="fDescripcion" maxlength="400" placeholder="Mariscos y cocina del Caribe mexicano"></div>
+      <div class="ancho"><label for="fUbicacion">Ubicación y cómo llegar</label><input id="fUbicacion" maxlength="400"></div>
+      <div class="ancho"><label for="fPagos">Formas de pago</label><input id="fPagos" maxlength="300" placeholder="Efectivo, Visa, Mastercard, American Express"></div>
+      <div class="ancho"><label for="fPromos">Promociones vigentes</label><textarea id="fPromos" maxlength="1500" placeholder="Ej.: Martes 2x1 en margaritas de 5 a 8 pm. Déjalo vacío si no hay."></textarea></div>
+      <div class="ancho"><label for="fExtra">Otros datos (estacionamiento, música en vivo, opciones vegetarianas…)</label><textarea id="fExtra" maxlength="2000"></textarea></div>
+    </div>
+  </section>
+
+  <section class="caja">
+    <h2>Cocina</h2>
+    <p class="ayuda">Con esto la recepcionista calcula cuánto va a tardar un pedido para llevar según lo que hay en la cocina.</p>
+    <div class="rejilla">
+      <div><label for="fMinutos">Minutos que tarda un pedido normal</label><input id="fMinutos" type="number" min="5" max="180" inputmode="numeric"></div>
+      <div><label for="fCapacidad">Pedidos que la cocina saca a la vez</label><input id="fCapacidad" type="number" min="1" max="100" inputmode="numeric"></div>
+      <div class="ancho ayuda" id="ejemploEspera" style="margin:0"></div>
+    </div>
+  </section>
+
+  <section class="caja" id="cajaBloqueados" hidden>
+    <h2>Números bloqueados</h2>
+    <p class="ayuda">Números marcados como broma en la pantalla de cocina. La recepcionista no les toma pedidos (sí puede darles información).</p>
+    <div id="bloqueados"></div>
+  </section>
+
+  <section class="caja">
+    <h2>Menú</h2>
+    <p class="ayuda">Organizado por categorías. Para cargar un menú largo de golpe usa <b>Pegar menú</b>.</p>
+    <div id="categorias"></div>
+    <div class="fila" style="justify-content:flex-start">
+      <button type="button" id="btnCategoria">+ Categoría</button>
+      <button type="button" id="btnImportar">Pegar menú</button>
+    </div>
+  </section>
+</div>
+
+<div class="barra"><div class="dentro">
+  <span id="estado">Cargando…</span>
+  <button type="button" class="primario" id="btnGuardar">Guardar cambios</button>
+</div></div>
+
+<dialog id="dlgImportar">
+  <h2 style="margin:0 0 6px;font-size:17px">Pegar menú</h2>
+  <p class="ayuda">Una categoría por renglón empezando con <b>#</b>, y luego un platillo por renglón: <b>nombre — precio</b>. Lo que vaya entre paréntesis se guarda como descripción. Se <b>agrega</b> a lo que ya hay.</p>
+  <textarea id="txtImportar" placeholder="# Entradas&#10;Guacamole con totopos — 190&#10;Ceviche de camarón (con mango y chile habanero) — 260&#10;# Postres&#10;Pastel de tres leches — 150"></textarea>
+  <div class="fila">
+    <button type="button" id="btnCancelarImp">Cancelar</button>
+    <button type="button" class="primario" id="btnAplicarImp">Agregar al menú</button>
+  </div>
+</dialog>
+
+<script>
+(function(){
+  var BACKEND = 'https://argayes-backend.onrender.com';
+  try {
+    var dev = localStorage.getItem('argayes-backend-url');
+    if(dev && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(dev) && /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) BACKEND = dev;
+  } catch(e){}
+
+  var tablero = (new URLSearchParams(location.search).get('t') || '').toLowerCase();
+  var $ = function(id){ return document.getElementById(id); };
+  if(!/^[a-z0-9-]{16,64}$/.test(tablero)){
+    document.querySelector('.envoltura').innerHTML = '<p class="ayuda">Este link no es válido. Abre el menú desde la pantalla de cocina.</p>';
+    $('btnGuardar').hidden = true; $('estado').textContent = '';
+    return;
+  }
+  $('linkCocina').href = 'comandas.html?t=' + encodeURIComponent(tablero);
+
+  // Estado en memoria: lista de categorías, cada una con sus platillos.
+  var categorias = [];
+  var sucio = false;
+
+  function marcarSucio(){
+    sucio = true;
+    var e = $('estado'); e.className = 'pendiente'; e.textContent = 'Tienes cambios sin guardar';
+  }
+  window.addEventListener('beforeunload', function(ev){ if(sucio){ ev.preventDefault(); ev.returnValue = ''; } });
+
+  function el(tag, attrs){ var e = document.createElement(tag); if(attrs) Object.keys(attrs).forEach(function(k){ if(k === 'text') e.textContent = attrs[k]; else e.setAttribute(k, attrs[k]); }); return e; }
+
+  function pintar(){
+    var cont = $('categorias'); cont.innerHTML = '';
+    if(!categorias.length){
+      cont.appendChild(el('p', { class: 'ayuda', text: 'Todavía no hay platillos. Agrega una categoría o pega el menú completo.' }));
+    }
+    categorias.forEach(function(cat, ci){
+      var caja = el('div', { class: 'categoria' });
+      var cab = el('div', { class: 'cat-cab' });
+      var nom = el('input', { value: cat.nombre, maxlength: '60', 'aria-label': 'Nombre de la categoría' });
+      nom.value = cat.nombre;
+      nom.addEventListener('input', function(){ cat.nombre = nom.value; marcarSucio(); });
+      var quitarCat = el('button', { type: 'button', class: 'quitar', title: 'Quitar categoría', 'aria-label': 'Quitar categoría', text: '✕' });
+      quitarCat.addEventListener('click', function(){
+        if(cat.platillos.length && !confirm('¿Quitar la categoría "' + cat.nombre + '" y sus ' + cat.platillos.length + ' platillos?')) return;
+        categorias.splice(ci, 1); marcarSucio(); pintar();
+      });
+      cab.appendChild(nom); cab.appendChild(quitarCat);
+      caja.appendChild(cab);
+
+      cat.platillos.forEach(function(p, pi){
+        var fila = el('div', { class: 'platillo' + (p.agotado ? ' agotado' : '') });
+        function campo(clave, ph, cls, max){
+          var i = el('input', { placeholder: ph, maxlength: String(max), 'aria-label': ph });
+          if(cls) i.className = cls;
+          i.value = p[clave] || '';
+          i.addEventListener('input', function(){ p[clave] = i.value; marcarSucio(); });
+          return i;
+        }
+        fila.appendChild(campo('nombre', 'Platillo', '', 120));
+        var d = campo('descripcion', 'Descripción (opcional)', '', 300); var dw = el('div', { class: 'desc' }); dw.appendChild(d); fila.appendChild(dw);
+        var pr = campo('precio', 'Precio', '', 30); pr.inputMode = 'decimal'; fila.appendChild(pr);
+        var ag = el('label', { class: 'agot' });
+        var cb = el('input', { type: 'checkbox' }); cb.checked = !!p.agotado;
+        cb.addEventListener('change', function(){ p.agotado = cb.checked; fila.classList.toggle('agotado', cb.checked); marcarSucio(); });
+        ag.appendChild(cb); ag.appendChild(document.createTextNode('Agotado'));
+        fila.appendChild(ag);
+        var q = el('button', { type: 'button', class: 'quitar', title: 'Quitar platillo', 'aria-label': 'Quitar platillo', text: '✕' });
+        q.addEventListener('click', function(){ cat.platillos.splice(pi, 1); marcarSucio(); pintar(); });
+        fila.appendChild(q);
+        caja.appendChild(fila);
+      });
+
+      var pie = el('div', { class: 'cat-pie' });
+      var mas = el('button', { type: 'button', class: 'chico', text: '+ Platillo' });
+      mas.addEventListener('click', function(){
+        cat.platillos.push({ nombre: '', descripcion: '', precio: '', agotado: false }); marcarSucio(); pintar();
+        var filas = $('categorias').querySelectorAll('.categoria')[ci].querySelectorAll('.platillo');
+        var ultima = filas[filas.length - 1]; if(ultima) ultima.querySelector('input').focus();
+      });
+      pie.appendChild(mas);
+      caja.appendChild(pie);
+      cont.appendChild(caja);
+    });
+  }
+
+  function desdeMenu(menu){
+    var mapa = {}; categorias = [];
+    (menu || []).forEach(function(p){
+      var c = p.categoria || 'Otros';
+      if(!mapa[c]){ mapa[c] = { nombre: c, platillos: [] }; categorias.push(mapa[c]); }
+      mapa[c].platillos.push({ nombre: p.nombre, descripcion: p.descripcion || '', precio: p.precio || '', agotado: !!p.agotado });
+    });
+  }
+  function aMenu(){
+    var menu = [];
+    categorias.forEach(function(c){
+      c.platillos.forEach(function(p){
+        if(String(p.nombre || '').trim()) menu.push({ categoria: String(c.nombre || '').trim() || 'Otros', nombre: p.nombre.trim(), descripcion: (p.descripcion || '').trim(), precio: String(p.precio || '').trim(), agotado: !!p.agotado });
+      });
+    });
+    return menu;
+  }
+
+  function ejemplo(){
+    var m = parseInt($('fMinutos').value, 10) || 25, c = parseInt($('fCapacidad').value, 10) || 6;
+    $('ejemploEspera').textContent = 'Así queda: con 0 a ' + (c - 1) + ' pedidos en la cocina, ' + m + ' min; con ' + c + ' a ' + (2 * c - 1) + ', ' + (2 * m) + ' min; con ' + (2 * c) + ' o más, ' + (3 * m) + ' min o más.';
+  }
+
+  var campos = { fNombre: 'nombre', fHorario: 'horario', fDescripcion: 'descripcion', fUbicacion: 'ubicacion', fPagos: 'pagos', fPromos: 'promociones', fExtra: 'extra' };
+  Object.keys(campos).forEach(function(id){ $(id).addEventListener('input', marcarSucio); });
+  ['fMinutos', 'fCapacidad'].forEach(function(id){ $(id).addEventListener('input', function(){ marcarSucio(); ejemplo(); }); });
+
+  function pintarBloqueados(lista){
+    $('cajaBloqueados').hidden = !lista.length;
+    var cont = $('bloqueados'); cont.innerHTML = '';
+    lista.forEach(function(n){
+      var f = el('div', { class: 'fila' }); f.style.justifyContent = 'space-between'; f.style.marginTop = '6px';
+      f.appendChild(el('span', { text: '🚫 ' + n }));
+      var b = el('button', { type: 'button', class: 'chico', text: 'Desbloquear' });
+      b.addEventListener('click', async function(){
+        b.disabled = true;
+        try {
+          var r = await fetch(BACKEND + '/api/voz/' + tablero + '/bloqueados/' + encodeURIComponent(n), { method: 'DELETE' });
+          if(r.ok) pintarBloqueados((await r.json()).bloqueados || []);
+        } catch(e){ b.disabled = false; }
+      });
+      f.appendChild(b); cont.appendChild(f);
+    });
+  }
+
+  async function cargar(){
+    try {
+      var r = await fetch(BACKEND + '/api/voz/' + tablero + '/restaurante', { cache: 'no-store' });
+      if(!r.ok) throw new Error();
+      var d = await r.json();
+      Object.keys(campos).forEach(function(id){ $(id).value = (d.info || {})[campos[id]] || ''; });
+      $('fMinutos').value = d.minutosBase || 25;
+      $('fCapacidad').value = d.capacidad || 6;
+      desdeMenu(d.menu);
+      pintar(); ejemplo(); pintarBloqueados(d.bloqueados || []);
+      $('estado').className = ''; $('estado').textContent = d.actualizado ? 'Guardado · ' + new Date(d.actualizado).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin guardar todavía';
+    } catch(e){
+      $('estado').className = 'error'; $('estado').textContent = 'No se pudo cargar. Revisa tu internet y recarga la página.';
+    }
+  }
+
+  $('btnGuardar').addEventListener('click', async function(){
+    var b = this; b.disabled = true; var e = $('estado'); e.className = ''; e.textContent = 'Guardando…';
+    var info = {}; Object.keys(campos).forEach(function(id){ info[campos[id]] = $(id).value.trim(); });
+    try {
+      var r = await fetch(BACKEND + '/api/voz/' + tablero + '/restaurante', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ info: info, menu: aMenu(), minutosBase: $('fMinutos').value, capacidad: $('fCapacidad').value })
+      });
+      if(!r.ok) throw new Error();
+      var d = await r.json();
+      sucio = false; e.className = 'ok'; e.textContent = '✓ Guardado · ' + d.platillos + ' platillos. La recepcionista ya lo usa.';
+    } catch(err){
+      e.className = 'error'; e.textContent = 'No se pudo guardar. Intenta de nuevo.';
+    }
+    b.disabled = false;
+  });
+
+  $('btnCategoria').addEventListener('click', function(){
+    categorias.push({ nombre: 'Nueva categoría', platillos: [{ nombre: '', descripcion: '', precio: '', agotado: false }] });
+    marcarSucio(); pintar();
+    var cs = $('categorias').querySelectorAll('.cat-cab input'); var u = cs[cs.length - 1]; if(u){ u.focus(); u.select(); }
+  });
+
+  // Importar un menú pegado como texto.
+  var dlg = $('dlgImportar');
+  $('btnImportar').addEventListener('click', function(){ $('txtImportar').value = ''; dlg.showModal(); });
+  $('btnCancelarImp').addEventListener('click', function(){ dlg.close(); });
+  $('btnAplicarImp').addEventListener('click', function(){
+    var actual = null, n = 0;
+    function cat(nombre){
+      var c = categorias.find(function(x){ return x.nombre.toLowerCase() === nombre.toLowerCase(); });
+      if(!c){ c = { nombre: nombre, platillos: [] }; categorias.push(c); }
+      return c;
+    }
+    $('txtImportar').value.split(/\r?\n/).forEach(function(l){
+      l = l.trim(); if(!l) return;
+      if(/^#+/.test(l)){ actual = cat(l.replace(/^#+\s*/, '') || 'Otros'); return; }
+      l = l.replace(/^[-•*]\s*/, '');
+      var precio = '';
+      var m = l.match(/\s*(?:—|–|-|:|\.{2,}|\|)?\s*\$?\s*(\d[\d,]*(?:\.\d{1,2})?)\s*(?:mxn|pesos)?\s*$/i);
+      if(m && m.index > 0){ precio = m[1].replace(/,/g, ''); l = l.slice(0, m.index).trim(); }
+      var desc = '';
+      var d = l.match(/\(([^)]*)\)\s*$/);
+      if(d){ desc = d[1].trim(); l = l.slice(0, d.index).trim(); }
+      l = l.replace(/\s*(—|–|-|:)\s*$/, '');
+      if(!l) return;
+      (actual || cat('Menú')).platillos.push({ nombre: l, descripcion: desc, precio: precio, agotado: false });
+      n++;
+    });
+    dlg.close();
+    if(n){ marcarSucio(); pintar(); $('estado').textContent = 'Se agregaron ' + n + ' platillos. No olvides guardar.'; }
+  });
+
+  cargar();
+})();
+</script>
+</body>
+</html>

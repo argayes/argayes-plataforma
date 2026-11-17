@@ -809,7 +809,11 @@ app.post('/api/voz/:tablero/:tipo', limitadorVoz, ah(async (req, res) => {
                       hora: textoCorto(b.hora, 40),
                       notas: textoCorto(b.notas, 400),
                       total: textoCorto(b.total, 30),
-                      idioma: textoCorto(b.idioma, 30)
+                      idioma: textoCorto(b.idioma, 30),
+                      // Número desde el que llamaron (identificador de llamadas
+                      // del teléfono); no lo dicta el cliente, así que no se
+                      // puede falsear diciendo otro número.
+                      llamada_desde: textoCorto(b.llamada_desde, 30)
               }
               : {
                       nombre: textoCorto(b.nombre, 80),
@@ -823,9 +827,123 @@ app.post('/api/voz/:tablero/:tipo', limitadorVoz, ah(async (req, res) => {
       if (!datos.nombre || (tipo === 'pedido' && !datos.articulos)) {
               return res.status(400).json({ error: 'Faltan datos: nombre' + (tipo === 'pedido' ? ' y artículos' : '') });
       }
+      let espera = null;
+      if (tipo === 'pedido') {
+              const r = await db.restauranteVoz(tablero);
+              if (r.pausado) {
+                      // La cocina está saturada: la IA debe avisarle al cliente.
+                      return res.status(200).json({ ok: false, mensaje: 'NO se registró el pedido: la cocina pausó los pedidos para llevar por alta demanda. Discúlpate con el cliente y ofrécele hacer una reservación o llamar más tarde.' });
+              }
+              const bloqueados = Array.isArray(r.bloqueados) ? r.bloqueados : [];
+              if ([datos.llamada_desde, datos.telefono].map(numeroClave).some((n) => n && bloqueados.includes(n))) {
+                      return res.status(200).json({ ok: false, mensaje: 'NO se registró el pedido: este número está bloqueado por el restaurante por pedidos anteriores que no se recogieron. Dile amablemente al cliente que para pedidos debe acudir en persona al restaurante.' });
+              }
+              espera = await calcularEspera(tablero, r);
+      }
       const ev = await db.guardarEventoVoz(tablero, tipo, datos);
       // Respuesta corta para que la IA pueda decirle al cliente su número.
-      res.status(201).json({ ok: true, folio: ev.id, mensaje: tipo === 'pedido' ? `Pedido recibido en cocina, folio ${ev.id}` : `Reservación registrada, folio ${ev.id}` });
+      res.status(201).json({
+              ok: true,
+              folio: ev.id,
+              mensaje: tipo === 'pedido'
+                      ? `Pedido recibido en cocina, folio ${ev.id}. Tiempo estimado: ${espera.minutos} minutos.`
+                      : `Reservación registrada, folio ${ev.id}`
+      });
+}));
+
+// Los últimos 10 dígitos de un teléfono (así "+52 998 123 4567" y
+// "9981234567" son el mismo número). Vacío si no parece teléfono.
+function numeroClave(v) {
+      const d = String(v || '').replace(/\D/g, '');
+      return d.length >= 7 ? d.slice(-10) : '';
+}
+
+// Tiempo de espera de los pedidos para llevar: cada "tanda" de pedidos que
+// la cocina puede hacer a la vez (capacidad) suma otro tiempo base. Ej.: base
+// 25 min y capacidad 6 → 0-5 pedidos en cocina = 25 min, 6-11 = 50 min…
+async function calcularEspera(tablero, r) {
+      const activos = await db.pedidosActivosVoz(tablero);
+      const base = r.minutos_base || 25;
+      const cap = Math.max(1, r.capacidad || 6);
+      return { activos, minutos: base * (1 + Math.floor(activos / cap)) };
+}
+
+// Limpia el menú y los datos que manda el panel del restaurante.
+function limpiarRestaurante(b) {
+      const i = (b && b.info) || {};
+      const info = {
+              nombre: textoCorto(i.nombre, 100),
+              descripcion: textoCorto(i.descripcion, 400),
+              ubicacion: textoCorto(i.ubicacion, 400),
+              horario: textoCorto(i.horario, 400),
+              pagos: textoCorto(i.pagos, 300),
+              promociones: textoCorto(i.promociones, 1500),
+              extra: textoCorto(i.extra, 2000)
+      };
+      const menu = (Array.isArray(b && b.menu) ? b.menu : []).slice(0, 400).map((p) => ({
+              categoria: textoCorto(p && p.categoria, 60) || 'Otros',
+              nombre: textoCorto(p && p.nombre, 120),
+              descripcion: textoCorto(p && p.descripcion, 300),
+              precio: textoCorto(p && p.precio, 30),
+              agotado: !!(p && p.agotado)
+      })).filter((p) => p.nombre);
+      const minutosBase = Math.min(180, Math.max(5, parseInt(b && b.minutosBase, 10) || 25));
+      const capacidad = Math.min(100, Math.max(1, parseInt(b && b.capacidad, 10) || 6));
+      return { info, menu, minutosBase, capacidad };
+}
+
+// Panel del restaurante y pantalla de cocina.
+app.get('/api/voz/:tablero/restaurante', limitadorVoz, ah(async (req, res) => {
+      const { tablero } = req.params;
+      if (!TABLERO_VALIDO.test(tablero)) return res.status(400).json({ error: 'Tablero inválido' });
+      const r = await db.restauranteVoz(tablero);
+      const espera = await calcularEspera(tablero, r);
+      res.json({ info: r.info, menu: r.menu, pausado: r.pausado, minutosBase: r.minutos_base, capacidad: r.capacidad, bloqueados: r.bloqueados || [], actualizado: r.actualizado, espera });
+}));
+app.put('/api/voz/:tablero/restaurante', limitadorVoz, ah(async (req, res) => {
+      const { tablero } = req.params;
+      if (!TABLERO_VALIDO.test(tablero)) return res.status(400).json({ error: 'Tablero inválido' });
+      const r = await db.guardarRestauranteVoz(tablero, limpiarRestaurante(req.body));
+      res.json({ ok: true, actualizado: r.actualizado, platillos: r.menu.length });
+}));
+app.patch('/api/voz/:tablero/cocina', limitadorVoz, ah(async (req, res) => {
+      const { tablero } = req.params;
+      if (!TABLERO_VALIDO.test(tablero)) return res.status(400).json({ error: 'Tablero inválido' });
+      if (typeof (req.body || {}).pausado !== 'boolean') return res.status(400).json({ error: 'Falta "pausado"' });
+      res.json(await db.pausarRestauranteVoz(tablero, req.body.pausado));
+}));
+
+// Lo que consulta la IA al empezar cada llamada: información, menú vigente
+// (sin agotados), promociones y si la cocina está aceptando pedidos.
+app.get('/api/voz/:tablero/consultar', limitadorVoz, ah(async (req, res) => {
+      const { tablero } = req.params;
+      if (!TABLERO_VALIDO.test(tablero)) return res.status(400).json({ error: 'Tablero inválido' });
+      const r = await db.restauranteVoz(tablero);
+      const espera = await calcularEspera(tablero, r);
+      const i = r.info || {};
+      const lineas = [];
+      if (i.nombre) lineas.push(`Restaurante: ${i.nombre}`);
+      if (i.descripcion) lineas.push(`Descripción: ${i.descripcion}`);
+      if (i.ubicacion) lineas.push(`Ubicación: ${i.ubicacion}`);
+      if (i.horario) lineas.push(`Horario: ${i.horario}`);
+      if (i.pagos) lineas.push(`Formas de pago: ${i.pagos}`);
+      if (i.extra) lineas.push(`Otros datos: ${i.extra}`);
+      lineas.push(`Promociones vigentes: ${i.promociones || 'ninguna por ahora (no ofrezcas promociones)'}`);
+      const disponibles = (r.menu || []).filter((p) => !p.agotado);
+      const agotados = (r.menu || []).filter((p) => p.agotado).map((p) => p.nombre);
+      const porCategoria = {};
+      disponibles.forEach((p) => { (porCategoria[p.categoria] = porCategoria[p.categoria] || []).push(p); });
+      lineas.push('MENÚ DISPONIBLE HOY (precios en pesos mexicanos):');
+      Object.keys(porCategoria).forEach((c) => {
+              lineas.push(`## ${c}`);
+              porCategoria[c].forEach((p) => lineas.push(`- ${p.nombre}${p.descripcion ? ` (${p.descripcion})` : ''}${p.precio ? ` — $${String(p.precio).replace(/^\$/, '')}` : ''}`));
+      });
+      if (!disponibles.length) lineas.push('(El restaurante aún no ha cargado su menú: no inventes platillos; ofrece que el restaurante le devuelva la llamada.)');
+      lineas.push(`AGOTADOS HOY (no los ofrezcas; si los piden, discúlpate y sugiere otra cosa): ${agotados.length ? agotados.join(', ') : 'ninguno'}`);
+      lineas.push(r.pausado
+              ? 'PEDIDOS PARA LLEVAR: PAUSADOS por alta demanda. No tomes pedidos; ofrece una reservación o que llame más tarde.'
+              : `PEDIDOS PARA LLEVAR: disponibles. Tiempo de preparación actual: ${espera.minutos} minutos.`);
+      res.json({ informacion: lineas.join('\n') });
 }));
 app.get('/api/voz/:tablero/eventos', limitadorVoz, ah(async (req, res) => {
       if (!TABLERO_VALIDO.test(req.params.tablero)) return res.status(400).json({ error: 'Tablero inválido' });
@@ -834,10 +952,28 @@ app.get('/api/voz/:tablero/eventos', limitadorVoz, ah(async (req, res) => {
 app.patch('/api/voz/:tablero/eventos/:id', limitadorVoz, ah(async (req, res) => {
       if (!TABLERO_VALIDO.test(req.params.tablero)) return res.status(400).json({ error: 'Tablero inválido' });
       const estado = (req.body || {}).estado;
-      if (!['nuevo', 'en_preparacion', 'listo', 'confirmada'].includes(estado)) return res.status(400).json({ error: 'Estado inválido' });
+      if (!['nuevo', 'en_preparacion', 'listo', 'confirmada', 'entregado', 'cancelado'].includes(estado)) return res.status(400).json({ error: 'Estado inválido' });
       const r = await db.marcarEventoVoz(req.params.tablero, Number(req.params.id), estado);
       if (!r) return res.status(404).json({ error: 'No encontrado' });
-      res.json(r);
+      res.json({ id: r.id, estado: r.estado });
+}));
+// "Fue de broma": se quita de la cocina y se bloquean los números de ese
+// pedido (el que salió en el identificador de llamadas y el que dictó).
+app.post('/api/voz/:tablero/eventos/:id/broma', limitadorVoz, ah(async (req, res) => {
+      const { tablero } = req.params;
+      if (!TABLERO_VALIDO.test(tablero)) return res.status(400).json({ error: 'Tablero inválido' });
+      const r = await db.marcarEventoVoz(tablero, Number(req.params.id), 'broma');
+      if (!r) return res.status(404).json({ error: 'No encontrado' });
+      const numeros = [...new Set([r.datos.llamada_desde, r.datos.telefono].map(numeroClave).filter(Boolean))];
+      for (const n of numeros) await db.bloquearNumeroVoz(tablero, n, true);
+      res.json({ ok: true, bloqueados: numeros });
+}));
+app.delete('/api/voz/:tablero/bloqueados/:numero', limitadorVoz, ah(async (req, res) => {
+      const { tablero } = req.params;
+      if (!TABLERO_VALIDO.test(tablero)) return res.status(400).json({ error: 'Tablero inválido' });
+      const n = numeroClave(req.params.numero);
+      if (!n) return res.status(400).json({ error: 'Número inválido' });
+      res.json({ bloqueados: await db.bloquearNumeroVoz(tablero, n, false) });
 }));
 
 // Imágenes públicas para Google Wallet (Google solo acepta URLs https, no

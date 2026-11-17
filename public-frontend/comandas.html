@@ -50,8 +50,15 @@
   .notas{font-size:13px;color:#f0c450;margin-top:4px}
   .t-acc{display:flex;gap:6px;margin-top:10px}
   .t-acc button{flex:1;padding:8px 10px;font-size:14px}
+  .t-acc button.broma{flex:0 0 auto;background:transparent;color:#e89a8a;border-color:#4a2e2a}
   .aviso{margin:14px 20px 0;padding:12px 14px;border:1px solid #4a3a17;background:#2a2213;color:#f0d7a0;border-radius:12px;font-size:14px;line-height:1.5}
   .aviso code{background:#1b160c;padding:2px 6px;border-radius:6px;font-size:12px;word-break:break-all}
+  .acciones{align-items:center}
+  a.boton{font-weight:600;text-decoration:none;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);padding:9px 14px}
+  .espera{font-size:14px;color:var(--muted);padding:0 4px}
+  .espera b{color:var(--ink)}
+  button.pausa-on{background:#5a2a20;border-color:#e5604a;color:#ffd9cf}
+  .pausado{margin:14px 20px 0;padding:12px 14px;border:1px solid #e5604a;background:#2e1a16;color:#ffd9cf;border-radius:12px;font-size:15px}
   [hidden]{display:none !important}
 </style>
 </head>
@@ -62,10 +69,15 @@
     <span class="vivo" id="estadoVivo"><i></i><span id="estadoTexto">Conectando…</span></span>
   </div>
   <div class="acciones">
+    <span class="espera" id="espera" hidden></span>
+    <button type="button" id="btnPausa" hidden>⏸ Pausar pedidos</button>
+    <a class="boton" id="linkMenu" href="#">📋 Menú</a>
     <button type="button" id="btnSonido" class="primario">🔔 Activar sonido</button>
     <button type="button" id="btnInfo">Conexión de la IA</button>
   </div>
 </header>
+
+<div class="pausado" id="avisoPausa" hidden>⏸ Pedidos para llevar <b>pausados</b>: la recepcionista solo está tomando reservaciones. Presiona <b>Reanudar</b> cuando la cocina se libere.</div>
 
 <div class="aviso" id="info" hidden>
   <b>Para conectar la recepcionista de IA</b> a esta pantalla, en las herramientas del agente de voz usa estas direcciones (método POST):<br>
@@ -151,6 +163,9 @@
     if(!esRes && d.hora) meta.appendChild(el('span', '', '🕒 ' + d.hora));
     if(!esRes && d.total) meta.appendChild(el('span', '', '💵 ' + d.total));
     if(d.telefono) meta.appendChild(el('span', '', '📞 ' + d.telefono));
+    if(d.llamada_desde && d.llamada_desde.replace(/\D/g, '').slice(-10) !== String(d.telefono || '').replace(/\D/g, '').slice(-10)){
+      meta.appendChild(el('span', '', '📱 Llamó desde ' + d.llamada_desde));
+    }
     t.appendChild(meta);
     if(d.notas) t.appendChild(el('div', 'notas', '⚠ ' + d.notas));
     var acc = el('div', 't-acc');
@@ -162,6 +177,18 @@
     if(esRes){ if(ev.estado !== 'confirmada') boton('Confirmar', 'confirmada'); }
     else if(ev.estado === 'nuevo') boton('Preparar', 'en_preparacion');
     else if(ev.estado === 'en_preparacion') boton('Listo', 'listo');
+    else if(ev.estado === 'listo'){
+      boton('Entregado', 'entregado');
+      var nr = el('button', 'broma', 'No lo recogieron'); nr.type = 'button';
+      nr.addEventListener('click', function(){ broma(ev); });
+      acc.appendChild(nr);
+    }
+    if(!esRes && ev.estado === 'nuevo'){
+      var br = el('button', 'broma', '🚫 Broma'); br.type = 'button';
+      br.title = 'Quitar este pedido y bloquear el número';
+      br.addEventListener('click', function(){ broma(ev); });
+      acc.appendChild(br);
+    }
     if(acc.children.length) t.appendChild(acc);
     return t;
   }
@@ -171,6 +198,7 @@
     var cols = { nuevo: [], en_preparacion: [], listo: [], reservaciones: [] };
     Object.keys(eventos).map(Number).sort(function(a, b){ return b - a; }).forEach(function(id){
       var ev = eventos[id];
+      if(ev.estado === 'entregado' || ev.estado === 'cancelado' || ev.estado === 'broma') return;
       if(ev.tipo === 'reservacion') cols.reservaciones.push(ev);
       else (cols[ev.estado] || cols.nuevo).push(ev);
     });
@@ -189,6 +217,17 @@
     fetch(BACKEND + '/api/voz/' + tablero + '/eventos/' + ev.id, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estado: estado })
     }).catch(function(){});
+  }
+
+  // Pedido de broma (o que nunca recogieron): se quita y se bloquea el número
+  // para que la recepcionista ya no le tome pedidos.
+  function broma(ev){
+    var d = ev.datos || {};
+    var num = d.llamada_desde || d.telefono || '';
+    if(!confirm('¿Quitar el pedido #' + ev.id + (num ? ' y bloquear el número ' + num : '') + '?\nLa recepcionista ya no le tomará pedidos a ese número. Se puede desbloquear en Menú.')) return;
+    ev.estado = 'broma'; pintar();
+    fetch(BACKEND + '/api/voz/' + tablero + '/eventos/' + ev.id + '/broma', { method: 'POST' })
+      .then(function(){ revisarCocina(); }).catch(function(){});
   }
 
   function estadoConexion(ok){
@@ -215,6 +254,49 @@
     } catch(e){ estadoConexion(false); }
     setTimeout(revisar, 2000);
   }
+  // Estado de la cocina: tiempo de espera y pausa de pedidos.
+  document.getElementById('linkMenu').href = 'menu.html?t=' + encodeURIComponent(tablero);
+  var pausado = false;
+  function pintarCocina(d){
+    pausado = !!d.pausado;
+    var b = document.getElementById('btnPausa');
+    b.hidden = false;
+    b.textContent = pausado ? '▶ Reanudar pedidos' : '⏸ Pausar pedidos';
+    b.classList.toggle('pausa-on', pausado);
+    document.getElementById('avisoPausa').hidden = !pausado;
+    var e = document.getElementById('espera');
+    if(d.espera){
+      e.hidden = false;
+      e.innerHTML = '';
+      e.appendChild(document.createTextNode('⏱ Espera: '));
+      e.appendChild(el('b', '', d.espera.minutos + ' min'));
+      e.appendChild(document.createTextNode(' · ' + d.espera.activos + ' en cocina'));
+    }
+  }
+  async function revisarCocina(){
+    try {
+      var r = await fetch(BACKEND + '/api/voz/' + tablero + '/restaurante', { cache: 'no-store' });
+      if(r.ok) pintarCocina(await r.json());
+    } catch(e){}
+  }
+  document.getElementById('btnPausa').addEventListener('click', async function(){
+    var nuevo = !pausado;
+    if(nuevo && !confirm('¿Pausar los pedidos para llevar? La recepcionista dejará de tomarlos hasta que presiones "Reanudar".')) return;
+    this.disabled = true;
+    try {
+      var r = await fetch(BACKEND + '/api/voz/' + tablero + '/cocina', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pausado: nuevo })
+      });
+      if(r.ok) await revisarCocina();
+    } catch(e){}
+    this.disabled = false;
+  });
+  // El tiempo de espera cambia cuando la cocina mueve pedidos.
+  var cambiarOriginal = cambiar;
+  cambiar = function(ev, estado){ cambiarOriginal(ev, estado); setTimeout(revisarCocina, 600); };
+  setInterval(revisarCocina, 10000);
+  revisarCocina();
+
   pintar();
   revisar();
 })();
