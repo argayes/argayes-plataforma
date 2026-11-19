@@ -783,10 +783,14 @@ app.get('/api/wallet/google/:clienteId', ah(async (req, res) => {
 // una reservación por teléfono; la pantalla comandas.html las muestra en vivo.
 // El "tablero" es un identificador largo y aleatorio que funciona como llave.
 const TABLERO_VALIDO = /^[a-z0-9-]{16,64}$/;
+// El límite se cuenta por IP Y por tablero: así varias pantallas de cocina en
+// el mismo wifi no se bloquean entre sí (cada una consulta ~36 veces por
+// minuto), y las llamadas de la plataforma de voz, que llegan desde las mismas
+// IPs para todos los restaurantes, no se acumulan entre restaurantes.
 const limitadorVoz = rateLimit({
-      keyGenerator: ipCliente,
+      keyGenerator: (req) => ipCliente(req) + '|' + String((req.params && req.params.tablero) || req.path.split('/')[3] || ''),
       windowMs: 60 * 1000,
-      limit: 60,
+      limit: 150,
       standardHeaders: true,
       legacyHeaders: false,
       message: { error: 'Demasiadas solicitudes.' }
@@ -872,23 +876,55 @@ function numeroDe(v) {
 function normalizar(t) {
       return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\([^)]*\)/g, ' ').replace(/[^a-z0-9ñ ]/g, ' ').replace(/\s+/g, ' ').trim();
 }
+// Palabras que no distinguen un platillo de otro.
+const VACIAS = new Set(['y', 'de', 'del', 'la', 'el', 'los', 'las', 'con', 'en', 'a', 'al', 'pizza', 'pizzas', 'orden', 'ordenes', 'una', 'un', 'novedad']);
+// Raíz corta para que "queso"/"quesos" o "champiñón"/"champiñones" coincidan.
+function raices(t) {
+      // "sin cebolla", "sin champiñones": lo que se quita no ayuda a reconocer el platillo.
+      return normalizar(t).replace(/\bsin\b.*?(?=\bcon\b|$)/g, ' ').split(' ').filter((w) => w && !VACIAS.has(w)).map((w) => w.slice(0, 5));
+}
+// El platillo del menú cuyas palabras aparecen TODAS en el texto; si hay
+// varios, el de más palabras. null si no hay ninguno o si hay un empate entre
+// platillos de distinto precio (p. ej. "mitad hawaiana mitad pepperoni").
+function platilloDe(texto, platillos) {
+      const pal = new Set(raices(texto));
+      let mejor = [], max = 0;
+      for (const p of platillos) {
+              if (!p.r.length || !p.r.every((w) => pal.has(w))) continue;
+              if (p.r.length > max) { max = p.r.length; mejor = [p]; } else if (p.r.length === max) mejor.push(p);
+      }
+      if (!mejor.length && pal.size) {
+              // Nombre incompleto ("tacos de pescado" por "Tacos de pescado estilo
+              // Baja"): vale solo si apunta a un único precio.
+              mejor = platillos.filter((p) => [...pal].every((w) => p.r.includes(w)));
+      }
+      if (!mejor.length) return null;
+      if (new Set(mejor.map((p) => p.precio)).size > 1) return null;
+      return mejor[0];
+}
 // Suma "2x Tacos de pescado (sin cebolla)" con los precios del menú. Devuelve
-// null si algún renglón no se reconoce (entonces se deja el total de la IA).
+// null si algún renglón no se reconoce o no tiene precio (entonces se deja el
+// total de la IA).
 function totalSegunMenu(articulos, menu) {
-      const platillos = (menu || []).filter((p) => numeroDe(p.precio) !== null).map((p) => ({ n: normalizar(p.nombre), precio: numeroDe(p.precio) }));
-      if (!platillos.length) return null;
+      const platillos = (menu || []).map((p) => ({ r: raices(p.nombre), precio: numeroDe(p.precio) })).filter((p) => p.r.length);
+      if (!platillos.some((p) => p.precio !== null)) return null;
       const lineas = String(articulos || '').split(/\n|;/).map((l) => l.trim()).filter(Boolean);
       if (!lineas.length) return null;
       let total = 0;
       for (const l of lineas) {
-              const m = l.match(/^(\d+)\s*(?:x|×|\*)?\s*(.+)$/i);
-              const cant = m ? parseInt(m[1], 10) : 1;
-              const nombre = normalizar(m ? m[2] : l);
-              if (!nombre || cant < 1 || cant > 200) return null;
-              // El nombre más largo del menú contenido en el renglón (o al revés).
-              const cand = platillos.filter((p) => nombre.includes(p.n) || p.n.includes(nombre)).sort((a, b) => b.n.length - a.n.length);
-              if (!cand.length) return null;
-              total += cant * cand[0].precio;
+              let cant = 1, resto = l;
+              const conX = l.match(/^(\d+)\s*(?:x|×|\*)\s*(.+)$/i);
+              const sinX = l.match(/^(\d+)\s+(.+)$/);
+              if (conX) { cant = parseInt(conX[1], 10); resto = conX[2]; }
+              else if (sinX) {
+                      // "4 Quesos" es un platillo, no cuatro pizzas de queso.
+                      const entero = platilloDe(l, platillos);
+                      if (!(entero && entero.r.includes(sinX[1]))) { cant = parseInt(sinX[1], 10); resto = sinX[2]; }
+              }
+              if (cant < 1 || cant > 200) return null;
+              const p = platilloDe(resto, platillos);
+              if (!p || p.precio === null) return null;
+              total += cant * p.precio;
       }
       return Math.round(total * 100) / 100;
 }
