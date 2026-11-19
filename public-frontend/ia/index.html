@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARGAYES · Recepcionista con IA para restaurantes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500&family=Tinos:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAF8; --surface:#FFFFFF; --ink:#16181D; --muted:#6A6E76; --line:#E6E4DF; --accent:#14213D;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,sans-serif;font-weight:300;line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 24px}
+  header{position:sticky;top:0;z-index:5;background:rgba(250,250,248,.86);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .brand{font-family:'Times New Roman',Tinos,serif;font-weight:700;letter-spacing:.22em;font-size:17px}
+  .nav a.link{font-size:14px;font-weight:400;text-decoration:none;color:var(--muted)}
+  .nav a.link:hover{color:var(--ink)}
+  .eyebrow{font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 18px}
+  h1{font-weight:200;font-size:clamp(40px,7vw,72px);line-height:1.04;letter-spacing:-.025em;margin:0 0 22px;text-wrap:balance}
+  h2{font-weight:200;font-size:clamp(30px,4.6vw,44px);line-height:1.1;letter-spacing:-.02em;margin:0 0 14px;text-wrap:balance}
+  h3{font-weight:400;font-size:18px;margin:0 0 6px}
+  p{margin:0}
+  .lead{font-size:clamp(17px,2.2vw,20px);color:var(--muted);max-width:560px;text-wrap:pretty}
+  .btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
+  .btn{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:0 22px;border-radius:999px;font-size:15px;font-weight:400;text-decoration:none;transition:background .2s,border-color .2s,color .2s}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:#0c162b}
+  .btn-ghost{border:1px solid var(--line);background:var(--surface)}
+  .btn-ghost:hover{border-color:var(--ink)}
+  .btn svg{width:18px;height:18px}
+  section{padding:96px 0;border-top:1px solid var(--line)}
+  .hero{padding:88px 0 96px;border-top:none}
+  .hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:56px;align-items:center}
+  .video-card{justify-self:center;width:100%;max-width:320px;border-radius:28px;overflow:hidden;background:#0b1224;border:1px solid var(--line);box-shadow:0 30px 60px -30px rgba(20,33,61,.35)}
+  .video-card video{display:block;width:100%;height:auto;aspect-ratio:9/16;object-fit:cover}
+  .note{font-size:13px;color:var(--muted);text-align:center;margin-top:12px}
+  .trust{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:28px;font-size:14px;color:var(--muted)}
+  .trust span{display:inline-flex;align-items:center;gap:8px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);opacity:.55}
+  .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:20px;overflow:hidden;margin-top:44px}
+  .grid3>div{background:var(--surface);padding:28px}
+  .num{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:.08em;margin-bottom:14px;display:block}
+  .muted{color:var(--muted)}
+  .steps{list-style:none;padding:0;margin:44px 0 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px}
+  .steps li{border-top:1px solid var(--ink);padding-top:18px}
+  .feat{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 48px;margin-top:40px;list-style:none;padding:0}
+  .feat li{display:flex;gap:14px;align-items:flex-start;padding:18px 0;border-bottom:1px solid var(--line);font-size:17px}
+  .feat svg{flex:none;width:20px;height:20px;margin-top:4px;color:var(--accent)}
+  .demo{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:24px;background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:40px}
+  .cta{text-align:center}
+  .cta .lead{margin:0 auto}
+  .cta .btns{justify-content:center}
+  .contact{margin-top:22px;font-size:15px;color:var(--muted)}
+  details{border-bottom:1px solid var(--line);padding:20px 0}
+  details:first-of-type{border-top:1px solid var(--line);margin-top:36px}
+  summary{cursor:pointer;list-style:none;font-size:17px;font-weight:400;display:flex;justify-content:space-between;gap:16px}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";font-weight:200;font-size:22px;line-height:1;color:var(--muted)}
+  details[open] summary::after{content:"–"}
+  details p{margin-top:10px;color:var(--muted);max-width:720px}
+  footer{border-top:1px solid var(--line);padding:32px 0 48px;font-size:13px;color:var(--muted)}
+  footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
+  @media (max-width:860px){
+    .hero-grid{grid-template-columns:1fr;gap:48px}
+    .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid3{grid-template-columns:1fr}
+    .feat{grid-template-columns:1fr}
+    section{padding:72px 0}
+    .hero{padding:56px 0 72px}
+    .demo{padding:28px}
+  }
+  @media (max-width:520px){ .steps{grid-template-columns:1fr} .btn{width:100%;justify-content:center} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <span class="brand">ARGAYES</span>
+    <a class="link" href="https://wa.me/529984839441?text=Hola%2C%20quiero%20probar%20la%20recepcionista%20con%20IA" target="_blank" rel="noopener">Escríbenos</a>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="hero hero-grid">
+      <div>
+        <p class="eyebrow">Recepcionista con IA para restaurantes</p>
+        <h1>Tu restaurante contesta siempre.</h1>
+        <p class="lead">Un asistente con inteligencia artificial que contesta tus llamadas, da el menú, toma pedidos y reservaciones, y los manda directo a tu comanda. Las 24 horas, en español e inglés.</p>
+        <div class="btns">
+          <a class="btn btn-primary" href="https://wa.me/529984839441?text=Hola%2C%20quiero%20probar%202%20semanas%20gratis%20la%20recepcionista%20con%20IA" target="_blank" rel="noopener">Probar 2 semanas gratis</a>
+          <a class="btn btn-ghost" href="#demo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M19 11a7 7 0 0 1-14 0"/><path d="M12 18v3"/></svg>
+            Habla con la demo
+          </a>
+        </div>
+        <div class="trust">
+          <span><i class="dot"></i>Sin cambiar tu número</span>
+          <span><i class="dot"></i>Configurada con tu menú</span>
+          <span><i class="dot"></i>2 semanas de prueba gratis</span>
+        </div>
+      </div>
+      <div>
+        <div class="video-card">
+          <video src="video.mp4" poster="poster.jpg" controls playsinline preload="metadata" aria-label="Video: cómo funciona la recepcionista con IA"></video>
+        </div>
+        <p class="note">40 segundos · con sonido</p>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">El problema</p>
+      <h2>En hora pico, el teléfono es lo primero que se descuida.</h2>
+      <div class="grid3">
+        <div><span class="num">01</span><h3>Nadie alcanza a contestar</h3><p class="muted">Con las mesas llenas, el equipo atiende a quien está enfrente y el teléfono se queda sonando.</p></div>
+        <div><span class="num">02</span><h3>El cliente le compra a otro</h3><p class="muted">Quien no logra hacer su pedido o su reservación busca otra opción en segundos.</p></div>
+        <div><span class="num">03</span><h3>Fuera de horario, silencio</h3><p class="muted">Las llamadas de la noche o de la mañana se pierden, aunque fueran reservaciones para el día siguiente.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">Cómo funciona</p>
+      <h2>Una llamada, de principio a fin.</h2>
+      <ol class="steps">
+        <li><span class="num">01</span><h3>El cliente llama</h3><p class="muted">A tu mismo número de siempre. Las llamadas se desvían a la IA cuando nadie contesta o cuando está cerrado.</p></li>
+        <li><span class="num">02</span><h3>La IA contesta</h3><p class="muted">Responde dudas del menú, precios, horarios y ubicación, con una voz natural y amable.</p></li>
+        <li><span class="num">03</span><h3>Toma el pedido</h3><p class="muted">Anota el pedido o la reservación, lo repite para confirmar y le da al cliente su número de folio.</p></li>
+        <li><span class="num">04</span><h3>Llega a tu comanda</h3><p class="muted">El pedido entra a tu sistema de comandas o te llega por WhatsApp, según cómo trabajes hoy.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">Qué incluye</p>
+      <h2>Todo lo que haría una buena recepcionista.</h2>
+      <ul class="feat">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Contesta las 24 horas, los 7 días</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Menú, precios, horarios y ubicación</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Pedidos para llevar y reservaciones</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Español, inglés y otros idiomas</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Conexión con tu sistema de comandas</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Recados con nombre y teléfono fuera de horario</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="demo">
+    <div class="wrap">
+      <div class="demo">
+        <div>
+          <p class="eyebrow">Demo en vivo</p>
+          <h2 style="margin-bottom:8px">Pruébala tú mismo.</h2>
+          <p class="muted" style="max-width:520px">Habla con la recepcionista de un restaurante de ejemplo, Mar y Fuego, desde tu celular o computadora. Pídele el menú, haz un pedido o háblale en inglés.</p>
+        </div>
+        <a class="btn btn-primary" href="https://elevenlabs.io/app/talk-to?agent_id=agent_0601m7nkbt37fw99xvx2r44mwshm" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M19 11a7 7 0 0 1-14 0"/><path d="M12 18v3"/></svg>
+          Hablar con la demo
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="wrap">
+      <p class="eyebrow">Prueba gratuita</p>
+      <h2>Pruébala 2 semanas, sin costo.</h2>
+      <p class="lead">La configuramos con tu menú y tus horarios. Si en dos semanas no te convence, no pagas nada.</p>
+      <div class="btns">
+        <a class="btn btn-primary" href="https://wa.me/529984839441?text=Hola%2C%20quiero%20probar%202%20semanas%20gratis%20la%20recepcionista%20con%20IA" target="_blank" rel="noopener">Escribir por WhatsApp</a>
+      </div>
+      <p class="contact">Angel Hernández · WhatsApp 998 483 9441 · angelhdza22@gmail.com</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">Preguntas frecuentes</p>
+      <h2>Lo que más nos preguntan.</h2>
+      <details><summary>¿Tengo que cambiar mi número de teléfono?</summary><p>No. Activas el desvío de llamadas en tu línea actual: cuando nadie contesta, la línea está ocupada o el restaurante está cerrado, la llamada pasa a la IA.</p></details>
+      <details><summary>¿Se conecta con mi sistema de comandas?</summary><p>Depende del sistema que uses. Si permite conectar programas externos, el pedido entra directo. Si no, te llega al instante por WhatsApp o a una pantalla en cocina. Lo revisamos contigo antes de instalar.</p></details>
+      <details><summary>¿Qué pasa si el cliente pregunta algo que la IA no sabe?</summary><p>No inventa información. Toma el nombre y el teléfono del cliente y te deja el recado para que le devuelvas la llamada.</p></details>
+      <details><summary>¿Cuánto cuesta?</summary><p>Las primeras 2 semanas son gratis. Después, te pasamos una cotización según el tamaño de tu restaurante y la cantidad de llamadas.</p></details>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span><span class="brand" style="font-size:13px">ARGAYES</span> · Cancún, Quintana Roo</span>
+    <span>© 2026 · Angel Hernández</span>
+  </div>
+</footer>
+
+</body>
+</html>
