@@ -8,76 +8,83 @@
 <link rel="icon" type="image/png" href="favicon-48.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Tinos:wght@700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#121417; --panel:#1b1e23; --panel-2:#22262c; --line:#2f343b;
-    --ink:#f2efe8; --muted:#9aa0a8; --accent:#d9a84a; --accent-ink:#1b1206;
-    --nuevo:#e5a64a; --prep:#5aa9e6; --listo:#58c08a; --reserva:#b58cf0;
+    --bg:#FAFAF8; --panel:#FFFFFF; --panel-2:#F5F4F0; --line:#E6E4DF;
+    --ink:#16181D; --muted:#6A6E76; --accent:#14213D; --accent-ink:#FFFFFF;
+    --nuevo:#C17F2A; --prep:#3B6EA8; --listo:#2E8B57; --reserva:#7A5BB5;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif}
-  header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-  .marca{display:flex;align-items:center;gap:10px}
-  .marca b{font-size:20px;letter-spacing:.02em}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,sans-serif;font-weight:300;-webkit-font-smoothing:antialiased}
+  header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 24px;border-bottom:1px solid var(--line);flex-wrap:wrap;background:rgba(250,250,248,.9);backdrop-filter:saturate(1.4) blur(10px)}
+  .marca{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .marca .logo{font-family:'Times New Roman',Tinos,serif;font-weight:700;letter-spacing:.22em;font-size:16px;text-decoration:none;color:var(--ink)}
+  .marca .sep{width:1px;height:18px;background:var(--line)}
+  .marca b{font-size:17px;font-weight:400;letter-spacing:-.01em}
   .vivo{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
-  .vivo i{width:9px;height:9px;border-radius:50%;background:#58c08a;box-shadow:0 0 0 0 rgba(88,192,138,.7);animation:latido 1.6s infinite}
-  .vivo.caido i{background:#e5604a;animation:none}
-  @keyframes latido{0%{box-shadow:0 0 0 0 rgba(88,192,138,.6)}70%{box-shadow:0 0 0 10px rgba(88,192,138,0)}100%{box-shadow:0 0 0 0 rgba(88,192,138,0)}}
-  .acciones{display:flex;gap:8px;flex-wrap:wrap}
-  button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);padding:9px 14px;font-weight:600}
+  .vivo i{width:8px;height:8px;border-radius:50%;background:var(--listo);box-shadow:0 0 0 0 rgba(46,139,87,.5);animation:latido 1.8s infinite}
+  .vivo.caido i{background:#C2483D;animation:none}
+  @keyframes latido{0%{box-shadow:0 0 0 0 rgba(46,139,87,.45)}70%{box-shadow:0 0 0 9px rgba(46,139,87,0)}100%{box-shadow:0 0 0 0 rgba(46,139,87,0)}}
+  .acciones{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  button{font:inherit;font-weight:400;font-size:14px;cursor:pointer;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:9px 16px;transition:border-color .2s,background .2s}
+  button:hover{border-color:var(--ink)}
   button.primario{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-  main{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.1fr);gap:14px;padding:16px 20px 40px}
+  button.primario:hover{background:#0c162b}
+  main{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.1fr);gap:16px;padding:20px 24px 48px;max-width:1500px;margin:0 auto}
   @media (max-width:1100px){main{grid-template-columns:1fr 1fr}}
   @media (max-width:640px){main{grid-template-columns:1fr;padding:12px 12px 40px}header{padding:12px}}
-  .col{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px;min-height:200px}
-  .col h2{margin:2px 4px 12px;font-size:13px;letter-spacing:.12em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
-  .col h2 span{background:var(--panel-2);border-radius:999px;padding:2px 9px;font-size:12px;color:var(--muted)}
-  .col[data-c="nuevo"] h2{color:var(--nuevo)} .col[data-c="en_preparacion"] h2{color:var(--prep)}
-  .col[data-c="listo"] h2{color:var(--listo)} .col[data-c="reservaciones"] h2{color:var(--reserva)}
-  .vacio{color:var(--muted);font-size:14px;text-align:center;padding:28px 8px}
-  .tarjeta{background:var(--panel-2);border:1px solid var(--line);border-left:5px solid var(--nuevo);border-radius:12px;padding:12px 12px 10px;margin-bottom:10px}
+  .col{background:transparent;border:1px solid var(--line);border-radius:20px;padding:14px;min-height:220px}
+  .col h2{margin:2px 4px 14px;font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;color:var(--muted)}
+  .col h2::before{content:"";width:7px;height:7px;border-radius:50%;margin-right:8px;background:var(--nuevo);flex:none}
+  .col h2{justify-content:flex-start}
+  .col h2 span{margin-left:auto;background:var(--panel-2);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:400;color:var(--muted);letter-spacing:0}
+  .col[data-c="en_preparacion"] h2::before{background:var(--prep)}
+  .col[data-c="listo"] h2::before{background:var(--listo)} .col[data-c="reservaciones"] h2::before{background:var(--reserva)}
+  .vacio{color:var(--muted);font-size:14px;text-align:center;padding:32px 8px}
+  .tarjeta{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--nuevo);border-radius:14px;padding:14px 14px 12px;margin-bottom:10px;box-shadow:0 1px 2px rgba(20,33,61,.04)}
   .tarjeta.prep{border-left-color:var(--prep)} .tarjeta.listo{border-left-color:var(--listo)} .tarjeta.reserva{border-left-color:var(--reserva)}
   .tarjeta.recien{animation:entra .6s ease-out}
-  @keyframes entra{from{transform:translateY(-8px);box-shadow:0 0 0 3px var(--accent)}to{transform:none;box-shadow:none}}
+  @keyframes entra{from{transform:translateY(-8px);box-shadow:0 0 0 3px rgba(20,33,61,.18)}to{transform:none}}
   .t-cab{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-  .folio{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted)}
-  .nombre{font-weight:700;font-size:17px}
-  .articulos{white-space:pre-wrap;font-size:16px;line-height:1.45;margin:8px 0}
+  .folio{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--muted)}
+  .nombre{font-weight:500;font-size:17px}
+  .articulos{white-space:pre-wrap;font-size:16px;line-height:1.5;margin:8px 0;font-weight:400}
   .meta{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}
-  .meta span{font-size:12px;background:#2a2f36;border-radius:999px;padding:3px 9px;color:#d6d2c8}
-  .meta span.idioma{background:#3a2f17;color:#f0c450}
-  .notas{font-size:13px;color:#f0c450;margin-top:4px}
-  .t-acc{display:flex;gap:6px;margin-top:10px}
-  .t-acc button{flex:1;padding:8px 10px;font-size:14px}
-  .t-acc button.broma{flex:0 0 auto;background:transparent;color:#e89a8a;border-color:#4a2e2a}
-  .aviso{margin:14px 20px 0;padding:12px 14px;border:1px solid #4a3a17;background:#2a2213;color:#f0d7a0;border-radius:12px;font-size:14px;line-height:1.5}
-  .aviso code{background:#1b160c;padding:2px 6px;border-radius:6px;font-size:12px;word-break:break-all}
-  .acciones{align-items:center}
-  a.boton{font-weight:600;text-decoration:none;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);padding:9px 14px}
+  .meta span{font-size:12px;background:var(--panel-2);border-radius:999px;padding:3px 10px;color:var(--muted)}
+  .meta span.idioma{background:#EEF1F7;color:var(--accent)}
+  .notas{font-size:13px;color:#9A5B12;margin-top:4px;font-weight:400}
+  .t-acc{display:flex;gap:6px;margin-top:12px}
+  .t-acc button{flex:1;padding:8px 10px;font-size:13px}
+  .t-acc button.broma{flex:0 0 auto;background:transparent;color:#B04A3F;border-color:#EBD3CF}
+  .aviso{margin:16px 24px 0;padding:14px 16px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:14px;font-size:14px;line-height:1.6}
+  .aviso code{background:var(--panel-2);padding:2px 6px;border-radius:6px;font-size:12px;word-break:break-all}
+  a.boton{font-size:14px;font-weight:400;text-decoration:none;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:9px 16px}
+  a.boton:hover{border-color:var(--ink)}
   .espera{font-size:14px;color:var(--muted);padding:0 4px}
-  .espera b{color:var(--ink)}
-  button.pausa-on{background:#5a2a20;border-color:#e5604a;color:#ffd9cf}
-  .pausado{margin:14px 20px 0;padding:12px 14px;border:1px solid #e5604a;background:#2e1a16;color:#ffd9cf;border-radius:12px;font-size:15px}
+  .espera b{color:var(--ink);font-weight:500}
+  button.pausa-on{background:#FBEDEA;border-color:#C2483D;color:#8E2F26}
+  .pausado{margin:16px 24px 0;padding:14px 16px;border:1px solid #EBD3CF;background:#FBEDEA;color:#8E2F26;border-radius:14px;font-size:15px}
   [hidden]{display:none !important}
 </style>
 </head>
 <body>
 <header>
   <div class="marca">
+    <a class="logo" href="/ia/">ARGAYES</a><span class="sep"></span>
     <b>Comandas en vivo</b>
     <span class="vivo" id="estadoVivo"><i></i><span id="estadoTexto">Conectando…</span></span>
   </div>
   <div class="acciones">
     <span class="espera" id="espera" hidden></span>
-    <button type="button" id="btnPausa" hidden>⏸ Pausar pedidos</button>
-    <a class="boton" id="linkMenu" href="#">📋 Menú</a>
-    <button type="button" id="btnSonido" class="primario">🔔 Activar sonido</button>
+    <button type="button" id="btnPausa" hidden>Pausar pedidos</button>
+    <a class="boton" id="linkMenu" href="#">Menú</a>
+    <button type="button" id="btnSonido" class="primario">Activar sonido</button>
     <button type="button" id="btnInfo">Conexión de la IA</button>
   </div>
 </header>
 
-<div class="pausado" id="avisoPausa" hidden>⏸ Pedidos para llevar <b>pausados</b>: la recepcionista solo está tomando reservaciones. Presiona <b>Reanudar</b> cuando la cocina se libere.</div>
+<div class="pausado" id="avisoPausa" hidden>Pedidos para llevar <b>pausados</b>: la recepcionista solo está tomando reservaciones. Presiona <b>Reanudar</b> cuando la cocina se libere.</div>
 
 <div class="aviso" id="info" hidden>
   <b>Para conectar la recepcionista de IA</b> a esta pantalla, en las herramientas del agente de voz usa estas direcciones (método POST):<br>
@@ -133,7 +140,7 @@
   }
   document.getElementById('btnSonido').addEventListener('click', function(){
     try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); campana(); } catch(e){}
-    this.textContent = '🔔 Sonido activado'; this.classList.remove('primario');
+    this.textContent = 'Sonido activado'; this.classList.remove('primario');
   });
 
   var eventos = {};   // id → evento
@@ -158,16 +165,16 @@
       t.appendChild(el('div', 'articulos', String(d.articulos || '').replace(/\s*;\s*/g, '\n').replace(/,\s*(?=\d+\s*x)/gi, '\n')));
     }
     var meta = el('div', 'meta');
-    if(d.idioma) meta.appendChild(el('span', 'idioma', '🌐 ' + d.idioma));
+    if(d.idioma) meta.appendChild(el('span', 'idioma', d.idioma));
     if(!esRes && d.modalidad) meta.appendChild(el('span', '', d.modalidad));
-    if(!esRes && d.hora) meta.appendChild(el('span', '', '🕒 ' + d.hora));
-    if(!esRes && d.total) meta.appendChild(el('span', '', '💵 ' + d.total));
-    if(d.telefono) meta.appendChild(el('span', '', '📞 ' + d.telefono));
+    if(!esRes && d.hora) meta.appendChild(el('span', '', 'Hora ' + d.hora));
+    if(!esRes && d.total) meta.appendChild(el('span', '', 'Total ' + d.total));
+    if(d.telefono) meta.appendChild(el('span', '', 'Tel. ' + d.telefono));
     if(d.llamada_desde && d.llamada_desde.replace(/\D/g, '').slice(-10) !== String(d.telefono || '').replace(/\D/g, '').slice(-10)){
-      meta.appendChild(el('span', '', '📱 Llamó desde ' + d.llamada_desde));
+      meta.appendChild(el('span', '', 'Llamó desde ' + d.llamada_desde));
     }
     t.appendChild(meta);
-    if(d.notas) t.appendChild(el('div', 'notas', '⚠ ' + d.notas));
+    if(d.notas) t.appendChild(el('div', 'notas', 'Nota: ' + d.notas));
     var acc = el('div', 't-acc');
     function boton(txt, estado){
       var b = el('button', '', txt); b.type = 'button';
@@ -184,7 +191,7 @@
       acc.appendChild(nr);
     }
     if(!esRes && ev.estado === 'nuevo'){
-      var br = el('button', 'broma', '🚫 Broma'); br.type = 'button';
+      var br = el('button', 'broma', 'Broma'); br.type = 'button';
       br.title = 'Quitar este pedido y bloquear el número';
       br.addEventListener('click', function(){ broma(ev); });
       acc.appendChild(br);
@@ -261,7 +268,7 @@
     pausado = !!d.pausado;
     var b = document.getElementById('btnPausa');
     b.hidden = false;
-    b.textContent = pausado ? '▶ Reanudar pedidos' : '⏸ Pausar pedidos';
+    b.textContent = pausado ? 'Reanudar pedidos' : 'Pausar pedidos';
     b.classList.toggle('pausa-on', pausado);
     document.getElementById('avisoPausa').hidden = !pausado;
     var e = document.getElementById('espera');
