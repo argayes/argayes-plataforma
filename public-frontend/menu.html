@@ -8,50 +8,58 @@
 <link rel="icon" type="image/png" href="favicon-48.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Tinos:wght@700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#121417; --panel:#1b1e23; --panel-2:#22262c; --line:#2f343b;
-    --ink:#f2efe8; --muted:#9aa0a8; --accent:#d9a84a; --accent-ink:#1b1206;
-    --ok:#58c08a; --mal:#e5604a;
+    --bg:#FAFAF8; --panel:#FFFFFF; --panel-2:#F5F4F0; --line:#E6E4DF;
+    --ink:#16181D; --muted:#6A6E76; --accent:#14213D; --accent-ink:#FFFFFF;
+    --ok:#2E8B57; --mal:#B04A3F;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif}
-  header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-  header b{font-size:20px}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,sans-serif;font-weight:300;-webkit-font-smoothing:antialiased}
+  header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 24px;border-bottom:1px solid var(--line);flex-wrap:wrap;background:rgba(250,250,248,.9);backdrop-filter:saturate(1.4) blur(10px)}
+  header .marca{display:flex;align-items:center;gap:14px}
+  header .logo{font-family:'Times New Roman',Tinos,serif;font-weight:700;letter-spacing:.22em;font-size:16px;text-decoration:none;color:var(--ink)}
+  header .sep{width:1px;height:18px;background:var(--line)}
+  header b{font-size:17px;font-weight:400}
   a{color:var(--accent)}
-  .envoltura{max-width:920px;margin:0 auto;padding:18px 16px 120px}
-  section.caja{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
-  section.caja h2{margin:0 0 4px;font-size:17px}
-  .ayuda{color:var(--muted);font-size:14px;margin:0 0 14px;line-height:1.5}
-  .rejilla{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  #linkCocina{font-size:14px;font-weight:400;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:9px 16px;color:var(--ink);background:var(--panel)}
+  #linkCocina:hover{border-color:var(--ink)}
+  .envoltura{max-width:920px;margin:0 auto;padding:24px 16px 120px}
+  section.caja{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:22px;margin-bottom:16px}
+  section.caja h2{margin:0 0 4px;font-size:20px;font-weight:300;letter-spacing:-.01em}
+  .ayuda{color:var(--muted);font-size:14px;margin:0 0 16px;line-height:1.6}
+  .ayuda b{font-weight:500;color:var(--ink)}
+  .rejilla{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media (max-width:640px){.rejilla{grid-template-columns:1fr}}
-  label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px;font-weight:500}
-  input,textarea{width:100%;font:inherit;font-size:15px;color:var(--ink);background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:400}
+  input,textarea{width:100%;font:inherit;font-weight:400;font-size:15px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
   textarea{resize:vertical;min-height:64px}
-  input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+  input:focus,textarea:focus{outline:2px solid rgba(20,33,61,.25);outline-offset:0;border-color:var(--accent)}
   .ancho{grid-column:1/-1}
-  button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);padding:9px 14px;font-weight:600}
+  button{font:inherit;font-weight:400;font-size:14px;cursor:pointer;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:9px 16px}
+  button:hover{border-color:var(--ink)}
   button.primario{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-  button.chico{padding:6px 10px;font-size:13px}
-  .categoria{border:1px solid var(--line);border-radius:12px;margin-bottom:14px;overflow:hidden}
+  button.primario:hover{background:#0c162b}
+  button.chico{padding:6px 12px;font-size:13px}
+  .categoria{border:1px solid var(--line);border-radius:14px;margin-bottom:14px;overflow:hidden}
   .cat-cab{display:flex;gap:8px;align-items:center;background:var(--panel-2);padding:10px}
-  .cat-cab input{font-weight:700;background:transparent;border-color:transparent}
+  .cat-cab input{font-weight:500;background:transparent;border-color:transparent}
   .cat-cab input:hover{border-color:var(--line)}
   .platillo{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,2.4fr) 90px auto auto;gap:8px;align-items:center;padding:8px 10px;border-top:1px solid var(--line)}
   .platillo.agotado input{opacity:.5;text-decoration:line-through}
   @media (max-width:720px){.platillo{grid-template-columns:1fr 90px;}.platillo .desc{grid-column:1/-1;order:3}.platillo .agot{order:4}.platillo .quitar{order:5;justify-self:end}}
   .agot{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);white-space:nowrap;cursor:pointer;user-select:none}
   .agot input{width:18px;height:18px;accent-color:var(--mal)}
-  .quitar{background:transparent;border-color:transparent;color:var(--muted);font-size:18px;padding:4px 8px}
-  .quitar:hover{color:var(--mal)}
+  .quitar{background:transparent;border-color:transparent;color:var(--muted);font-size:16px;padding:4px 8px}
+  .quitar:hover{color:var(--mal);border-color:transparent}
   .cat-pie{padding:8px 10px;border-top:1px solid var(--line)}
-  .barra{position:fixed;left:0;right:0;bottom:0;background:rgba(18,20,23,.94);backdrop-filter:blur(6px);border-top:1px solid var(--line);padding:12px 16px;display:flex;justify-content:center}
+  .barra{position:fixed;left:0;right:0;bottom:0;background:rgba(250,250,248,.94);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:12px 16px;display:flex;justify-content:center}
   .barra .dentro{max-width:920px;width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px}
   #estado{font-size:14px;color:var(--muted)}
-  #estado.pendiente{color:var(--accent)} #estado.ok{color:var(--ok)} #estado.error{color:var(--mal)}
-  dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:18px;width:min(640px,94vw)}
-  dialog::backdrop{background:rgba(0,0,0,.6)}
+  #estado.pendiente{color:#9A5B12} #estado.ok{color:var(--ok)} #estado.error{color:var(--mal)}
+  dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:20px;padding:22px;width:min(640px,94vw)}
+  dialog::backdrop{background:rgba(22,24,29,.35)}
   dialog textarea{min-height:260px;font-family:ui-monospace,Menlo,monospace;font-size:13px}
   .fila{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
   [hidden]{display:none !important}
@@ -59,8 +67,8 @@
 </head>
 <body>
 <header>
-  <b>Menú del restaurante</b>
-  <a id="linkCocina" href="#">← Pantalla de cocina</a>
+  <div class="marca"><a class="logo" href="/ia/">ARGAYES</a><span class="sep"></span><b>Menú del restaurante</b></div>
+  <a id="linkCocina" href="#">Volver a comandas</a>
 </header>
 
 <div class="envoltura">
@@ -238,7 +246,7 @@
     var cont = $('bloqueados'); cont.innerHTML = '';
     lista.forEach(function(n){
       var f = el('div', { class: 'fila' }); f.style.justifyContent = 'space-between'; f.style.marginTop = '6px';
-      f.appendChild(el('span', { text: '🚫 ' + n }));
+      f.appendChild(el('span', { text: 'Bloqueado: ' + n }));
       var b = el('button', { type: 'button', class: 'chico', text: 'Desbloquear' });
       b.addEventListener('click', async function(){
         b.disabled = true;

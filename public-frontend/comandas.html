@@ -80,6 +80,7 @@
     <button type="button" id="btnPausa" hidden>Pausar pedidos</button>
     <a class="boton" id="linkMenu" href="#">Menú</a>
     <button type="button" id="btnSonido" class="primario">Activar sonido</button>
+    <button type="button" id="btnLimpiar">Limpiar tablero</button>
     <button type="button" id="btnInfo">Conexión de la IA</button>
   </div>
 </header>
@@ -225,6 +226,19 @@
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estado: estado })
     }).catch(function(){});
   }
+
+  // Limpiar tablero: marca como entregados los pedidos activos y como
+  // canceladas las reservaciones, para empezar una demo desde cero.
+  document.getElementById('btnLimpiar').addEventListener('click', function(){
+    var activos = Object.keys(eventos).map(function(k){ return eventos[k]; }).filter(function(ev){
+      return ev.estado !== 'entregado' && ev.estado !== 'cancelado' && ev.estado !== 'broma';
+    });
+    if(!activos.length) return;
+    if(!confirm('¿Quitar ' + activos.length + (activos.length === 1 ? ' pedido o reservación' : ' pedidos y reservaciones') + ' de la pantalla?')) return;
+    activos.forEach(function(ev, i){
+      setTimeout(function(){ cambiar(ev, ev.tipo === 'reservacion' ? 'cancelado' : 'entregado'); }, i * 150);
+    });
+  });
 
   // Pedido de broma (o que nunca recogieron): se quita y se bloquea el número
   // para que la recepcionista ya no le tome pedidos.
