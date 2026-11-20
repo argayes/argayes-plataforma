@@ -817,7 +817,12 @@ app.post('/api/voz/:tablero/:tipo', limitadorVoz, ah(async (req, res) => {
                       // Número desde el que llamaron (identificador de llamadas
                       // del teléfono); no lo dicta el cliente, así que no se
                       // puede falsear diciendo otro número.
-                      llamada_desde: textoCorto(b.llamada_desde, 30)
+                      llamada_desde: textoCorto(b.llamada_desde, 30),
+                      // Entregas a domicilio (dark kitchens / pedidos por WhatsApp).
+                      direccion: textoCorto(b.direccion, 300),
+                      referencias: textoCorto(b.referencias, 300),
+                      pago: textoCorto(b.pago, 80),
+                      envio: textoCorto(b.envio, 30)
               }
               : {
                       nombre: textoCorto(b.nombre, 80),

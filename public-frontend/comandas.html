@@ -266,11 +266,19 @@
     if(!esRes && d.modalidad) meta.appendChild(el('span', '', d.modalidad));
     if(!esRes && d.hora) meta.appendChild(el('span', '', 'Hora ' + d.hora));
     if(!esRes && d.total) meta.appendChild(el('span', '', 'Total ' + d.total));
+    if(!esRes && d.envio) meta.appendChild(el('span', '', 'Envío ' + d.envio));
+    if(!esRes && d.pago) meta.appendChild(el('span', '', 'Pago: ' + d.pago));
     if(d.telefono) meta.appendChild(el('span', '', 'Tel. ' + d.telefono));
     if(d.llamada_desde && d.llamada_desde.replace(/\D/g, '').slice(-10) !== String(d.telefono || '').replace(/\D/g, '').slice(-10)){
       meta.appendChild(el('span', '', 'Llamó desde ' + d.llamada_desde));
     }
     t.appendChild(meta);
+    if(!esRes && d.direccion){
+      // Entrega a domicilio: la dirección va bien visible para el repartidor.
+      var dir = el('div', 'articulos', 'Entregar en: ' + d.direccion + (d.referencias ? '\n' + d.referencias : ''));
+      dir.style.fontSize = '14px';
+      t.appendChild(dir);
+    }
     if(d.notas) t.appendChild(el('div', 'notas', 'Nota: ' + d.notas));
     var acc = el('div', 't-acc');
     function boton(txt, estado){
