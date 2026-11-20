@@ -34,7 +34,20 @@
   main{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.1fr);gap:16px;padding:20px 24px 48px;max-width:1500px;margin:0 auto}
   main.sin-reservas{grid-template-columns:repeat(3,minmax(0,1fr))}
   @media (max-width:1100px){main,main.sin-reservas{grid-template-columns:1fr 1fr}}
-  @media (max-width:640px){main,main.sin-reservas{grid-template-columns:1fr;padding:12px 12px 40px}header{padding:12px}}
+  @media (max-width:640px){
+    main,main.sin-reservas{grid-template-columns:1fr;padding:12px 12px 40px}
+    header{position:static;padding:10px 12px;gap:8px}
+    .marca{gap:10px}
+    #negocioSep{display:none}
+    .acciones{gap:6px}
+    .acciones button,.acciones a.boton,.tema{padding:8px 12px;font-size:13px}
+    .espera{width:100%;padding:0 2px}
+  }
+  /* Pantallas táctiles: botones de cada pedido más fáciles de tocar */
+  @media (pointer:coarse){
+    .t-acc button{min-height:44px;font-size:14px}
+    .acciones button,.acciones a.boton,.tema{min-height:40px}
+  }
   .col{background:transparent;border:1px solid var(--line);border-radius:20px;padding:14px;min-height:220px}
   .col h2{margin:2px 4px 14px;font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;color:var(--muted)}
   .col h2::before{content:"";width:7px;height:7px;border-radius:50%;margin-right:8px;background:var(--nuevo);flex:none}
@@ -69,7 +82,8 @@
   [hidden]{display:none !important}
   /* Logo y nombre del negocio junto a ARGAYES */
   .negocio{display:inline-flex;align-items:center;gap:9px}
-  .negocio img{width:34px;height:34px;border-radius:9px;object-fit:cover;border:1px solid var(--line);background:#000}
+  .negocio .logo-caja{width:40px;height:40px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#000;flex:none}
+  .negocio img{width:100%;height:100%;object-fit:cover;transform:scale(1.55);display:block}
   .negocio span{font-size:15px;font-weight:500}
   /* Selector de tema */
   .tema{font:inherit;font-weight:400;font-size:14px;cursor:pointer;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:9px 14px}
@@ -97,7 +111,7 @@
 <header>
   <div class="marca">
     <a class="logo" href="/ia/">ARGAYES</a><span class="sep"></span>
-    <span class="negocio" id="negocio" hidden><img id="negocioLogo" alt="" hidden><span id="negocioNombre"></span></span><span class="sep" id="negocioSep" hidden></span>
+    <span class="negocio" id="negocio" hidden><span class="logo-caja" id="negocioLogoCaja" hidden><img id="negocioLogo" alt=""></span><span id="negocioNombre"></span></span><span class="sep" id="negocioSep" hidden></span>
     <b>Comandas en vivo</b>
     <span class="vivo" id="estadoVivo"><i></i><span id="estadoTexto">Conectando…</span></span>
   </div>
@@ -156,9 +170,9 @@
     document.getElementById('negocioSep').hidden = false;
     document.getElementById('negocioNombre').textContent = nombre || '';
     if(logo){
-      var img = document.getElementById('negocioLogo');
-      img.onerror = function(){ img.hidden = true; };
-      img.src = logo; img.alt = 'Logo de ' + (nombre || 'el negocio'); img.hidden = false;
+      var img = document.getElementById('negocioLogo'), caja = document.getElementById('negocioLogoCaja');
+      img.onerror = function(){ caja.hidden = true; };
+      img.src = logo; img.alt = 'Logo de ' + (nombre || 'el negocio'); caja.hidden = false;
     }
     if(nombre) document.title = 'Comandas · ' + nombre;
   }
@@ -208,6 +222,22 @@
   document.getElementById('btnSonido').addEventListener('click', function(){
     try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); campana(); } catch(e){}
     this.textContent = 'Sonido activado'; this.classList.remove('primario');
+    mantenerEncendida();
+  });
+
+  // Que la tablet/celular no apague la pantalla: si se apaga, el navegador deja
+  // de revisar pedidos y no suena. Se pide al activar el sonido y se vuelve a
+  // pedir cada vez que la página regresa al frente.
+  var candado = null, quiereEncendida = false;
+  async function mantenerEncendida(){
+    quiereEncendida = true;
+    try { if('wakeLock' in navigator && !candado){ candado = await navigator.wakeLock.request('screen'); candado.addEventListener('release', function(){ candado = null; }); } } catch(e){}
+  }
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'visible'){
+      if(quiereEncendida) mantenerEncendida();
+      if(typeof revisarCocina === 'function') revisarCocina();
+    }
   });
 
   var eventos = {};   // id → evento
