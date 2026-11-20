@@ -98,6 +98,19 @@
     </div>
   </section>
 
+  <section class="caja" id="cajaPin">
+    <h2>PIN de la pantalla</h2>
+    <p class="ayuda" id="pinAyuda">Protege la pantalla de cocina y este panel con un PIN de 4 a 8 números. Cada dispositivo lo pide una sola vez. La recepcionista sigue mandando pedidos sin PIN.</p>
+    <div class="rejilla">
+      <div id="pinActualCaja" hidden><label for="fPinActual">PIN actual</label><input id="fPinActual" type="password" inputmode="numeric" maxlength="8" autocomplete="off"></div>
+      <div><label for="fPinNuevo" id="pinNuevoLabel">Nuevo PIN</label><input id="fPinNuevo" type="password" inputmode="numeric" maxlength="8" autocomplete="off"></div>
+      <div class="ancho fila" style="justify-content:flex-start;align-items:center;margin-top:0">
+        <button type="button" id="btnPin">Guardar PIN</button>
+        <span id="pinEstado" role="status" style="font-size:14px"></span>
+      </div>
+    </div>
+  </section>
+
   <section class="caja" id="cajaBloqueados" hidden>
     <h2>Números bloqueados</h2>
     <p class="ayuda">Números marcados como broma en la pantalla de cocina. La recepcionista no les toma pedidos (sí puede darles información).</p>
@@ -130,6 +143,7 @@
   </div>
 </dialog>
 
+<script src="js/pin-voz.js"></script>
 <script>
 (function(){
   var BACKEND = 'https://argayes-backend.onrender.com';
@@ -259,6 +273,36 @@
     });
   }
 
+  function pintarPin(tiene){
+    if(/^demo-/.test(tablero)){ $('cajaPin').hidden = true; return; }
+    $('pinActualCaja').hidden = !tiene;
+    $('pinNuevoLabel').textContent = tiene ? 'Nuevo PIN' : 'PIN (4 a 8 números)';
+    $('btnPin').textContent = tiene ? 'Cambiar PIN' : 'Poner PIN';
+    if(tiene) $('pinAyuda').textContent = 'La pantalla de cocina y este panel están protegidos con PIN. Aquí lo puedes cambiar.';
+  }
+  if(/^demo-/.test(tablero)) $('cajaPin').hidden = true;
+  $('btnPin').addEventListener('click', async function(){
+    var b = this, est = $('pinEstado');
+    var nuevo = $('fPinNuevo').value.replace(/\D/g, ''), actual = $('fPinActual').value.replace(/\D/g, '');
+    if(nuevo.length < 4 || nuevo.length > 8){ est.style.color = 'var(--mal,#C2483D)'; est.textContent = 'El PIN debe tener de 4 a 8 números.'; return; }
+    b.disabled = true; est.style.color = ''; est.textContent = 'Guardando…';
+    try {
+      var r = await fetch(BACKEND + '/api/voz/' + tablero + '/pin', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actual: actual, nuevo: nuevo })
+      });
+      var d = await r.json().catch(function(){ return {}; });
+      if(!r.ok) throw new Error(d.error || 'No se pudo guardar');
+      if(window.ArgayesPin) window.ArgayesPin.guardar(nuevo);
+      $('fPinNuevo').value = ''; $('fPinActual').value = '';
+      pintarPin(true);
+      est.style.color = 'var(--ok,#2E8B57)'; est.textContent = 'Listo. Anótalo: lo van a pedir en la tablet de la cocina.';
+    } catch(e){
+      est.style.color = 'var(--mal,#C2483D)'; est.textContent = e.message || 'No se pudo guardar.';
+    }
+    b.disabled = false;
+  });
+
   async function cargar(){
     try {
       var r = await fetch(BACKEND + '/api/voz/' + tablero + '/restaurante', { cache: 'no-store' });
@@ -268,7 +312,7 @@
       $('fMinutos').value = d.minutosBase || 25;
       $('fCapacidad').value = d.capacidad || 6;
       desdeMenu(d.menu);
-      pintar(); ejemplo(); pintarBloqueados(d.bloqueados || []);
+      pintar(); ejemplo(); pintarBloqueados(d.bloqueados || []); pintarPin(!!d.tienePin);
       $('estado').className = ''; $('estado').textContent = d.actualizado ? 'Guardado · ' + new Date(d.actualizado).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin guardar todavía';
     } catch(e){
       $('estado').className = 'error'; $('estado').textContent = 'No se pudo cargar. Revisa tu internet y recarga la página.';

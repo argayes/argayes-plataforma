@@ -799,10 +799,11 @@ function textoCorto(v, max) {
       if (v === undefined || v === null) return '';
       return String(v).replace(/[\u0000-\u0009\u000b-\u001f]/g, ' ').trim().slice(0, max); // se conservan los saltos de línea
 }
-app.post('/api/voz/:tablero/:tipo', limitadorVoz, ah(async (req, res) => {
+app.post('/api/voz/:tablero/:tipo', limitadorVoz, ah(async (req, res, next) => {
       const { tablero, tipo } = req.params;
+      // Otras rutas POST del tablero (p. ej. /pin) siguen su camino.
+      if (tipo !== 'pedido' && tipo !== 'reservacion') return next();
       if (!TABLERO_VALIDO.test(tablero)) return res.status(400).json({ error: 'Tablero inválido' });
-      if (tipo !== 'pedido' && tipo !== 'reservacion') return res.status(400).json({ error: 'Tipo inválido' });
       const b = req.body || {};
       const datos = tipo === 'pedido'
               ? {
@@ -979,15 +980,77 @@ function limpiarRestaurante(b) {
       return { info, menu, minutosBase, capacidad };
 }
 
-// Panel del restaurante y pantalla de cocina.
-app.get('/api/voz/:tablero/restaurante', limitadorVoz, ah(async (req, res) => {
+// ---------- PIN de la pantalla de cocina ----------
+// El link (?t=...) ya es difícil de adivinar, pero si alguien lo reenvía vería
+// nombres, teléfonos y direcciones de clientes. Con PIN, la pantalla y el panel
+// del menú lo piden; las rutas que usa la IA (pedido, reservación, consultar)
+// siguen sin PIN.
+const PIN_VALIDO = /^\d{4,8}$/;
+function hashPin(pin) {
+      const sal = crypto.randomBytes(16).toString('hex');
+      return sal + ':' + crypto.scryptSync(String(pin), sal, 32).toString('hex');
+}
+function pinCorrecto(pin, guardado) {
+      if (!guardado || !PIN_VALIDO.test(String(pin || ''))) return false;
+      const [sal, hash] = String(guardado).split(':');
+      if (!sal || !hash) return false;
+      const calc = crypto.scryptSync(String(pin), sal, 32);
+      const esperado = Buffer.from(hash, 'hex');
+      return esperado.length === calc.length && crypto.timingSafeEqual(calc, esperado);
+}
+// Intentos fallidos por tablero: con 10 fallos en 15 min se bloquea un rato
+// (un PIN de 4 dígitos no se puede adivinar así).
+const fallosPin = new Map();
+function pinBloqueado(tablero) {
+      const f = fallosPin.get(tablero);
+      if (!f) return false;
+      if (Date.now() - f.desde > 15 * 60 * 1000) { fallosPin.delete(tablero); return false; }
+      return f.n >= 10;
+}
+function registrarFalloPin(tablero) {
+      const f = fallosPin.get(tablero);
+      if (!f || Date.now() - f.desde > 15 * 60 * 1000) fallosPin.set(tablero, { n: 1, desde: Date.now() });
+      else f.n++;
+}
+const requierePinVoz = ah(async (req, res, next) => {
       const { tablero } = req.params;
       if (!TABLERO_VALIDO.test(tablero)) return res.status(400).json({ error: 'Tablero inválido' });
       const r = await db.restauranteVoz(tablero);
-      const espera = await calcularEspera(tablero, r);
-      res.json({ info: r.info, menu: r.menu, pausado: r.pausado, minutosBase: r.minutos_base, capacidad: r.capacidad, bloqueados: r.bloqueados || [], actualizado: r.actualizado, espera });
+      req.restauranteVoz = r;
+      if (!r.pin_hash) return next();
+      if (pinBloqueado(tablero)) return res.status(429).json({ error: 'Demasiados intentos con PIN incorrecto. Espera 15 minutos.', pin: true });
+      if (pinCorrecto(req.get('x-pin'), r.pin_hash)) return next();
+      if (req.get('x-pin')) registrarFalloPin(tablero);
+      res.status(401).json({ error: 'Falta el PIN o es incorrecto', pin: true });
+});
+// Crear o cambiar el PIN. Si el tablero aún no tiene PIN, se puede crear con
+// solo tener el link (quien lo instala lo pone el primer día); para cambiarlo
+// hay que dar el PIN actual.
+app.post('/api/voz/:tablero/pin', limitadorVoz, ah(async (req, res) => {
+      const { tablero } = req.params;
+      if (!TABLERO_VALIDO.test(tablero)) return res.status(400).json({ error: 'Tablero inválido' });
+      // Las pantallas de demostración son públicas (página /ia): nadie debe
+      // poder ponerles PIN y dejar fuera a los demás.
+      if (tablero.startsWith('demo-')) return res.status(403).json({ error: 'Las pantallas de demostración no llevan PIN' });
+      const { actual, nuevo } = req.body || {};
+      if (!PIN_VALIDO.test(String(nuevo || ''))) return res.status(400).json({ error: 'El PIN debe tener de 4 a 8 números' });
+      const r = await db.restauranteVoz(tablero);
+      if (r.pin_hash) {
+              if (pinBloqueado(tablero)) return res.status(429).json({ error: 'Demasiados intentos. Espera 15 minutos.' });
+              if (!pinCorrecto(actual, r.pin_hash)) { registrarFalloPin(tablero); return res.status(401).json({ error: 'El PIN actual no es correcto' }); }
+      }
+      await db.guardarPinVoz(tablero, hashPin(nuevo));
+      res.json({ ok: true });
 }));
-app.put('/api/voz/:tablero/restaurante', limitadorVoz, ah(async (req, res) => {
+
+// Panel del restaurante y pantalla de cocina.
+app.get('/api/voz/:tablero/restaurante', limitadorVoz, requierePinVoz, ah(async (req, res) => {
+      const { tablero } = req.params;
+      const r = req.restauranteVoz;
+      const espera = await calcularEspera(tablero, r);
+      res.json({ info: r.info, menu: r.menu, pausado: r.pausado, minutosBase: r.minutos_base, capacidad: r.capacidad, bloqueados: r.bloqueados || [], tienePin: !!r.pin_hash, actualizado: r.actualizado, espera });
+}));
+app.put('/api/voz/:tablero/restaurante', limitadorVoz, requierePinVoz, ah(async (req, res) => {
       const { tablero } = req.params;
       if (!TABLERO_VALIDO.test(tablero)) return res.status(400).json({ error: 'Tablero inválido' });
       const limpio = limpiarRestaurante(req.body);
@@ -1002,7 +1065,7 @@ app.put('/api/voz/:tablero/restaurante', limitadorVoz, ah(async (req, res) => {
       const r = await db.guardarRestauranteVoz(tablero, limpio);
       res.json({ ok: true, actualizado: r.actualizado, platillos: r.menu.length });
 }));
-app.patch('/api/voz/:tablero/cocina', limitadorVoz, ah(async (req, res) => {
+app.patch('/api/voz/:tablero/cocina', limitadorVoz, requierePinVoz, ah(async (req, res) => {
       const { tablero } = req.params;
       if (!TABLERO_VALIDO.test(tablero)) return res.status(400).json({ error: 'Tablero inválido' });
       if (typeof (req.body || {}).pausado !== 'boolean') return res.status(400).json({ error: 'Falta "pausado"' });
@@ -1041,11 +1104,11 @@ app.get('/api/voz/:tablero/consultar', limitadorVoz, ah(async (req, res) => {
               : `PEDIDOS PARA LLEVAR: disponibles. Tiempo de preparación actual: ${espera.minutos} minutos.`);
       res.json({ informacion: lineas.join('\n') });
 }));
-app.get('/api/voz/:tablero/eventos', limitadorVoz, ah(async (req, res) => {
+app.get('/api/voz/:tablero/eventos', limitadorVoz, requierePinVoz, ah(async (req, res) => {
       if (!TABLERO_VALIDO.test(req.params.tablero)) return res.status(400).json({ error: 'Tablero inválido' });
       res.json(await db.eventosVoz(req.params.tablero, req.query.desde));
 }));
-app.patch('/api/voz/:tablero/eventos/:id', limitadorVoz, ah(async (req, res) => {
+app.patch('/api/voz/:tablero/eventos/:id', limitadorVoz, requierePinVoz, ah(async (req, res) => {
       if (!TABLERO_VALIDO.test(req.params.tablero)) return res.status(400).json({ error: 'Tablero inválido' });
       const estado = (req.body || {}).estado;
       if (!['nuevo', 'en_preparacion', 'listo', 'confirmada', 'entregado', 'cancelado'].includes(estado)) return res.status(400).json({ error: 'Estado inválido' });
@@ -1055,7 +1118,7 @@ app.patch('/api/voz/:tablero/eventos/:id', limitadorVoz, ah(async (req, res) => 
 }));
 // "Fue de broma": se quita de la cocina y se bloquean los números de ese
 // pedido (el que salió en el identificador de llamadas y el que dictó).
-app.post('/api/voz/:tablero/eventos/:id/broma', limitadorVoz, ah(async (req, res) => {
+app.post('/api/voz/:tablero/eventos/:id/broma', limitadorVoz, requierePinVoz, ah(async (req, res) => {
       const { tablero } = req.params;
       if (!TABLERO_VALIDO.test(tablero)) return res.status(400).json({ error: 'Tablero inválido' });
       const r = await db.marcarEventoVoz(tablero, Number(req.params.id), 'broma');
@@ -1064,7 +1127,7 @@ app.post('/api/voz/:tablero/eventos/:id/broma', limitadorVoz, ah(async (req, res
       for (const n of numeros) await db.bloquearNumeroVoz(tablero, n, true);
       res.json({ ok: true, bloqueados: numeros });
 }));
-app.delete('/api/voz/:tablero/bloqueados/:numero', limitadorVoz, ah(async (req, res) => {
+app.delete('/api/voz/:tablero/bloqueados/:numero', limitadorVoz, requierePinVoz, ah(async (req, res) => {
       const { tablero } = req.params;
       if (!TABLERO_VALIDO.test(tablero)) return res.status(400).json({ error: 'Tablero inválido' });
       const n = numeroClave(req.params.numero);
