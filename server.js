@@ -857,7 +857,7 @@ app.post('/api/voz/:tablero/:tipo', limitadorVoz, ah(async (req, res) => {
               ok: true,
               folio: ev.id,
               mensaje: tipo === 'pedido'
-                      ? `Pedido recibido en cocina, folio ${ev.id}. Tiempo estimado: ${espera.minutos} minutos.${datos.total_ia ? ` OJO: el total correcto según el menú es ${datos.total} (no ${datos.total_ia}); díselo al cliente disculpándote por el error.` : ''}`
+                      ? `Pedido recibido en cocina, folio ${ev.id}. Tiempo estimado: ${espera.minutos} minutos.${datos.total_ia ? ` OJO: el total correcto según el menú es ${pesosTexto(datos.total)} (no ${pesosTexto(datos.total_ia)}); díselo al cliente disculpándote por el error.` : ''}`
                       : `Reservación registrada, folio ${ev.id}`
       });
 }));
@@ -867,6 +867,13 @@ app.post('/api/voz/:tablero/:tipo', limitadorVoz, ah(async (req, res) => {
 function numeroClave(v) {
       const d = String(v || '').replace(/\D/g, '');
       return d.length >= 7 ? d.slice(-10) : '';
+}
+
+// "$1,040" → "1,040 pesos": en los mensajes para la IA nunca va el signo "$",
+// porque la voz lo lee como "dólares".
+function pesosTexto(v) {
+      const t = String(v || '').replace(/\$/g, '').trim();
+      return t ? t + ' pesos' : '';
 }
 
 function numeroDe(v) {
@@ -1004,10 +1011,10 @@ app.get('/api/voz/:tablero/consultar', limitadorVoz, ah(async (req, res) => {
       const agotados = (r.menu || []).filter((p) => p.agotado).map((p) => p.nombre);
       const porCategoria = {};
       disponibles.forEach((p) => { (porCategoria[p.categoria] = porCategoria[p.categoria] || []).push(p); });
-      lineas.push('MENÚ DISPONIBLE HOY (precios en pesos mexicanos):');
+      lineas.push('MENÚ DISPONIBLE HOY (precios en pesos mexicanos; di siempre "pesos", nunca "dólares" ni el signo $):');
       Object.keys(porCategoria).forEach((c) => {
               lineas.push(`## ${c}`);
-              porCategoria[c].forEach((p) => lineas.push(`- ${p.nombre}${p.descripcion ? ` (${p.descripcion})` : ''}${p.precio ? ` — $${String(p.precio).replace(/^\$/, '')}` : ''}`));
+              porCategoria[c].forEach((p) => lineas.push(`- ${p.nombre}${p.descripcion ? ` (${p.descripcion})` : ''}${p.precio ? ` — ${String(p.precio).replace(/^\$/, '')} pesos` : ''}`));
       });
       if (!disponibles.length) lineas.push('(El restaurante aún no ha cargado su menú: no inventes platillos; ofrece que el restaurante le devuelva la llamada.)');
       lineas.push(`AGOTADOS HOY (no los ofrezcas; si los piden, discúlpate y sugiere otra cosa): ${agotados.length ? agotados.join(', ') : 'ninguno'}`);
