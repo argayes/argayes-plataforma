@@ -956,7 +956,11 @@ function limpiarRestaurante(b) {
               horario: textoCorto(i.horario, 400),
               pagos: textoCorto(i.pagos, 300),
               promociones: textoCorto(i.promociones, 1500),
-              extra: textoCorto(i.extra, 2000)
+              extra: textoCorto(i.extra, 2000),
+              // Solo para la pantalla de comandas: logo del negocio (URL https)
+              // y si maneja reservaciones (una dark kitchen no).
+              logo: /^https:\/\/[^\s"'<>]+$/.test(String(i.logo || '')) ? textoCorto(i.logo, 500) : '',
+              reservaciones: i.reservaciones !== false
       };
       const menu = (Array.isArray(b && b.menu) ? b.menu : []).slice(0, 400).map((p) => ({
               categoria: textoCorto(p && p.categoria, 60) || 'Otros',
@@ -981,7 +985,16 @@ app.get('/api/voz/:tablero/restaurante', limitadorVoz, ah(async (req, res) => {
 app.put('/api/voz/:tablero/restaurante', limitadorVoz, ah(async (req, res) => {
       const { tablero } = req.params;
       if (!TABLERO_VALIDO.test(tablero)) return res.status(400).json({ error: 'Tablero inválido' });
-      const r = await db.guardarRestauranteVoz(tablero, limpiarRestaurante(req.body));
+      const limpio = limpiarRestaurante(req.body);
+      // Si quien guarda (p. ej. el panel del menú) no manda logo o reservaciones,
+      // se conservan los que ya tenía el negocio.
+      const bi = (req.body && req.body.info) || {};
+      if (bi.logo === undefined || bi.reservaciones === undefined) {
+              const previo = (await db.restauranteVoz(tablero)).info || {};
+              if (bi.logo === undefined) limpio.info.logo = previo.logo || '';
+              if (bi.reservaciones === undefined) limpio.info.reservaciones = previo.reservaciones !== false;
+      }
+      const r = await db.guardarRestauranteVoz(tablero, limpio);
       res.json({ ok: true, actualizado: r.actualizado, platillos: r.menu.length });
 }));
 app.patch('/api/voz/:tablero/cocina', limitadorVoz, ah(async (req, res) => {
