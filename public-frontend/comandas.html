@@ -32,8 +32,9 @@
   button.primario{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
   button.primario:hover{background:#0c162b}
   main{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.1fr);gap:16px;padding:20px 24px 48px;max-width:1500px;margin:0 auto}
-  @media (max-width:1100px){main{grid-template-columns:1fr 1fr}}
-  @media (max-width:640px){main{grid-template-columns:1fr;padding:12px 12px 40px}header{padding:12px}}
+  main.sin-reservas{grid-template-columns:repeat(3,minmax(0,1fr))}
+  @media (max-width:1100px){main,main.sin-reservas{grid-template-columns:1fr 1fr}}
+  @media (max-width:640px){main,main.sin-reservas{grid-template-columns:1fr;padding:12px 12px 40px}header{padding:12px}}
   .col{background:transparent;border:1px solid var(--line);border-radius:20px;padding:14px;min-height:220px}
   .col h2{margin:2px 4px 14px;font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;color:var(--muted)}
   .col h2::before{content:"";width:7px;height:7px;border-radius:50%;margin-right:8px;background:var(--nuevo);flex:none}
@@ -66,12 +67,37 @@
   button.pausa-on{background:#FBEDEA;border-color:#C2483D;color:#8E2F26}
   .pausado{margin:16px 24px 0;padding:14px 16px;border:1px solid #EBD3CF;background:#FBEDEA;color:#8E2F26;border-radius:14px;font-size:15px}
   [hidden]{display:none !important}
+  /* Logo y nombre del negocio junto a ARGAYES */
+  .negocio{display:inline-flex;align-items:center;gap:9px}
+  .negocio img{width:34px;height:34px;border-radius:9px;object-fit:cover;border:1px solid var(--line);background:#000}
+  .negocio span{font-size:15px;font-weight:500}
+  /* Selector de tema */
+  .tema{font:inherit;font-weight:400;font-size:14px;cursor:pointer;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:9px 14px}
+  /* Tema oscuro */
+  [data-tema="oscuro"]{
+    --bg:#0F1115; --panel:#181B21; --panel-2:#22262E; --line:#2C313A;
+    --ink:#ECEDEF; --muted:#9AA0AA; --accent:#E8EAEE; --accent-ink:#0F1115;
+    --nuevo:#E0A04A; --prep:#6A9BD8; --listo:#4CB37A; --reserva:#A88BE0;
+    color-scheme:dark;
+  }
+  [data-tema="oscuro"] header{background:rgba(15,17,21,.88)}
+  [data-tema="oscuro"] button.primario:hover{background:#FFFFFF}
+  [data-tema="oscuro"] .tarjeta{box-shadow:none}
+  [data-tema="oscuro"] .meta span.idioma{background:#1E2633;color:#9DB8E8}
+  [data-tema="oscuro"] .notas{color:#E7B36A}
+  [data-tema="oscuro"] .t-acc button.broma{color:#E38B80;border-color:#4A2C29}
+  [data-tema="oscuro"] button.pausa-on,[data-tema="oscuro"] .pausado{background:#3A1D1A;border-color:#7A3A33;color:#F2B8AF}
+  [data-tema="oscuro"] .negocio img{border-color:#2C313A}
 </style>
+<script>
+  try { if(localStorage.getItem('argayes-comandas-tema') === 'oscuro') document.documentElement.setAttribute('data-tema', 'oscuro'); } catch(e){}
+</script>
 </head>
 <body>
 <header>
   <div class="marca">
     <a class="logo" href="/ia/">ARGAYES</a><span class="sep"></span>
+    <span class="negocio" id="negocio" hidden><img id="negocioLogo" alt="" hidden><span id="negocioNombre"></span></span><span class="sep" id="negocioSep" hidden></span>
     <b>Comandas en vivo</b>
     <span class="vivo" id="estadoVivo"><i></i><span id="estadoTexto">Conectando…</span></span>
   </div>
@@ -82,10 +108,14 @@
     <button type="button" id="btnSonido" class="primario">Activar sonido</button>
     <button type="button" id="btnLimpiar">Limpiar tablero</button>
     <button type="button" id="btnInfo">Conexión de la IA</button>
+    <select class="tema" id="selTema" aria-label="Tema de la pantalla">
+      <option value="claro">Tema: claro</option>
+      <option value="oscuro">Tema: oscuro</option>
+    </select>
   </div>
 </header>
 
-<div class="pausado" id="avisoPausa" hidden>Pedidos para llevar <b>pausados</b>: la recepcionista solo está tomando reservaciones. Presiona <b>Reanudar</b> cuando la cocina se libere.</div>
+<div class="pausado" id="avisoPausa" hidden>Pedidos <b>pausados</b>: la IA no está tomando pedidos nuevos (avisa a los clientes que llamen más tarde). Presiona <b>Reanudar</b> cuando la cocina se libere.</div>
 
 <div class="aviso" id="info" hidden>
   <b>Para conectar la recepcionista de IA</b> a esta pantalla, en las herramientas del agente de voz usa estas direcciones (método POST):<br>
@@ -109,6 +139,30 @@
     if(dev && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(dev) && /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) BACKEND = dev;
   } catch(e){}
 
+  // Tema claro / oscuro (se recuerda en este dispositivo).
+  var selTema = document.getElementById('selTema');
+  selTema.value = document.documentElement.getAttribute('data-tema') === 'oscuro' ? 'oscuro' : 'claro';
+  selTema.addEventListener('change', function(){
+    if(selTema.value === 'oscuro') document.documentElement.setAttribute('data-tema', 'oscuro');
+    else document.documentElement.removeAttribute('data-tema');
+    try { localStorage.setItem('argayes-comandas-tema', selTema.value); } catch(e){}
+  });
+
+  // Nombre y logo del negocio: vienen de los datos del restaurante en el
+  // servidor (info.nombre, info.logo); aquí no se escribe ningún tablero.
+  function mostrarNegocio(nombre, logo){
+    if(!nombre && !logo) return;
+    document.getElementById('negocio').hidden = false;
+    document.getElementById('negocioSep').hidden = false;
+    document.getElementById('negocioNombre').textContent = nombre || '';
+    if(logo){
+      var img = document.getElementById('negocioLogo');
+      img.onerror = function(){ img.hidden = true; };
+      img.src = logo; img.alt = 'Logo de ' + (nombre || 'el negocio'); img.hidden = false;
+    }
+    if(nombre) document.title = 'Comandas · ' + nombre;
+  }
+
   // El tablero va en el link (?t=...). Si no hay, se crea uno nuevo y aleatorio.
   var params = new URLSearchParams(location.search);
   var tablero = (params.get('t') || '').toLowerCase();
@@ -121,6 +175,18 @@
   }
   document.getElementById('urlPedido').textContent = BACKEND + '/api/voz/' + tablero + '/pedido';
   document.getElementById('urlReserva').textContent = BACKEND + '/api/voz/' + tablero + '/reservacion';
+
+  var negocioListo = false;
+  function aplicarNegocio(info){
+    if(negocioListo || !info) return;
+    negocioListo = true;
+    mostrarNegocio(info.nombre || '', info.logo || '');
+    if(info.reservaciones === false){
+      // Negocio sin reservaciones (p. ej. dark kitchen): se quita esa columna.
+      document.querySelector('.col[data-c="reservaciones"]').hidden = true;
+      document.querySelector('main').classList.add('sin-reservas');
+    }
+  }
   document.getElementById('btnInfo').addEventListener('click', function(){
     var i = document.getElementById('info'); i.hidden = !i.hidden;
   });
@@ -297,7 +363,11 @@
   async function revisarCocina(){
     try {
       var r = await fetch(BACKEND + '/api/voz/' + tablero + '/restaurante', { cache: 'no-store' });
-      if(r.ok) pintarCocina(await r.json());
+      if(r.ok){
+        var datos = await r.json();
+        aplicarNegocio(datos.info);
+        pintarCocina(datos);
+      }
     } catch(e){}
   }
   document.getElementById('btnPausa').addEventListener('click', async function(){
